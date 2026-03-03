@@ -4,12 +4,13 @@ A cross-platform desktop app for viewing and editing **Markdown**, **JSON**, and
 
 ## Features
 
-- **Split-panel editor** — Monaco editor (left) + live preview (right), resizable via drag handle
-- **Markdown** — GitHub Flavored Markdown, tables, task lists, syntax-highlighted code blocks
-- **JSON** — Collapsible tree viewer with dark/light theme support
-- **CSV** — Sortable + resizable columns, global search, SQL mode (`alasql`), cell selection, hover tooltips
-- **File open** — Native `File > Open…` (`⌘O`) or drag-and-drop onto the window
-- **Theme** — System / Light / Dark, syncs to OS appearance
+- Markdown, JSON, and CSV viewer with live preview
+- Split-panel editor — Monaco editor + resizable preview
+- CSV: sortable columns, search, and SQL mode
+- Open files via `⌘O` or drag-and-drop
+- System / Light / Dark theme
+
+![CSV Viewer](desktop-app/docs/assets/csv-viewer.png)
 
 ## Prerequisites
 
