@@ -103,7 +103,7 @@ jq --arg v "$next_version" '.version = $v' "$TAURI_CONF" > "$tmp" && mv "$tmp" "
 
 echo "→ updating desktop-app/src-tauri/Cargo.toml…"
 # Replace the first `version = "..."` line in [package] section only
-sed -i '' "0,/^version = \"[^\"]*\"/{s/^version = \"[^\"]*\"/version = \"${next_version}\"/}" "$CARGO_TOML"
+perl -i -0pe "s/^version = \"[^\"]*\"/version = \"${next_version}\"/" "$CARGO_TOML"
 
 echo "→ updating landing/src/version.ts…"
 sed -i '' 's/export const VERSION = ".*"/export const VERSION = "'"$next_version"'"/' "$VERSION_TS"
