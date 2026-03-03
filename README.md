@@ -1,14 +1,11 @@
 # File Viewers
 
-A cross-platform desktop app for viewing and editing **Markdown**, **JSON**, and **CSV** files with a live split-panel interface. Built with Tauri 2 + React 19.
+A cross-platform desktop app for viewing and editing **Markdown**, **JSON**, and **CSV** files.
 
 ## Features
 
 - Markdown, JSON, and CSV viewer with live preview
-- Split-panel editor — Monaco editor + resizable preview
-- CSV: sortable columns, search, and SQL mode
-- Open files via `⌘O` or drag-and-drop
-- System / Light / Dark theme
+- Advanced CSV viewer with SQL mode
 
 ![CSV Viewer](desktop-app/docs/assets/csv-viewer.png)
 
