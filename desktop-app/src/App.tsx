@@ -218,9 +218,10 @@ function App() {
 						{(["markdown", "json", "csv"] as Format[]).map((f) => (
 							<Tabs.Tab key={f} value={f} className="tab-btn">
 								{FORMAT_ICONS[f]}
-								{f.charAt(0).toUpperCase() + f.slice(1)}
+								{f}
 							</Tabs.Tab>
 						))}
+						<Tabs.Indicator className="tab-indicator" />
 					</Tabs.List>
 				</Tabs.Root>
 				<div className="toolbar-actions gap-2">

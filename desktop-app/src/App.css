@@ -192,6 +192,7 @@
   border-radius: 8px;
   padding: 3px;
   gap: 1px;
+  position: relative;
 }
  
 .tab-btn {
@@ -203,24 +204,38 @@
   border: none;
   font-size: 11px;
   font-weight: 600;
-  letter-spacing: 0.07em;
+  letter-spacing: 0;
   text-transform: uppercase;
   cursor: pointer;
   background: transparent;
   color: var(--tab-inactive-text);
-  transition: color 0.15s, background 0.15s, box-shadow 0.15s;
+  transition: color 0.15s;
   white-space: nowrap;
+  position: relative;
+  z-index: 1;
 }
- 
+
 .tab-btn:hover {
   color: var(--text-primary);
 }
 
 .tab-btn[data-active] {
-  background: var(--tab-active-pill-bg);
   color: var(--tab-active-text);
   font-weight: 700;
+}
+
+.tab-indicator {
+  position: absolute;
+  top: var(--active-tab-top);
+  left: var(--active-tab-left);
+  width: var(--active-tab-width);
+  height: var(--active-tab-height);
+  border-radius: 6px;
+  background: var(--tab-active-pill-bg);
   box-shadow: var(--tab-active-shadow);
+  transition: left 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              width 0.2s cubic-bezier(0.4, 0, 0.2, 1),
+              top 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 /* ── Toolbar actions (right side) ─────────────────────────── */
