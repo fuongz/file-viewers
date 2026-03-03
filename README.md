@@ -18,7 +18,7 @@ A cross-platform desktop app for viewing and editing **Markdown**, **JSON**, and
 
 **Platform support:** macOS 12+, Linux (GTK), Windows 10+
 
-## Getting Started
+## Development Setup
 
 ```bash
 bun install
@@ -49,7 +49,7 @@ bunx tsc --noEmit     # type check only
 ## Project Structure
 
 ```
-dev-viewers/
+file-viewers/desktop-app/
 ├── src/
 │   ├── App.tsx                 # Root component, all top-level state
 │   ├── App.css                 # Styles + CSS design tokens
@@ -76,5 +76,5 @@ MIT — see [LICENSE](LICENSE)
 
 ## Docs
 
-- [`docs/architecture.md`](docs/architecture.md) — component hierarchy, state, file loading, theme system, Tauri capabilities
-- [`docs/components.md`](docs/components.md) — props reference for every component
+- [`desktop-app/docs/architecture.md`](desktop-app/docs/architecture.md) — component hierarchy, state, file loading, theme system, Tauri capabilities
+- [`desktop-app/docs/components.md`](desktop-app/docs/components.md) — props reference for every component
