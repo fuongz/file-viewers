@@ -1,0 +1,68 @@
+import { Button as BaseButton } from "@base-ui/react";
+import { cva, type VariantProps } from "class-variance-authority";
+import type { ComponentProps } from "react";
+import { cn } from "@/lib/utils";
+
+const buttonVariants = cva("cursor-pointer transition-colors", {
+	variants: {
+		variant: {
+			// Toolbar ghost buttons: Format, Minify, theme toggle
+			toolbar:
+				"inline-flex items-center gap-[5px] px-[10px] py-[3px] rounded-md " +
+				"bg-transparent border-0 " +
+				"text-[var(--text-muted)] text-[11px] font-medium uppercase duration-150 " +
+				"hover:text-[var(--text-primary)] hover:bg-[var(--tabs-bg)]",
+
+			// Dropdown menu items: theme options
+			ghost:
+				"flex items-center gap-[7px] w-full px-[10px] py-[5px] " +
+				"bg-transparent border-0 " +
+				"text-[var(--text-muted)] text-xs " +
+				"text-left duration-[120ms] " +
+				"hover:text-[var(--text-primary)] hover:bg-[var(--tabs-bg)] " +
+				"data-[active]:text-[var(--tab-active-text)] data-[active]:bg-[var(--tab-active-pill-bg)]",
+
+			// Bordered buttons with primary hover: CSV mode toggle
+			outline:
+				"inline-flex items-center gap-[5px] px-2 py-[3px] rounded " +
+				"bg-transparent border border-[var(--border)] " +
+				"text-[var(--text-muted)] text-[11px] font-medium " +
+				"flex-shrink-0 duration-150 " +
+				"hover:text-[var(--text-primary)] hover:border-[var(--color-grenadier-400)] " +
+				"data-[active]:text-[var(--color-grenadier-400)] data-[active]:border-[var(--color-grenadier-400)] " +
+				"data-[active]:bg-[color-mix(in_srgb,var(--color-grenadier-400)_12%,transparent)]",
+
+			// Filled primary button using grenadier palette
+			primary:
+				"inline-flex items-center gap-[5px] px-3 py-1 rounded-md " +
+				"bg-[var(--color-grenadier-600)] border-0 " +
+				"text-white text-[11px] font-medium duration-150 " +
+				"hover:bg-[var(--color-grenadier-500)] " +
+				"active:bg-[var(--color-grenadier-700)]",
+
+			link:
+				"bg-transparent border-0 p-0 " +
+				"text-[13px] text-[var(--text-primary)] " +
+				"text-left hover:underline underline-offset-2",
+		},
+	},
+	defaultVariants: {
+		variant: "toolbar",
+	},
+});
+
+interface ButtonProps
+	extends ComponentProps<typeof BaseButton>,
+		VariantProps<typeof buttonVariants> {
+	active?: boolean;
+}
+
+export function Button({ variant, active, className, ...props }: ButtonProps) {
+	return (
+		<BaseButton
+			data-active={active || undefined}
+			className={cn(buttonVariants({ variant }), className)}
+			{...props}
+		/>
+	);
+}
