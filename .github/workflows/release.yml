@@ -52,7 +52,7 @@ jobs:
           releaseBody: |
             ## File Viewers ${{ github.ref_name }}
 
-            Download **File Viewers_${{ github.ref_name }}_universal.pkg** below and double-click to install.
+            Download **File Viewers_${{ github.ref_name }}_universal.dmg** below, open it and drag the app to Applications.
           releaseDraft: true
           prerelease: false
-          args: --bundles pkg --target universal-apple-darwin
+          args: --bundles dmg --target universal-apple-darwin
