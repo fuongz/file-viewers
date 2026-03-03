@@ -123,7 +123,7 @@ echo ""
 echo "  git push origin main ${next_tag}"
 echo ""
 read -r -p "Push now? [y/N] " confirm
-if [[ "${confirm,,}" == "y" ]]; then
+if [[ "$(echo "$confirm" | tr '[:upper:]' '[:lower:]')" == "y" ]]; then
   git push origin main "$next_tag"
   echo "✓ pushed — create a GitHub Release from ${next_tag} to trigger the CI build."
 else
