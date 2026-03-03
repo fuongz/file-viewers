@@ -13,6 +13,9 @@ export default defineConfig(async () => ({
 			"@": resolve(__dirname, "src"),
 		},
 	},
+	build: {
+		chunkSizeWarningLimit: 1000,
+	},
 	clearScreen: false,
 	server: {
 		port: 1420,

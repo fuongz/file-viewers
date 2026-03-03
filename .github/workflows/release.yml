@@ -143,7 +143,8 @@ jobs:
             librsvg2-devel \
             patchelf \
             gcc \
-            make
+            make \
+            unzip
 
       - name: Setup Bun
         uses: oven-sh/setup-bun@v2
