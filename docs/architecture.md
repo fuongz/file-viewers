@@ -83,7 +83,7 @@ const openFile = useCallback(async () => { … }, [loadFile]);
 
 | Entry point | API | How it calls `loadFile` |
 |-------------|-----|------------------------|
-| Native menu `⌘O` | `@tauri-apps/api/event` → `listen("menu-open-file", …)` | `openFile()` → `loadFile(path)` |
+| Native menu (`⌘O` on macOS) | `@tauri-apps/api/event` → `listen("menu-open-file", …)` | `openFile()` → `loadFile(path)` |
 | Drag and drop | `getCurrentWebview().onDragDropEvent()` | Iterates `event.payload.paths`, picks first recognised extension, calls `loadFile(path)` directly |
 
 Both effects use the `cancelled` flag pattern to avoid race conditions with React StrictMode double-invocation:
@@ -275,12 +275,12 @@ Defined in `src-tauri/capabilities/default.json`. Referenced by name in `src-tau
 
 ## Build Output
 
-```
-src-tauri/target/release/bundle/
-├── macos/
-│   └── File Viewers.app
-└── dmg/
-    └── File Viewers_*.dmg
-```
+Produced by `bun run tauri build`. Output lives under `src-tauri/target/release/bundle/`.
 
-Produced by `bun run tauri build`. The app is code-signed with the system developer identity if available.
+| Platform | Bundle dir | Artifacts |
+|----------|-----------|-----------|
+| macOS | `macos/`, `dmg/` | `File Viewers.app`, `File Viewers_*.dmg` |
+| Linux | `deb/`, `appimage/` | `file-viewers_*.deb`, `file-viewers_*.AppImage` |
+| Windows | `msi/`, `nsis/` | `File Viewers_*.msi`, `File Viewers_*-setup.exe` |
+
+The GitHub Actions release workflow (`release.yml`) builds all three platforms in parallel and attaches the artifacts to the GitHub Release. macOS builds use `--target universal-apple-darwin` (arm64 + x86_64 fat binary).

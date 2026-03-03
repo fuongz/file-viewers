@@ -1,12 +1,11 @@
-name: Release macOS
+name: Release
 
 on:
-  push:
-    tags:
-      - "v*.*.*"
+  release:
+    types: [created]
 
 jobs:
-  release:
+  release-macos:
     runs-on: macos-latest
     permissions:
       contents: write
@@ -32,14 +31,26 @@ jobs:
       - name: Install frontend dependencies
         run: bun install
 
-      - name: Build and publish .pkg (direct download)
+      # Detect whether Apple signing secrets are configured.
+      # We do this via an env var so the secret value is never interpolated
+      # directly into the shell script (avoids log exposure).
+      - name: Detect Apple signing secrets
+        id: signing
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+        run: |
+          if [ -n "$APPLE_CERTIFICATE" ]; then
+            echo "enabled=true" >> $GITHUB_OUTPUT
+          else
+            echo "enabled=false" >> $GITHUB_OUTPUT
+          fi
+
+      # Signed + notarized build (requires Developer ID Application cert).
+      - name: Build and publish .dmg (signed)
+        if: steps.signing.outputs.enabled == 'true'
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          # ── macOS notarization (optional) ──────────────────────────────────
-          # Requires a "Developer ID Application" certificate (NOT App Store).
-          # Without these secrets the build still works but Gatekeeper will
-          # warn users on first launch.
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
@@ -47,12 +58,90 @@ jobs:
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
         with:
-          tagName: ${{ github.ref_name }}
-          releaseName: "File Viewers ${{ github.ref_name }}"
-          releaseBody: |
-            ## File Viewers ${{ github.ref_name }}
-
-            Download **File Viewers_${{ github.ref_name }}_universal.dmg** below, open it and drag the app to Applications.
-          releaseDraft: true
-          prerelease: false
+          tagName: ${{ github.event.release.tag_name }}
           args: --bundles dmg --target universal-apple-darwin
+
+      # Unsigned build — Gatekeeper will warn on first launch but the app works.
+      - name: Build and publish .dmg (unsigned)
+        if: steps.signing.outputs.enabled == 'false'
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.event.release.tag_name }}
+          args: --bundles dmg --target universal-apple-darwin
+
+  release-linux:
+    runs-on: ubuntu-22.04
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Linux system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            libssl-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            patchelf
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+
+      - name: Install frontend dependencies
+        run: bun install
+
+      - name: Build and publish .deb + .AppImage
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.event.release.tag_name }}
+          args: --bundles deb,appimage
+
+  release-windows:
+    runs-on: windows-latest
+    permissions:
+      contents: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Setup Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Rust cache
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: "./src-tauri -> target"
+
+      - name: Install frontend dependencies
+        run: bun install
+
+      - name: Build and publish .msi + .exe
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ${{ github.event.release.tag_name }}
+          args: --bundles msi,nsis
