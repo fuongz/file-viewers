@@ -11,9 +11,10 @@
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-TAURI_CONF="$ROOT/src-tauri/tauri.conf.json"
-CARGO_TOML="$ROOT/src-tauri/Cargo.toml"
-PKG_JSON="$ROOT/package.json"
+TAURI_CONF="$ROOT/desktop-app/src-tauri/tauri.conf.json"
+CARGO_TOML="$ROOT/desktop-app/src-tauri/Cargo.toml"
+PKG_JSON="$ROOT/desktop-app/package.json"
+VERSION_TS="$ROOT/landing/src/version.ts"
 
 # ── helpers ────────────────────────────────────────────────────────────────
 
@@ -92,22 +93,25 @@ echo ""
 
 # ── update version files ───────────────────────────────────────────────────
 
-echo "→ updating package.json…"
+echo "→ updating desktop-app/package.json…"
 tmp=$(mktemp)
 jq --arg v "$next_version" '.version = $v' "$PKG_JSON" > "$tmp" && mv "$tmp" "$PKG_JSON"
 
-echo "→ updating src-tauri/tauri.conf.json…"
+echo "→ updating desktop-app/src-tauri/tauri.conf.json…"
 tmp=$(mktemp)
 jq --arg v "$next_version" '.version = $v' "$TAURI_CONF" > "$tmp" && mv "$tmp" "$TAURI_CONF"
 
-echo "→ updating src-tauri/Cargo.toml…"
+echo "→ updating desktop-app/src-tauri/Cargo.toml…"
 # Replace the first `version = "..."` line in [package] section only
 sed -i '' "0,/^version = \"[^\"]*\"/{s/^version = \"[^\"]*\"/version = \"${next_version}\"/}" "$CARGO_TOML"
+
+echo "→ updating landing/src/version.ts…"
+sed -i '' 's/export const VERSION = ".*"/export const VERSION = "'"$next_version"'"/' "$VERSION_TS"
 
 # ── commit, tag, push ──────────────────────────────────────────────────────
 
 echo "→ committing version bump…"
-git add "$PKG_JSON" "$TAURI_CONF" "$CARGO_TOML"
+git add "$PKG_JSON" "$TAURI_CONF" "$CARGO_TOML" "$VERSION_TS"
 git commit -m "chore: release ${next_tag}"
 
 echo "→ tagging ${next_tag}…"
