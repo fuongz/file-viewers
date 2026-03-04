@@ -5,6 +5,13 @@ pub fn run() {
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
         .setup(|_app| {
+            #[cfg(debug_assertions)]
+            {
+                use tauri::Manager;
+                if let Some(win) = _app.get_webview_window("main") {
+                    win.open_devtools();
+                }
+            }
             #[cfg(target_os = "macos")]
             {
                 let app = _app;

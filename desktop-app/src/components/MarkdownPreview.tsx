@@ -6,7 +6,13 @@ import {
 } from "@tabler/icons-react";
 import githubUrl from "highlight.js/styles/github.css?url";
 import githubDarkUrl from "highlight.js/styles/github-dark.css?url";
-import { type ReactNode, useEffect, useState } from "react";
+import {
+	Children,
+	isValidElement,
+	type ReactNode,
+	useEffect,
+	useState,
+} from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
 import remarkGfm from "remark-gfm";
@@ -24,7 +30,30 @@ function getNodeText(node: HastNode): string {
 	return (node.children ?? []).map(getNodeText).join("");
 }
 
-function CodeBlock({
+interface CodeElProps {
+	className?: string;
+	children?: ReactNode;
+}
+
+function extractCodeInfoFromChildren(children: ReactNode): {
+	lang: string;
+	text: string;
+} {
+	const codeEl = Children.toArray(children).find(
+		(c): c is React.ReactElement<CodeElProps> => isValidElement(c),
+	) as React.ReactElement<CodeElProps> | undefined;
+	if (!codeEl) return { lang: "", text: "" };
+	const className = codeEl.props.className ?? "";
+	const lang =
+		className
+			.split(" ")
+			.find((c) => c.startsWith("language-"))
+			?.replace("language-", "") ?? "";
+	const text = String(codeEl.props.children ?? "").trimEnd();
+	return { lang, text };
+}
+
+export function CodeBlock({
 	node,
 	children,
 }: {
@@ -34,14 +63,24 @@ function CodeBlock({
 	const [collapsed, setCollapsed] = useState(false);
 	const [copied, setCopied] = useState(false);
 
-	const codeChild = node?.children?.[0];
-	const classNames =
-		(codeChild?.properties?.className as string[] | undefined) ?? [];
-	const lang =
-		classNames
-			.find((c) => c.startsWith("language-"))
-			?.replace("language-", "") ?? "";
-	const rawText = node ? getNodeText(node).trimEnd() : "";
+	let lang: string;
+	let rawText: string;
+
+	if (node) {
+		const codeChild = node.children?.[0];
+		const classNames =
+			(codeChild?.properties?.className as string[] | undefined) ?? [];
+		lang =
+			classNames
+				.find((c) => c.startsWith("language-"))
+				?.replace("language-", "") ?? "";
+		rawText = getNodeText(node).trimEnd();
+	} else {
+		const info = extractCodeInfoFromChildren(children);
+		lang = info.lang;
+		rawText = info.text;
+	}
+
 	const lineCount = rawText ? rawText.split("\n").length : 0;
 
 	const handleCopy = async () => {
@@ -115,7 +154,7 @@ export function MarkdownPreview({ content, isDark }: MarkdownPreviewProps) {
 	}
 
 	return (
-		<div className="markdown-body">
+		<article className="markdown-body">
 			<ReactMarkdown
 				remarkPlugins={[remarkGfm]}
 				rehypePlugins={[rehypeHighlight]}
@@ -128,6 +167,6 @@ export function MarkdownPreview({ content, isDark }: MarkdownPreviewProps) {
 			>
 				{content}
 			</ReactMarkdown>
-		</div>
+		</article>
 	);
 }

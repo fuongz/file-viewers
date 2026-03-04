@@ -1,9 +1,10 @@
+import { memo } from "react";
 import { CsvPreview } from "./CsvPreview";
 import { EmptyState } from "./EmptyState";
 import { JsonPreview } from "./JsonPreview";
 import { MarkdownPreview } from "./MarkdownPreview";
 
-export type Format = "markdown" | "json" | "csv";
+export type Format = "markdown" | "json" | "csv" | "mdx";
 
 interface PreviewPanelProps {
 	content: string;
@@ -13,7 +14,7 @@ interface PreviewPanelProps {
 	onContentChange?: (content: string) => void;
 }
 
-export function PreviewPanel({
+export const PreviewPanel = memo(function PreviewPanel({
 	content,
 	format,
 	isDark,
@@ -39,4 +40,4 @@ export function PreviewPanel({
 			)}
 		</div>
 	);
-}
+});

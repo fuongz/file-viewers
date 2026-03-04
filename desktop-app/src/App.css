@@ -9,8 +9,8 @@
   --border: oklch(1 0 0 / 10%);
   --text-primary: #cccccc;
   --text-muted: #6a6a6a;
-  --accent: #0e7ae4;
-  --accent-hover: #1a8df0;
+  --accent: #e0330d;
+  --accent-hover: #c1250d;
   --tab-active-text: #ffffff;
   --tab-inactive-text: #8a8a8a;
   --error-bg: #3a1212;
@@ -29,7 +29,7 @@
   --md-heading: #e6e6e6;
   --md-strong: #e6e6e6;
   --md-em: #d4c5a0;
-  --md-link: #4db6f5;
+  --md-link: #e0330d;
   --md-blockquote-color: #999;
   --md-code-color: #ce9178;
   --md-code-bg: rgba(255, 255, 255, 0.08);
@@ -269,6 +269,129 @@
   z-index: 100;
 }
 
+/* ── File tabs bar ────────────────────────────────────────── */
+.file-tabs-bar {
+  display: flex;
+  align-items: stretch;
+  height: 36px;
+  background: var(--background);
+  border-bottom: 1px solid var(--border);
+  flex-shrink: 0;
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+
+.file-tabs-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.file-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 0 8px 0 12px;
+  min-width: 100px;
+  max-width: 200px;
+  height: 100%;
+  font-size: 12px;
+  color: var(--tab-inactive-text);
+  background: transparent;
+  border: none;
+  border-right: 1px solid var(--border);
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+  flex-shrink: 0;
+  user-select: none;
+  -webkit-user-select: none;
+  transition: color 0.12s, background 0.12s;
+}
+
+.file-tab:hover {
+  background: var(--tab-active-pill-bg);
+  color: var(--text-primary);
+}
+
+.file-tab.active {
+  @apply bg-[var(--color-grenadier-50)];
+  color: var(--tab-active-text);
+  border-bottom-color: var(--accent);
+}
+
+.file-tab-icon {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  opacity: 0.6;
+}
+
+.file-tab.active .file-tab-icon {
+  opacity: 1;
+}
+
+.file-tab-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.file-tab-dirty {
+  flex-shrink: 0;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #f97316;
+}
+
+.file-tab-close {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border: none;
+  border-radius: 3px;
+  background: transparent;
+  color: var(--text-muted);
+  padding: 0;
+  opacity: 0;
+  transition: opacity 0.12s, background 0.12s, color 0.12s;
+  cursor: pointer;
+}
+
+.file-tab:hover .file-tab-close,
+.file-tab.active .file-tab-close {
+  opacity: 1;
+}
+
+.file-tab-close:hover {
+  background: var(--tab-active-pill-bg);
+  color: var(--text-primary);
+}
+
+.file-tab-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 100%;
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: color 0.12s, background 0.12s;
+}
+
+.file-tab-add:hover {
+  color: var(--text-primary);
+  background: var(--tab-active-pill-bg);
+}
+
 /* ── Workspace ────────────────────────────────────────────── */
 .workspace {
   flex: 1;
@@ -401,8 +524,7 @@
 
 /* ── Markdown body ────────────────────────────────────────── */
 .markdown-body {
-  padding: 28px 32px;
-  max-width: 900px;
+  @apply p-4 max-w-5xl mx-auto;
   color: var(--text-primary);
   line-height: 1.7;
 }
@@ -445,8 +567,14 @@
   color: var(--md-em);
 }
 
-.markdown-body ul,
+.markdown-body ul {
+  list-style-type: disc;
+  padding-left: 1.5em;
+  margin-bottom: 1em;
+}
+
 .markdown-body ol {
+  list-style-type: decimal;
   padding-left: 1.5em;
   margin-bottom: 1em;
 }
@@ -477,12 +605,15 @@
 }
 
 .markdown-body blockquote {
-  border-left: 4px solid var(--accent);
+  @apply rounded-lg rounded-l-none border-l-3 bg-[var(--color-grenadier-50)];
+  border-left-color: var(--accent);
   padding: 4px 16px;
   margin: 1em 0;
   color: var(--md-blockquote-color);
-  background: rgba(14, 122, 228, 0.06);
-  border-radius: 0 4px 4px 0;
+}
+
+.markdown-body blockquote > *:last-child {
+  margin-bottom: 2px !important;
 }
 
 .markdown-body code {
