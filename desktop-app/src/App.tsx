@@ -116,6 +116,7 @@ function readStoredTheme(): ThemePreference {
 				"data-theme",
 				isDark ? "dark" : "light",
 			);
+			document.documentElement.classList.toggle("dark", isDark);
 			return raw;
 		}
 	} catch {}
@@ -202,6 +203,7 @@ function App() {
 			"data-theme",
 			isDark ? "dark" : "light",
 		);
+		document.documentElement.classList.toggle("dark", isDark);
 	}, [isDark]);
 
 	useEffect(() => {
@@ -419,6 +421,16 @@ function App() {
 		}
 	}, [activeTab.content, updateActiveTab]);
 
+	const convertRawToMarkdown = useCallback(() => {
+		const converted = activeTab.content
+			.replace(/\\n/g, "\n")
+			.replace(/\\t/g, "\t")
+			.replace(/\\r/g, "\r")
+			.replace(/\\"/g, '"')
+			.replace(/\\\\/g, "\\");
+		updateActiveTab({ content: converted, previewContent: converted });
+	}, [activeTab.content, updateActiveTab]);
+
 	const handleEditorChange = useCallback(
 		(val: string) => {
 			setTabs((prev) =>
@@ -525,6 +537,12 @@ function App() {
 									Show editor
 								</>
 							)}
+						</Button>
+					)}
+					{(format === "markdown" || format === "mdx") && content && (
+						<Button onClick={convertRawToMarkdown}>
+							<IconWand size={13} stroke={1.5} />
+							Format
 						</Button>
 					)}
 					{format === "json" && content && (

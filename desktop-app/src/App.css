@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@custom-variant dark (&:is(.dark *));
 
 /* ── Design tokens ────────────────────────────────────────── */
 :root {
@@ -315,7 +316,7 @@
 }
 
 .file-tab.active {
-  @apply bg-[var(--color-grenadier-50)];
+  @apply bg-[var(--color-grenadier-50)] dark:bg-zinc-800;
   color: var(--tab-active-text);
   border-bottom-color: var(--accent);
 }
