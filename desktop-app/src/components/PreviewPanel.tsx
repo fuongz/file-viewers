@@ -31,7 +31,7 @@ export function PreviewPanel({
 	return (
 		<div className="preview-panel">
 			{format === "markdown" ? (
-				<MarkdownPreview content={content} />
+				<MarkdownPreview content={content} isDark={isDark} />
 			) : format === "json" ? (
 				<JsonPreview content={content} isDark={isDark} />
 			) : (

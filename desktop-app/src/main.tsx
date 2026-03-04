@@ -5,7 +5,6 @@ import JsonWorker from "monaco-editor/esm/vs/language/json/json.worker?worker";
 import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App";
-import "highlight.js/styles/github-dark.css";
 
 // ── Monaco: use locally bundled files instead of CDN ─────────
 window.MonacoEnvironment = {

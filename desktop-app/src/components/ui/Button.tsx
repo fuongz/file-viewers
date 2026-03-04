@@ -22,6 +22,13 @@ const buttonVariants = cva("cursor-pointer transition-colors", {
 				"hover:text-[var(--text-primary)] hover:bg-[var(--tabs-bg)] " +
 				"data-[active]:text-[var(--tab-active-text)] data-[active]:bg-[var(--tab-active-pill-bg)]",
 
+			// Square icon-only buttons: code block collapse/copy
+			icon:
+				"inline-flex items-center justify-center w-5 h-5 rounded " +
+				"bg-transparent border-0 " +
+				"text-[var(--text-muted)] duration-150 " +
+				"hover:text-[var(--text-primary)] hover:bg-[var(--tabs-bg)]",
+
 			// Bordered buttons with primary hover: CSV mode toggle
 			outline:
 				"inline-flex items-center gap-[5px] px-2 py-[3px] rounded " +

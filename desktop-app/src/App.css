@@ -33,6 +33,7 @@
   --md-blockquote-color: #999;
   --md-code-color: #ce9178;
   --md-code-bg: rgba(255, 255, 255, 0.08);
+  --md-pre-bg: #161616;
   --md-th-bg: rgba(255, 255, 255, 0.05);
   --md-th-color: #e6e6e6;
   --md-tr-even-bg: rgba(255, 255, 255, 0.02);
@@ -94,6 +95,7 @@
   --md-blockquote-color: #555;
   --md-code-color: #c0392b;
   --md-code-bg: rgba(0, 0, 0, 0.06);
+  --md-pre-bg: #f6f8fa;
   --md-th-bg: rgba(0, 0, 0, 0.04);
   --md-th-color: #1a1a1a;
   --md-tr-even-bg: rgba(0, 0, 0, 0.02);
@@ -492,13 +494,19 @@
   border-radius: 4px;
 }
 
-.markdown-body pre {
-  background: #1a1a1a;
+.md-code-block {
   border: 1px solid var(--border);
-  border-radius: 6px;
+  border-radius: 8px;
+  overflow: hidden;
+  margin: 1em 0;
+}
+
+.markdown-body pre {
+  background: var(--md-pre-bg);
   padding: 16px;
   overflow-x: auto;
-  margin: 1em 0;
+  margin: 0;
+  border-radius: 0;
 }
 
 .markdown-body pre code {
