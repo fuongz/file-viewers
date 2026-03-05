@@ -255,14 +255,37 @@ export function CsvPreview({ content, onContentChange }: CsvPreviewProps) {
 
 	const { headers, rows, error } = useMemo(() => {
 		if (!deferredContent.trim()) return { headers: [], rows: [], error: null };
-		const result = Papa.parse<string[]>(deferredContent.trim(), {
+		// Strip UTF-8 BOM if present
+		const raw = deferredContent.trim().replace(/^\uFEFF/, "");
+		const result = Papa.parse<string[]>(raw, {
 			skipEmptyLines: true,
 		});
 		if (result.errors.length > 0 && result.data.length === 0) {
 			return { headers: [], rows: [], error: result.errors[0].message };
 		}
 		const [headerRow, ...dataRows] = result.data;
-		return { headers: headerRow ?? [], rows: dataRows, error: null };
+		const rawHeaders = headerRow ?? [];
+
+		// Strip trailing empty columns (common in CSV exports like FastMoss)
+		let lastNonEmpty = rawHeaders.length - 1;
+		while (lastNonEmpty >= 0 && rawHeaders[lastNonEmpty] === "") {
+			lastNonEmpty--;
+		}
+		const trimmedHeaders = rawHeaders.slice(0, lastNonEmpty + 1);
+
+		// Deduplicate headers: append _2, _3 etc. for repeated names (including "")
+		const seen = new Map<string, number>();
+		const dedupedHeaders = trimmedHeaders.map((h, i) => {
+			const key = h === "" ? `Col ${i + 1}` : h;
+			const count = seen.get(key) ?? 0;
+			seen.set(key, count + 1);
+			return count === 0 ? key : `${key}_${count + 1}`;
+		});
+
+		const trimmedRows = dataRows.map((row) =>
+			row.slice(0, dedupedHeaders.length),
+		);
+		return { headers: dedupedHeaders, rows: trimmedRows, error: null };
 	}, [deferredContent]);
 
 	// When rows change due to an external file load, reset editRows.
@@ -335,8 +358,9 @@ export function CsvPreview({ content, onContentChange }: CsvPreviewProps) {
 	// biome-ignore lint/correctness/useExhaustiveDependencies: no need
 	const columns = useMemo(
 		() =>
-			displayHeaders.map((h) =>
+			displayHeaders.map((h, i) =>
 				columnHelper.accessor(h, {
+					id: `col-${i}`,
 					header: h,
 					cell: (info) => info.getValue(),
 					size: 150,

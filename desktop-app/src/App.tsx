@@ -24,6 +24,7 @@ import { EditorPanel } from "./components/EditorPanel";
 import { type Format, PreviewPanel } from "./components/PreviewPanel";
 import "./App.css";
 import { Button } from "./components/ui/Button";
+import { ConfirmDialog } from "./components/ui/Dialog";
 
 type ThemePreference = "system" | "dark" | "light";
 
@@ -180,6 +181,7 @@ function App() {
 	const [themeMenuOpen, setThemeMenuOpen] = useState(false);
 	const [isDragOver, setIsDragOver] = useState(false);
 	const [showEditor, setShowEditor] = useState(true);
+	const [closeConfirmTabId, setCloseConfirmTabId] = useState<string | null>(null);
 	const themeMenuRef = useRef<HTMLDivElement>(null);
 
 	// ── Derived active tab ───────────────────────────────────────
@@ -259,7 +261,7 @@ function App() {
 		setActiveTabId(t.id);
 	}, []);
 
-	const closeTab = useCallback(
+	const closeTabForce = useCallback(
 		(id: string) => {
 			setTabs((prev) => {
 				if (prev.length === 1) return prev; // never close the last tab
@@ -272,6 +274,18 @@ function App() {
 			});
 		},
 		[activeTabId],
+	);
+
+	const closeTab = useCallback(
+		(id: string) => {
+			const tab = tabs.find((t) => t.id === id);
+			if (tab?.isDirty) {
+				setCloseConfirmTabId(id);
+			} else {
+				closeTabForce(id);
+			}
+		},
+		[tabs, closeTabForce],
 	);
 
 	// ── File loading ─────────────────────────────────────────────
@@ -391,17 +405,21 @@ function App() {
 		);
 	}, [tabs, activeTabId]);
 
-	// Cmd+S / Ctrl+S
+	// Cmd+S / Ctrl+S  and  Cmd+W / Ctrl+W
 	useEffect(() => {
 		function handleKeyDown(e: KeyboardEvent) {
 			if ((e.metaKey || e.ctrlKey) && e.key === "s") {
 				e.preventDefault();
 				saveFile();
 			}
+			if ((e.metaKey || e.ctrlKey) && e.key === "w") {
+				e.preventDefault();
+				closeTab(activeTabId);
+			}
 		}
 		window.addEventListener("keydown", handleKeyDown);
 		return () => window.removeEventListener("keydown", handleKeyDown);
-	}, [saveFile]);
+	}, [saveFile, closeTab, activeTabId]);
 
 	const formatJson = useCallback(() => {
 		try {
@@ -464,6 +482,24 @@ function App() {
 		};
 	}, [openFile]);
 
+	// Listen for native menu "File > Close Tab" (Cmd+W)
+	const closeTabRef = useRef(closeTab);
+	closeTabRef.current = closeTab;
+	useEffect(() => {
+		let cancelled = false;
+		let unlisten: (() => void) | null = null;
+		listen("menu-close-tab", () => {
+			closeTabRef.current(activeTabIdRef.current);
+		}).then((fn) => {
+			if (cancelled) fn();
+			else unlisten = fn;
+		});
+		return () => {
+			cancelled = true;
+			unlisten?.();
+		};
+	}, []);
+
 	// ── Drag and drop ────────────────────────────────────────────
 	useEffect(() => {
 		let cancelled = false;
@@ -498,8 +534,22 @@ function App() {
 	}, [loadFile]);
 
 	// ── Render ───────────────────────────────────────────────────
+	const closeConfirmTab = tabs.find((t) => t.id === closeConfirmTabId);
+
 	return (
 		<div className="app">
+			<ConfirmDialog
+				open={closeConfirmTabId !== null}
+				title="Close unsaved file?"
+				description={`"${closeConfirmTab?.name}" has unsaved changes. Close without saving?`}
+				confirmLabel="Close without saving"
+				cancelLabel="Cancel"
+				onConfirm={() => {
+					if (closeConfirmTabId) closeTabForce(closeConfirmTabId);
+					setCloseConfirmTabId(null);
+				}}
+				onCancel={() => setCloseConfirmTabId(null)}
+			/>
 			{/* Drag-and-drop overlay */}
 			{isDragOver && <div className="drag-overlay"></div>}
 

@@ -47,10 +47,10 @@ pub fn run() {
                 // ── File ─────────────────────────────────────────────
                 let open      = MenuItem::with_id(app, "open", "Open…", true, Some("cmd+o"))?;
                 let sep4      = PredefinedMenuItem::separator(app)?;
-                let close_win = PredefinedMenuItem::close_window(app, None)?;
+                let close_tab = MenuItem::with_id(app, "close-tab", "Close Tab", true, Some("cmd+w"))?;
                 let file_menu = Submenu::with_items(
                     app, "File", true,
-                    &[&open, &sep4, &close_win],
+                    &[&open, &sep4, &close_tab],
                 )?;
 
                 // ── Edit ─────────────────────────────────────────────
@@ -87,9 +87,12 @@ pub fn run() {
             Ok(())
         })
         .on_menu_event(|app, event| {
+            use tauri::Emitter;
             if event.id() == "open" {
-                use tauri::Emitter;
                 app.emit("menu-open-file", ()).ok();
+            }
+            if event.id() == "close-tab" {
+                app.emit("menu-close-tab", ()).ok();
             }
         })
         .run(tauri::generate_context!())
