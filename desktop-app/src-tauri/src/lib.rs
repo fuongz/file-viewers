@@ -47,10 +47,11 @@ pub fn run() {
                 // ── File ─────────────────────────────────────────────
                 let open      = MenuItem::with_id(app, "open", "Open…", true, Some("cmd+o"))?;
                 let sep4      = PredefinedMenuItem::separator(app)?;
+                let new_tab   = MenuItem::with_id(app, "new-tab", "New Tab", true, Some("cmd+t"))?;
                 let close_tab = MenuItem::with_id(app, "close-tab", "Close Tab", true, Some("cmd+w"))?;
                 let file_menu = Submenu::with_items(
                     app, "File", true,
-                    &[&open, &sep4, &close_tab],
+                    &[&open, &sep4, &new_tab, &close_tab],
                 )?;
 
                 // ── Edit ─────────────────────────────────────────────
@@ -93,6 +94,9 @@ pub fn run() {
             }
             if event.id() == "close-tab" {
                 app.emit("menu-close-tab", ()).ok();
+            }
+            if event.id() == "new-tab" {
+                app.emit("menu-new-tab", ()).ok();
             }
         })
         .run(tauri::generate_context!())

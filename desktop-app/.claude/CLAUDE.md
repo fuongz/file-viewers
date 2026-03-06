@@ -32,21 +32,52 @@ bunx tsc --noEmit    # TypeScript type check
 
 ## Key Files
 
+### Root
 | File | Purpose |
 |------|---------|
-| `src/App.tsx` | Root layout; all top-level state; toolbar; drag-drop handler; file open logic |
+| `src/App.tsx` | Root component — composes all hooks and layout components (~160 lines) |
 | `src/App.css` | All styles; CSS vars for dark (`:root`) and light (`[data-theme="light"]`) themes |
 | `src/main.tsx` | React root; Monaco local-bundle setup (workers + loader.config) |
-| `src/components/ui/Button.tsx` | Primitive button — 5 variants via Tailwind; wraps `@base-ui/react` Button |
-| `src/components/ui/Input.tsx` | Primitive input — base Tailwind styles; wraps `@base-ui/react` Input |
-| `src/components/ui/Textarea.tsx` | Primitive textarea — base Tailwind styles; wraps native `<textarea>` |
-| `src/components/ui/index.ts` | Barrel export for all UI primitives |
+
+### Types & Constants
+| File | Purpose |
+|------|---------|
+| `src/types/index.ts` | Shared types: `FileTab`, `ThemePreference`, `PersistedSession`, `PersistedTab` |
+| `src/constants/index.tsx` | `EXT_TO_FORMAT`, `FORMAT_LANGUAGE`, `FORMAT_ICONS`, `THEME_*`, `STORAGE_*` keys |
+
+### Hooks
+| File | Purpose |
+|------|---------|
+| `src/hooks/useSession.ts` | `createTab`, `readStoredSession`, `advanceTabCounter`, `persistSession` |
+| `src/hooks/useTabs.ts` | Tab state: `tabs`, `addTab`, `closeTab`, `closeTabForce`, `updateActiveTab` |
+| `src/hooks/useTheme.ts` | Theme state: `themePref`, `isDark`, `systemDark`, `themeMenuOpen` + effects |
+| `src/hooks/useFileManager.ts` | `loadFile`, `openFile`, `saveFile`; `useRestoreSession` for startup file reload |
+| `src/hooks/useDragDrop.ts` | Tauri drag-drop listener → `isDragOver` |
+| `src/hooks/useNativeMenu.ts` | Listens for `"menu-open-file"` and `"menu-close-tab"` Tauri events |
+| `src/hooks/useKeyboard.ts` | Cmd+S (save) and Cmd+W (close tab) keyboard shortcuts |
+
+### Components
+| File | Purpose |
+|------|---------|
+| `src/components/toolbar/Toolbar.tsx` | `<header>` wrapper; composes FormatTabs + ToolbarActions + ThemeMenu |
+| `src/components/toolbar/FormatTabs.tsx` | MD / JSON / CSV format switcher (Base UI Tabs) |
+| `src/components/toolbar/ToolbarActions.tsx` | Context-sensitive action buttons (Format, Minify, Clear data, Show/Hide editor) |
+| `src/components/toolbar/ThemeMenu.tsx` | Theme dropdown (System / Light / Dark) |
+| `src/components/FileTabsBar.tsx` | Per-file tab strip with close buttons and add-tab button |
 | `src/components/EditorPanel.tsx` | Monaco editor wrapper; `isDark` prop → `vs-dark`/`vs` theme |
 | `src/components/PreviewPanel.tsx` | Switches Markdown / JSON / CSV preview by `format` prop |
 | `src/components/MarkdownPreview.tsx` | `react-markdown` renderer with GFM + rehype-highlight |
 | `src/components/JsonPreview.tsx` | `react-json-view-lite`; `isDark` → `darkStyles`/`defaultStyles` |
 | `src/components/CsvPreview.tsx` | TanStack Table; search/SQL mode; skeleton loading; row/cell selection; status bar |
 | `src/components/EmptyState.tsx` | Welcome screen shown when no content is loaded |
+| `src/components/ui/Button.tsx` | Primitive button — 5 variants via Tailwind; wraps `@base-ui/react` Button |
+| `src/components/ui/Input.tsx` | Primitive input — base Tailwind styles; wraps `@base-ui/react` Input |
+| `src/components/ui/Textarea.tsx` | Primitive textarea — base Tailwind styles; wraps native `<textarea>` |
+| `src/components/ui/index.ts` | Barrel export for all UI primitives |
+
+### Tauri
+| File | Purpose |
+|------|---------|
 | `src-tauri/src/lib.rs` | Tauri app setup; macOS native menu; emits `"menu-open-file"` event on Cmd+O |
 | `src-tauri/capabilities/default.json` | Tauri permission grants |
 
@@ -72,16 +103,19 @@ bunx tsc --noEmit    # TypeScript type check
 | JSON | Format (`IconWand`), Minify (`IconMinimize`) |
 | CSV | Clear data (`IconTrash`) |
 
-### State (`App.tsx`)
-| State | Type | Description |
+### State (split across hooks)
+| State | Hook | Description |
 |-------|------|-------------|
-| `format` | `Format` | Active tab: `"markdown"` \| `"json"` \| `"csv"` |
-| `content` | `Record<Format, string>` | Per-format editor content; switching tabs preserves content |
-| `themePref` | `ThemePreference` | `"system"` \| `"dark"` \| `"light"` |
-| `systemDark` | `boolean` | Tracks OS `prefers-color-scheme` MQ |
-| `isDark` | `boolean` (derived) | `themePref==="dark"` or `(system && systemDark)` |
-| `themeMenuOpen` | `boolean` | Theme dropdown open/close |
-| `isDragOver` | `boolean` | Drag-and-drop overlay visibility |
+| `tabs` / `activeTabId` | `useTabs` | All open file tabs; which is active |
+| `activeTab` | `useTabs` (derived) | Shorthand for `tabs.find(id === activeTabId)` |
+| `format` / `content` / `previewContent` | destructured from `activeTab` | Active file's format and content |
+| `themePref` | `useTheme` | `"system"` \| `"dark"` \| `"light"` |
+| `systemDark` | `useTheme` | Tracks OS `prefers-color-scheme` MQ |
+| `isDark` | `useTheme` (derived) | `themePref==="dark"` or `(system && systemDark)` |
+| `themeMenuOpen` | `useTheme` | Theme dropdown open/close |
+| `isDragOver` | `useDragDrop` | Drag-and-drop overlay visibility |
+| `showEditor` | `App.tsx` | Whether Monaco editor panel is visible |
+| `closeConfirmTabId` | `useTabs` | Tab ID pending unsaved-changes confirm dialog |
 
 ### Theme system
 - Sets `data-theme` on `<html>` → CSS vars switch between dark (`:root`) and light (`[data-theme="light"]`)
