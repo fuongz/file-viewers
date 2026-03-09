@@ -106,7 +106,9 @@ echo "→ updating desktop-app/src-tauri/Cargo.toml…"
 perl -i -0pe "s/^version = \"[^\"]*\"/version = \"${next_version}\"/" "$CARGO_TOML"
 
 echo "→ updating landing/src/version.ts…"
+release_date=$(date +%Y-%m-%d)
 sed -i '' 's/export const VERSION = ".*"/export const VERSION = "'"$next_version"'"/' "$VERSION_TS"
+sed -i '' 's/export const RELEASE_DATE = ".*"/export const RELEASE_DATE = "'"$release_date"'"/' "$VERSION_TS"
 
 # ── commit, tag, push ──────────────────────────────────────────────────────
 

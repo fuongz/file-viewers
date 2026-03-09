@@ -1,10 +1,19 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Download } from "lucide-react";
+import { ArrowDown, Braces, FileText, Table2 } from "lucide-react";
+import { AnimatePresence, motion } from "motion/react";
+import { useState } from "react";
 import { VERSION } from "../version";
 
 export const Route = createFileRoute("/")({ component: HomePage });
 
+const TABS = [
+	{ id: "001", label: "CSV Viewer", icon: Table2 },
+	{ id: "002", label: "JSON Viewer", icon: Braces },
+	{ id: "003", label: "Markdown Viewer", icon: FileText },
+];
+
 function HomePage() {
+	const [active, setActive] = useState("001");
 	return (
 		<div className="relative min-h-screen flex flex-col">
 			{/* Hero */}
@@ -13,9 +22,9 @@ function HomePage() {
 				<img
 					src="/icon.png"
 					alt="File Viewers"
-					width={90}
-					height={90}
-					className="rounded-[22%] mb-6 shadow-[0_8px_32px_rgba(0,0,0,0.5)]"
+					width={240}
+					height={240}
+					className="mb-6"
 				/>
 
 				{/* Name */}
@@ -24,7 +33,7 @@ function HomePage() {
 				</h1>
 
 				{/* Tagline */}
-				<p className="text-[1.1rem] text-white/70 mb-6 text-center">
+				<p className="text-[1.1rem] text-white/50 mb-6 text-center">
 					Your files, beautifully rendered.
 				</p>
 
@@ -35,39 +44,94 @@ function HomePage() {
 						className="inline-flex items-center gap-2 rounded-full px-6 py-2.5 text-sm font-semibold text-white no-underline transition-all hover:brightness-110 active:scale-95"
 						style={{ backgroundColor: "#f74f18" }}
 					>
-						<Download size={15} />
+						<ArrowDown size={15} />
 						Download
+						<span className="px-1.5 py-0.5 rounded text-[0.6rem] font-bold tracking-widest uppercase bg-[#2a2a2a]/20">
+							v{VERSION}
+						</span>
 					</Link>
 				</div>
 
 				{/* Version meta */}
 				<div className="flex items-center gap-2 mb-12 flex-wrap justify-center">
-					<span
-						className="px-1.5 py-0.5 rounded text-[0.6rem] font-bold tracking-widest uppercase"
-						style={{ backgroundColor: "#2a2a2a", color: "#888" }}
-					>
-						BETA
-					</span>
 					<span className="text-xs text-white/40">
-						v{VERSION} · Open source on{" "}
+						Open source on{" "}
 						<a
 							href="https://github.com/fuongz/file-viewers"
 							target="_blank"
 							rel="noopener noreferrer"
-							className="no-underline hover:underline text-white/40"
+							className="no-underline hover:underline text-white/70"
 						>
 							GitHub
 						</a>
 					</span>
 				</div>
 
-				{/* Hero Banner */}
-				<div className="w-full mx-auto px-0 max-sm:px-4">
-					<img
-						src="/hero-banner.png"
-						alt=""
-						className="w-full rounded-t-xl shadow-[0_-8px_60px_rgba(247,79,24,0.12)]"
-					/>
+				{/* Tabbed Banners */}
+				<div className="w-full max-w-4xl mx-auto mb-6 pt-8 border-t border-white/5 text-center">
+					<h2 className="text-lg font-semibold text-white tracking-tight">
+						Everything you need to view your files
+					</h2>
+					<p className="text-white/40 mt-1 text-xs">
+						Open and preview any file format — no extra apps needed.
+					</p>
+				</div>
+
+				{/* Tabs row */}
+				<div className="flex items-center gap-1 mb-6 bg-white/5 rounded-full p-1">
+					{TABS.map((tab) => {
+						const Icon = tab.icon;
+						return (
+							<button
+								key={tab.id}
+								type="button"
+								onClick={() => setActive(tab.id)}
+								className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all cursor-pointer border-0 ${
+									active === tab.id
+										? "bg-white/15 text-white shadow"
+										: "bg-transparent text-white/40 hover:text-white/70"
+								}`}
+							>
+								<Icon size={14} />
+								{tab.label}
+							</button>
+						);
+					})}
+				</div>
+
+				{/* Monitor frame + image */}
+				<div className="w-full max-w-4xl mx-auto pb-12">
+					{/* Screen bezel */}
+					<div className="relative rounded-2xl bg-[#1c1c1e] p-3 shadow-2xl border border-white/10">
+						{/* Inner screen */}
+						<div className="rounded-lg overflow-hidden">
+							<AnimatePresence mode="wait">
+								<motion.img
+									key={active}
+									src={`/banners/${active}.png`}
+									alt={TABS.find((t) => t.id === active)?.label}
+									className="w-full block object-cover"
+									initial={{ opacity: 0, y: 6 }}
+									animate={{ opacity: 1, y: 0 }}
+									exit={{ opacity: 0, y: -6 }}
+									transition={{ duration: 0.2, ease: "easeInOut" }}
+								/>
+							</AnimatePresence>
+						</div>
+						{/* Bottom chin */}
+						<div className="h-5 flex items-center justify-center mt-2">
+							<div className="w-2 h-2 rounded-full bg-white/10" />
+						</div>
+					</div>
+					{/* Neck */}
+					<div className="flex flex-col items-center">
+						<div
+							className="w-14 bg-[#3a3a3c]"
+							style={{ height: "40px", clipPath: "polygon(20% 0%, 80% 0%, 90% 100%, 10% 100%)" }}
+						/>
+						{/* Base */}
+						<div className="w-36 h-3 rounded-full bg-[#3a3a3c]" />
+					</div>
 				</div>
 			</main>
 

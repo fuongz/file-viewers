@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { Download } from "lucide-react";
+import { ArrowLeft, Download } from "lucide-react";
 import { VERSION } from "../version";
 
 export const Route = createFileRoute("/download")({
@@ -43,7 +43,7 @@ const PLATFORMS = [
 		downloads: [
 			{
 				label: "Installer .exe",
-				href: `${BASE}/latest`,
+				href: `${BASE}/download/v${VERSION}/File.Viewers_${VERSION}_x64-setup.exe`,
 			},
 		],
 		requirements: [
@@ -66,7 +66,10 @@ const PLATFORMS = [
 				label: "Debian (amd64)",
 				href: `${BASE}/download/v${VERSION}/File.Viewers_${VERSION}_amd64.deb`,
 			},
-			{ label: "Fedora .rpm", href: `${BASE}/latest` },
+			{
+				label: "Fedora .rpm",
+				href: `${BASE}/download/v${VERSION}/File.Viewers-${VERSION}-1.x86_64.rpm`,
+			},
 		],
 		requirements: [
 			"Ubuntu 22.04+, Debian, Fedora or compatible",
@@ -84,9 +87,9 @@ function DownloadPage() {
 				<div className="w-full max-w-4xl mb-10">
 					<Link
 						to="/"
-						className="inline-flex items-center gap-1.5 text-sm text-white/40 no-underline hover:text-white/70 transition-colors"
+						className="inline-flex items-center gap-1.5 text-sm no-underline transition-colors bg-zinc-800 rounded-full px-4 text-xs text-zinc-400 py-2 hover:text-white hover:bg-zinc-700 active:scale-95 transition hover:transition font-semibold"
 					>
-						← Back
+						<ArrowLeft size={12} /> Back to Home
 					</Link>
 				</div>
 
