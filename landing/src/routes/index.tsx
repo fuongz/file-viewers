@@ -1,16 +1,48 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowDown, Braces, FileText, Table2 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { VERSION } from "../version";
 
 export const Route = createFileRoute("/")({ component: HomePage });
 
 const TABS = [
-	{ id: "001", label: "CSV Viewer", icon: Table2 },
-	{ id: "002", label: "JSON Viewer", icon: Braces },
-	{ id: "003", label: "Markdown Viewer", icon: FileText },
+	{ id: "001", label: "Markdown Viewer", icon: FileText },
+	{ id: "002", label: "CSV Viewer", icon: Table2 },
+	{ id: "003", label: "JSON Viewer", icon: Braces },
 ];
+
+function BannerImage({ src, alt }: { src: string; alt: string }) {
+	const [loaded, setLoaded] = useState(false);
+
+	useEffect(() => {
+		setLoaded(false);
+		const img = new Image();
+		img.src = src;
+		img.onload = () => setLoaded(true);
+	}, [src]);
+
+	return (
+		<div className="relative w-full" style={{ minHeight: "300px" }}>
+			{!loaded && (
+				<div className="absolute inset-0 rounded-lg bg-white/5 animate-pulse" />
+			)}
+			<AnimatePresence mode="wait">
+				<motion.img
+					key={src}
+					src={src}
+					alt={alt}
+					className="w-full block object-cover"
+					style={{ opacity: loaded ? 1 : 0 }}
+					initial={{ opacity: 0, y: 6 }}
+					animate={{ opacity: loaded ? 1 : 0, y: loaded ? 0 : 6 }}
+					exit={{ opacity: 0, y: -6 }}
+					transition={{ duration: 0.2, ease: "easeInOut" }}
+				/>
+			</AnimatePresence>
+		</div>
+	);
+}
 
 function HomePage() {
 	const [active, setActive] = useState("001");
@@ -105,18 +137,10 @@ function HomePage() {
 					<div className="relative rounded-2xl bg-[#1c1c1e] p-3 shadow-2xl border border-white/10">
 						{/* Inner screen */}
 						<div className="rounded-lg overflow-hidden">
-							<AnimatePresence mode="wait">
-								<motion.img
-									key={active}
-									src={`/banners/${active}.png`}
-									alt={TABS.find((t) => t.id === active)?.label}
-									className="w-full block object-cover"
-									initial={{ opacity: 0, y: 6 }}
-									animate={{ opacity: 1, y: 0 }}
-									exit={{ opacity: 0, y: -6 }}
-									transition={{ duration: 0.2, ease: "easeInOut" }}
-								/>
-							</AnimatePresence>
+							<BannerImage
+								src={`/banners/${active}.png`}
+								alt={TABS.find((t) => t.id === active)?.label ?? ""}
+							/>
 						</div>
 						{/* Bottom chin */}
 						<div className="h-5 flex items-center justify-center mt-2">
