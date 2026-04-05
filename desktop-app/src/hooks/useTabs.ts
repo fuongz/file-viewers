@@ -59,6 +59,27 @@ export function useTabs() {
 		[tabs, closeTabForce],
 	);
 
+	const reorderTabs = useCallback(
+		(fromIndex: number, toIndex: number) => {
+			setTabs((prev) => {
+				const newTabs = [...prev];
+				const [removed] = newTabs.splice(fromIndex, 1);
+				newTabs.splice(toIndex, 0, removed);
+				return newTabs;
+			});
+		},
+		[],
+	);
+
+	const renameTab = useCallback(
+		(id: string, newName: string) => {
+			setTabs((prev) =>
+				prev.map((t) => (t.id === id ? { ...t, name: newName } : t)),
+			);
+		},
+		[],
+	);
+
 	return {
 		tabs,
 		setTabs,
@@ -71,6 +92,8 @@ export function useTabs() {
 		closeTabForce,
 		closeConfirmTabId,
 		setCloseConfirmTabId,
+		reorderTabs,
+		renameTab,
 		initialPathTabs: initialTabs.filter((t) => t.path),
 	};
 }

@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from "react";
-import { STORAGE_THEME_KEY, THEME_OPTIONS } from "../constants";
+import { useEffect, useState } from "react";
+import { STORAGE_THEME_KEY } from "../constants";
 import type { ThemePreference } from "../types";
 
 function readStoredTheme(): ThemePreference {
@@ -26,8 +26,6 @@ export function useTheme() {
 	const [systemDark, setSystemDark] = useState(
 		() => window.matchMedia("(prefers-color-scheme: dark)").matches,
 	);
-	const [themeMenuOpen, setThemeMenuOpen] = useState(false);
-	const themeMenuRef = useRef<HTMLDivElement>(null);
 
 	const isDark = themePref === "dark" || (themePref === "system" && systemDark);
 
@@ -47,27 +45,9 @@ export function useTheme() {
 		return () => mq.removeEventListener("change", handler);
 	}, [themePref]);
 
-	useEffect(() => {
-		if (!themeMenuOpen) return;
-		function handleClick(e: MouseEvent) {
-			if (
-				themeMenuRef.current &&
-				!themeMenuRef.current.contains(e.target as Node)
-			) {
-				setThemeMenuOpen(false);
-			}
-		}
-		document.addEventListener("mousedown", handleClick);
-		return () => document.removeEventListener("mousedown", handleClick);
-	}, [themeMenuOpen]);
-
 	return {
 		themePref,
 		setThemePref,
 		isDark,
-		themeMenuOpen,
-		setThemeMenuOpen,
-		themeMenuRef,
-		themeOptions: THEME_OPTIONS,
 	};
 }

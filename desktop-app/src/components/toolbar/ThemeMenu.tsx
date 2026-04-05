@@ -1,6 +1,6 @@
 import { THEME_ICONS, THEME_LABELS, THEME_OPTIONS } from "../../constants";
 import type { ThemePreference } from "../../types";
-import { Button } from "../ui/Button";
+import { Button } from "../ui";
 
 interface ThemeMenuProps {
 	themePref: ThemePreference;

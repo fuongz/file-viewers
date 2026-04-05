@@ -16,7 +16,7 @@ import {
 import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
 import remarkGfm from "remark-gfm";
-import { Button } from "./ui/Button";
+import { Button } from "./ui";
 
 interface HastNode {
 	type: string;

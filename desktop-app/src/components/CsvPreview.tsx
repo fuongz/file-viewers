@@ -22,9 +22,7 @@ import alasql from "alasql";
 import Papa from "papaparse";
 import type React from "react";
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
-import { Button } from "./ui/Button";
-import { Input } from "./ui/Input";
-import { Textarea } from "./ui/Textarea";
+import { Button, Input, Textarea } from "./ui";
 
 interface CsvPreviewProps {
 	content: string;

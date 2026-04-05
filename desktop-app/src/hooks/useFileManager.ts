@@ -1,5 +1,5 @@
-import { open as openDialog } from "@tauri-apps/plugin-dialog";
-import { readTextFile, writeTextFile } from "@tauri-apps/plugin-fs";
+import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
+import { readTextFile, writeTextFile, rename } from "@tauri-apps/plugin-fs";
 import { useCallback, useEffect, useRef } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { EXT_TO_FORMAT } from "../constants";
@@ -92,20 +92,85 @@ export function useFileManager({
 
 	const saveFile = useCallback(async () => {
 		const tab = tabs.find((t) => t.id === activeTabId);
-		if (!tab || !tab.isDirty) return;
+		if (!tab) return;
 		if (tab.path) {
+			if (!tab.isDirty) return;
 			await writeTextFile(tab.path, tab.content);
+		} else {
+			const filePath = await saveDialog({
+				defaultPath: tab.name,
+				filters: [
+					{
+						name: "Developer Files",
+						extensions: ["md", "markdown", "mdx", "json", "csv"],
+					},
+				],
+			});
+			if (!filePath) return;
+			await writeTextFile(filePath, tab.content);
+			setTabs((prev) =>
+				prev.map((t) =>
+					t.id === activeTabId
+						? { ...t, path: filePath, name: filePath.split("/").pop() ?? t.name, isDirty: false }
+						: t,
+				),
+			);
+			return;
 		}
 		setTabs((prev) =>
 			prev.map((t) => (t.id === activeTabId ? { ...t, isDirty: false } : t)),
 		);
 	}, [tabs, activeTabId, setTabs]);
 
+	const saveAsFile = useCallback(async (): Promise<boolean> => {
+		const tab = tabs.find((t) => t.id === activeTabId);
+		if (!tab) return false;
+		const filePath = await saveDialog({
+			defaultPath: tab.name,
+			filters: [
+				{
+					name: "Developer Files",
+					extensions: ["md", "markdown", "mdx", "json", "csv"],
+				},
+			],
+		});
+		if (!filePath) return false;
+		await writeTextFile(filePath, tab.content);
+		setTabs((prev) =>
+			prev.map((t) =>
+				t.id === activeTabId
+					? { ...t, path: filePath, name: filePath.split("/").pop() ?? t.name, isDirty: false }
+					: t,
+			),
+		);
+		return true;
+	}, [tabs, activeTabId, setTabs]);
+
 	// Restore file-backed tabs on mount
 	const loadFileRef = useRef(loadFile);
 	loadFileRef.current = loadFile;
 
-	return { loadFile, openFile, saveFile, loadFileRef };
+	const renameFile = useCallback(
+		async (id: string, newName: string) => {
+			const tab = tabs.find((t) => t.id === id);
+			if (!tab?.path) return;
+			try {
+				const dir = tab.path.substring(0, tab.path.lastIndexOf("/"));
+				const newPath = `${dir}/${newName}`;
+				await rename(tab.path, newPath);
+				setTabs((prev) =>
+					prev.map((t) =>
+						t.id === id ? { ...t, name: newName, path: newPath } : t,
+					),
+				);
+			} catch (err) {
+				console.error("Failed to rename file:", err);
+			}
+		},
+		[tabs, setTabs],
+	);
+
+	return { loadFile, openFile, saveFile, saveAsFile, renameFile, loadFileRef };
 }
 
 export function useRestoreSession(

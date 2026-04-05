@@ -1,40 +1,32 @@
-import type { Format, ThemePreference } from "../../types";
+import { IconSettings } from "@tabler/icons-react";
+import type { Format } from "../../types";
 import { FormatTabs } from "./FormatTabs";
-import { ThemeMenu } from "./ThemeMenu";
 import { ToolbarActions } from "./ToolbarActions";
 
 interface ToolbarProps {
 	format: Format;
 	content: string;
 	showEditor: boolean;
-	themePref: ThemePreference;
-	themeMenuOpen: boolean;
-	themeMenuRef: React.RefObject<HTMLDivElement | null>;
 	onFormatChange: (format: Format) => void;
 	onToggleEditor: () => void;
 	onFormatMarkdown: () => void;
 	onFormatJson: () => void;
 	onMinifyJson: () => void;
 	onClearCsv: () => void;
-	onThemeToggle: () => void;
-	onThemeSelect: (pref: ThemePreference) => void;
+	onOpenSettings: () => void;
 }
 
 export function Toolbar({
 	format,
 	content,
 	showEditor,
-	themePref,
-	themeMenuOpen,
-	themeMenuRef,
 	onFormatChange,
 	onToggleEditor,
 	onFormatMarkdown,
 	onFormatJson,
 	onMinifyJson,
 	onClearCsv,
-	onThemeToggle,
-	onThemeSelect,
+	onOpenSettings,
 }: ToolbarProps) {
 	return (
 		<header className="toolbar" data-tauri-drag-region>
@@ -50,13 +42,15 @@ export function Toolbar({
 				onMinifyJson={onMinifyJson}
 				onClearCsv={onClearCsv}
 			/>
-			<ThemeMenu
-				themePref={themePref}
-				themeMenuOpen={themeMenuOpen}
-				themeMenuRef={themeMenuRef}
-				onToggle={onThemeToggle}
-				onSelect={onThemeSelect}
-			/>
+			<button
+				type="button"
+				className="toolbar-btn"
+				onClick={onOpenSettings}
+				title="Settings (Cmd+,)"
+			>
+				<IconSettings size={16} stroke={1.5} />
+				<span>Settings</span>
+			</button>
 		</header>
 	);
 }

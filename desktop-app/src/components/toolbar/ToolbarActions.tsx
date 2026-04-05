@@ -6,7 +6,7 @@ import {
 	IconWand,
 } from "@tabler/icons-react";
 import type { Format } from "../../types";
-import { Button } from "../ui/Button";
+import { Button } from "../ui";
 
 interface ToolbarActionsProps {
 	format: Format;

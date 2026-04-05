@@ -5,7 +5,7 @@ import { EditorPanel } from "./components/EditorPanel";
 import { FileTabsBar } from "./components/FileTabsBar";
 import { PreviewPanel } from "./components/PreviewPanel";
 import { Toolbar } from "./components/toolbar/Toolbar";
-import { ConfirmDialog } from "./components/ui/Dialog";
+import { ConfirmDialog, CommandPalette, SettingsDialog } from "./components/ui";
 import { FORMAT_LANGUAGE } from "./constants";
 import { useDragDrop } from "./hooks/useDragDrop";
 import { useFileManager, useRestoreSession } from "./hooks/useFileManager";
@@ -28,31 +28,29 @@ function App() {
 		closeTabForce,
 		closeConfirmTabId,
 		setCloseConfirmTabId,
+		reorderTabs,
+		renameTab,
 		initialPathTabs,
 	} = useTabs();
 
-	const {
-		themePref,
-		setThemePref,
-		isDark,
-		themeMenuOpen,
-		setThemeMenuOpen,
-		themeMenuRef,
-	} = useTheme();
+	const { themePref, setThemePref, isDark } = useTheme();
 
 	const [showEditor, setShowEditor] = useState(true);
+	const [settingsOpen, setSettingsOpen] = useState(false);
+	const [commandOpen, setCommandOpen] = useState(false);
 	const { format, content, previewContent } = activeTab;
 
 	const activeTabIdRef = useRef(activeTabId);
 	activeTabIdRef.current = activeTabId;
 
-	const { loadFile, openFile, saveFile, loadFileRef } = useFileManager({
-		tabs,
-		activeTabId,
-		setTabs,
-		setActiveTabId,
-		activeTabIdRef,
-	});
+	const { loadFile, openFile, saveFile, renameFile, loadFileRef } =
+		useFileManager({
+			tabs,
+			activeTabId,
+			setTabs,
+			setActiveTabId,
+			activeTabIdRef,
+		});
 
 	const { isDragOver } = useDragDrop(loadFile);
 
@@ -64,12 +62,16 @@ function App() {
 		setActiveTabId,
 	);
 
-	useNativeMenu(openFile, closeTab, activeTabIdRef, addTab);
+	useNativeMenu(openFile, closeTab, activeTabIdRef, addTab, saveFile, () =>
+		setSettingsOpen(true),
+	);
 	useKeyboard(
 		{
 			s: saveFile,
 			w: closeTab,
 			t: addTab,
+			",": () => setSettingsOpen(true),
+			k: () => setCommandOpen(true),
 			...Object.fromEntries(
 				Array.from({ length: 9 }, (_, i) => [
 					String(i + 1),
@@ -155,20 +157,13 @@ function App() {
 				format={format}
 				content={content}
 				showEditor={showEditor}
-				themePref={themePref}
-				themeMenuOpen={themeMenuOpen}
-				themeMenuRef={themeMenuRef}
 				onFormatChange={(f) => updateActiveTab({ format: f })}
 				onToggleEditor={() => setShowEditor((s) => !s)}
 				onFormatMarkdown={formatMarkdown}
 				onFormatJson={formatJson}
 				onMinifyJson={minifyJson}
 				onClearCsv={() => updateActiveTab({ content: "", previewContent: "" })}
-				onThemeToggle={() => setThemeMenuOpen((o) => !o)}
-				onThemeSelect={(pref) => {
-					setThemePref(pref);
-					setThemeMenuOpen(false);
-				}}
+				onOpenSettings={() => setSettingsOpen(true)}
 			/>
 
 			<FileTabsBar
@@ -177,6 +172,15 @@ function App() {
 				onSelectTab={setActiveTabId}
 				onCloseTab={closeTab}
 				onAddTab={addTab}
+				onReorderTabs={reorderTabs}
+				onRenameTab={(id, newName) => {
+					const tab = tabs.find((t) => t.id === id);
+					if (tab?.path) {
+						renameFile(id, newName);
+					} else {
+						renameTab(id, newName);
+					}
+				}}
 			/>
 
 			<main className="workspace">
@@ -217,6 +221,28 @@ function App() {
 					</Group>
 				)}
 			</main>
+			<SettingsDialog
+				open={settingsOpen}
+				onOpenChange={setSettingsOpen}
+				themePref={themePref}
+				onThemeSelect={setThemePref}
+			/>
+			<CommandPalette
+				open={commandOpen}
+				onOpenChange={setCommandOpen}
+				items={[
+					{ id: "new-tab", label: "New Tab", shortcut: "⌘ T", action: addTab },
+					{ id: "close-tab", label: "Close Tab", shortcut: "⌘ W", action: () => closeTab(activeTabId) },
+					{ id: "save", label: "Save", shortcut: "⌘ S", action: saveFile },
+					{ id: "open", label: "Open File", shortcut: "⌘ O", action: openFile },
+					{ id: "settings", label: "Settings", shortcut: "⌘ ,", action: () => setSettingsOpen(true) },
+					{ id: "toggle-editor", label: "Toggle Editor", action: () => setShowEditor((s) => !s) },
+					{ id: "format-markdown", label: "Format Markdown", action: formatMarkdown },
+					{ id: "format-json", label: "Format JSON", action: formatJson },
+					{ id: "minify-json", label: "Minify JSON", action: minifyJson },
+					{ id: "clear-csv", label: "Clear CSV", action: () => updateActiveTab({ content: "", previewContent: "" }) },
+				]}
+			/>
 		</div>
 	);
 }
