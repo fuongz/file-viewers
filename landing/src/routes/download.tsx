@@ -1,5 +1,6 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { ArrowLeft, Download } from "lucide-react";
+import { motion } from "motion/react";
 import { VERSION } from "../version";
 
 export const Route = createFileRoute("/download")({
@@ -84,32 +85,50 @@ function DownloadPage() {
 		<div className="relative min-h-screen flex flex-col">
 			<main className="flex-1 flex flex-col items-center px-8 pt-20 pb-16 max-sm:pt-14">
 				{/* Back */}
-				<div className="w-full max-w-4xl mb-10">
+				<motion.div
+					className="w-full max-w-4xl mb-10"
+					initial={{ opacity: 0, x: -20 }}
+					animate={{ opacity: 1, x: 0 }}
+					transition={{ duration: 0.4, ease: "easeOut" }}
+				>
 					<Link
 						to="/"
 						className="inline-flex items-center gap-1.5 text-sm no-underline transition-colors bg-zinc-800 rounded-full px-4 text-xs text-zinc-400 py-2 hover:text-white hover:bg-zinc-700 active:scale-95 transition hover:transition font-semibold"
 					>
 						<ArrowLeft size={12} /> Back to Home
 					</Link>
-				</div>
+				</motion.div>
 
 				{/* Header */}
-				<div className="text-center mb-14">
+				<motion.div
+					className="text-center mb-14"
+					initial={{ opacity: 0, y: 20 }}
+					animate={{ opacity: 1, y: 0 }}
+					transition={{ duration: 0.5, ease: "easeOut" }}
+				>
 					<h1 className="text-[2.4rem] font-bold text-white tracking-tight leading-none mb-3 max-sm:text-3xl">
 						Download File Viewers
 					</h1>
 					<p className="text-white/60 text-base">
 						Free to download forever. No sign-up required.
 					</p>
-				</div>
+				</motion.div>
 
 				{/* Platform cards */}
 				<div className="w-full max-w-4xl grid grid-cols-3 gap-5 mb-16 max-sm:grid-cols-1">
-					{PLATFORMS.map((platform) => (
-						<div
+					{PLATFORMS.map((platform, index) => (
+						<motion.div
 							key={platform.name}
 							className="flex flex-col rounded-2xl p-6 gap-4"
 							style={{ backgroundColor: "#111" }}
+							initial={{ opacity: 0, y: 30 }}
+							animate={{ opacity: 1, y: 0 }}
+							transition={{
+								duration: 0.5,
+								delay: 0.1 * index + 0.2,
+								ease: "easeOut",
+							}}
+							whileHover={{ y: -4, transition: { duration: 0.2 } }}
 						>
 							{/* Platform header */}
 							<div className="flex items-center gap-3">
@@ -158,7 +177,7 @@ function DownloadPage() {
 									</li>
 								))}
 							</ul>
-						</div>
+						</motion.div>
 					))}
 				</div>
 			</main>

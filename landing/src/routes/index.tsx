@@ -51,26 +51,44 @@ function HomePage() {
 			{/* Hero */}
 			<main className="flex-1 flex flex-col items-center px-8 pt-20 pb-0 max-sm:pt-16">
 				{/* App Icon */}
-				<img
+				<motion.img
 					src="/icon.png"
 					alt="File Viewers"
 					width={240}
 					height={240}
 					className="mb-6"
+					initial={{ opacity: 0, scale: 0.9, y: 20 }}
+					animate={{ opacity: 1, scale: 1, y: 0 }}
+					transition={{ duration: 0.5, ease: "easeOut" }}
 				/>
 
 				{/* Name */}
-				<h1 className="text-[2.8rem] font-bold text-white tracking-tight leading-none mb-3 text-center max-sm:text-4xl">
+				<motion.h1
+					className="text-[2.8rem] font-bold text-white tracking-tight leading-none mb-3 text-center max-sm:text-4xl"
+					initial={{ opacity: 0, y: 20 }}
+					animate={{ opacity: 1, y: 0 }}
+					transition={{ duration: 0.5, delay: 0.1, ease: "easeOut" }}
+				>
 					File Viewers
-				</h1>
+				</motion.h1>
 
 				{/* Tagline */}
-				<p className="text-[1.1rem] text-white/50 mb-6 text-center">
+				<motion.p
+					className="text-[1.1rem] text-white/50 mb-6 text-center"
+					initial={{ opacity: 0, y: 20 }}
+					animate={{ opacity: 1, y: 0 }}
+					transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }}
+				>
 					Your files, beautifully rendered.
-				</p>
+				</motion.p>
 
 				{/* Download */}
-				<div className="mb-4">
+				<motion.div
+					className="mb-4"
+					initial={{ opacity: 0, y: 20 }}
+					animate={{ opacity: 1, y: 0 }}
+					transition={{ duration: 0.5, delay: 0.3, ease: "easeOut" }}
+				>
 					<Link
 						to="/download"
 						className="inline-flex items-center gap-2 rounded-full px-6 py-2.5 text-sm font-semibold text-white no-underline transition-all hover:brightness-110 active:scale-95"
@@ -82,10 +100,15 @@ function HomePage() {
 							v{VERSION}
 						</span>
 					</Link>
-				</div>
+				</motion.div>
 
 				{/* Version meta */}
-				<div className="flex items-center gap-2 mb-12 flex-wrap justify-center">
+				<motion.div
+					className="flex items-center gap-2 mb-12 flex-wrap justify-center"
+					initial={{ opacity: 0, y: 20 }}
+					animate={{ opacity: 1, y: 0 }}
+					transition={{ duration: 0.5, delay: 0.4, ease: "easeOut" }}
+				>
 					<span className="text-xs text-white/40">
 						Open source on{" "}
 						<a
@@ -97,24 +120,34 @@ function HomePage() {
 							GitHub
 						</a>
 					</span>
-				</div>
+				</motion.div>
 
 				{/* Tabbed Banners */}
-				<div className="w-full max-w-4xl mx-auto mb-6 pt-8 border-t border-white/5 text-center">
+				<motion.div
+					className="w-full max-w-4xl mx-auto mb-6 pt-8 border-t border-white/5 text-center"
+					initial={{ opacity: 0, y: 20 }}
+					animate={{ opacity: 1, y: 0 }}
+					transition={{ duration: 0.5, delay: 0.5, ease: "easeOut" }}
+				>
 					<h2 className="text-lg font-semibold text-white tracking-tight">
 						Everything you need to view your files
 					</h2>
 					<p className="text-white/40 mt-1 text-xs">
 						Open and preview any file format — no extra apps needed.
 					</p>
-				</div>
+				</motion.div>
 
 				{/* Tabs row */}
-				<div className="flex items-center gap-1 mb-6 bg-white/5 rounded-full p-1">
+				<motion.div
+					className="flex items-center gap-1 mb-6 bg-white/5 rounded-full p-1"
+					initial={{ opacity: 0, y: 20 }}
+					animate={{ opacity: 1, y: 0 }}
+					transition={{ duration: 0.5, delay: 0.6, ease: "easeOut" }}
+				>
 					{TABS.map((tab) => {
 						const Icon = tab.icon;
 						return (
-							<button
+							<motion.button
 								key={tab.id}
 								type="button"
 								onClick={() => setActive(tab.id)}
@@ -123,16 +156,23 @@ function HomePage() {
 										? "bg-white/15 text-white shadow"
 										: "bg-transparent text-white/40 hover:text-white/70"
 								}`}
+								whileHover={{ scale: 1.02 }}
+								whileTap={{ scale: 0.98 }}
 							>
 								<Icon size={14} />
 								{tab.label}
-							</button>
+							</motion.button>
 						);
 					})}
-				</div>
+				</motion.div>
 
 				{/* Monitor frame + image */}
-				<div className="w-full max-w-4xl mx-auto pb-12">
+				<motion.div
+					className="w-full max-w-4xl mx-auto pb-12"
+					initial={{ opacity: 0, y: 20 }}
+					animate={{ opacity: 1, y: 0 }}
+					transition={{ duration: 0.5, delay: 0.7, ease: "easeOut" }}
+				>
 					{/* Screen bezel */}
 					<div className="relative rounded-2xl bg-[#1c1c1e] p-3 shadow-2xl border border-white/10">
 						{/* Inner screen */}
@@ -159,7 +199,7 @@ function HomePage() {
 						{/* Base */}
 						<div className="w-36 h-3 rounded-full bg-[#3a3a3c]" />
 					</div>
-				</div>
+				</motion.div>
 			</main>
 
 			{/* Footer */}
