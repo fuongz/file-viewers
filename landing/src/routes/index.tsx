@@ -151,7 +151,10 @@ function HomePage() {
 					<div className="flex flex-col items-center">
 						<div
 							className="w-14 bg-[#3a3a3c]"
-							style={{ height: "40px", clipPath: "polygon(20% 0%, 80% 0%, 90% 100%, 10% 100%)" }}
+							style={{
+								height: "40px",
+								clipPath: "polygon(20% 0%, 80% 0%, 90% 100%, 10% 100%)",
+							}}
 						/>
 						{/* Base */}
 						<div className="w-36 h-3 rounded-full bg-[#3a3a3c]" />
