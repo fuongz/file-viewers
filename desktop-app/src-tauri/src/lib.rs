@@ -86,8 +86,11 @@ fn center_traffic_lights(win: &tauri::WebviewWindow) {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
-        .plugin(tauri_plugin_liquid_glass::init())
+    #[allow(unused_mut)]
+    let mut builder = tauri::Builder::default();
+    #[cfg(target_os = "macos")]
+    let mut builder = builder.plugin(tauri_plugin_liquid_glass::init());
+    builder
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_fs::init())
