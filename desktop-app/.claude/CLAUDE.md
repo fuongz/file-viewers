@@ -23,11 +23,16 @@ Desktop developer tool for viewing and editing Markdown, JSON, and CSV files wit
 - **File open**: `@tauri-apps/plugin-dialog` + `@tauri-apps/plugin-fs`
 - **Icons**: `@tabler/icons-react`
 
+## Shell Commands
+- **Always prefix every Bash command with `rtk`** — e.g. `rtk git status`, `rtk bun install`, `rtk bunx tsc --noEmit`; never run bare shell commands directly
+- **For file operations, always prefer native Claude tools** (Read, Glob, Grep, Edit, Write) over Bash — they are token-free and don't need `rtk`
+- When Bash is the only option (e.g. running dev server, type check), `rtk` is mandatory
+
 ## Commands
 ```bash
-bun run tauri dev    # start dev desktop app (Rust + Vite HMR)
-bun run build        # Vite frontend build only
-bunx tsc --noEmit    # TypeScript type check
+rtk bun run tauri dev    # start dev desktop app (Rust + Vite HMR)
+rtk bun run build        # Vite frontend build only
+rtk bunx tsc --noEmit    # TypeScript type check
 ```
 
 ## Key Files
