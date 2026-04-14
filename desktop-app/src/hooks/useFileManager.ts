@@ -1,5 +1,5 @@
 import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
-import { readTextFile, writeTextFile, rename } from "@tauri-apps/plugin-fs";
+import { readFile, readTextFile, writeTextFile, rename } from "@tauri-apps/plugin-fs";
 import { useCallback, useEffect, useRef } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { EXT_TO_FORMAT } from "../constants";
@@ -25,8 +25,11 @@ export function useFileManager({
 		async (path: string) => {
 			const ext = path.split(".").pop()?.toLowerCase() ?? "";
 			const fmt = EXT_TO_FORMAT[ext] ?? "markdown";
-			const fileContent = await readTextFile(path);
 			const fileName = path.split("/").pop() ?? path;
+
+			const isBinary = fmt === "xlsx";
+			const binaryContent = isBinary ? await readFile(path) : undefined;
+			const fileContent = isBinary ? "" : await readTextFile(path);
 
 			setTabs((prev) => {
 				const existing = prev.find((t) => t.path === path);
@@ -40,6 +43,7 @@ export function useFileManager({
 									previewContent: fileContent,
 									format: fmt,
 									isDirty: false,
+									binaryContent,
 								}
 							: t,
 					);
@@ -57,6 +61,7 @@ export function useFileManager({
 									previewContent: fileContent,
 									path,
 									isDirty: false,
+									binaryContent,
 								}
 							: t,
 					);
@@ -68,6 +73,7 @@ export function useFileManager({
 					previewContent: fileContent,
 					path,
 					isDirty: false,
+					binaryContent,
 				});
 				setActiveTabId(newTab.id);
 				return [...prev, newTab];
@@ -82,7 +88,7 @@ export function useFileManager({
 			filters: [
 				{
 					name: "Developer Files",
-					extensions: ["md", "markdown", "mdx", "json", "csv"],
+					extensions: ["md", "markdown", "mdx", "json", "csv", "xlsx"],
 				},
 			],
 		});

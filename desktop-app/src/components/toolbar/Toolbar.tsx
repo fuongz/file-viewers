@@ -1,14 +1,12 @@
 import { IconSettings } from "@tabler/icons-react";
 import type { Format } from "../../types";
 import { Button } from "../ui";
-import { FormatTabs } from "./FormatTabs";
 import { ToolbarActions } from "./ToolbarActions";
 
 interface ToolbarProps {
 	format: Format;
 	content: string;
 	showEditor: boolean;
-	onFormatChange: (format: Format) => void;
 	onToggleEditor: () => void;
 	onFormatMarkdown: () => void;
 	onFormatJson: () => void;
@@ -21,7 +19,6 @@ export function Toolbar({
 	format,
 	content,
 	showEditor,
-	onFormatChange,
 	onToggleEditor,
 	onFormatMarkdown,
 	onFormatJson,
@@ -32,7 +29,6 @@ export function Toolbar({
 	return (
 		<header className="toolbar" data-tauri-drag-region>
 			<div className="toolbar-spacer" />
-			<FormatTabs value={format} onChange={onFormatChange} />
 			<ToolbarActions
 				format={format}
 				content={content}

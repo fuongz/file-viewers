@@ -12,6 +12,7 @@ export interface FileTab {
 	previewContent: string;
 	path?: string;
 	isDirty?: boolean;
+	binaryContent?: Uint8Array;
 }
 
 export interface PersistedTab {

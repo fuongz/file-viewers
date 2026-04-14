@@ -1,10 +1,11 @@
 import { memo } from "react";
 import { CsvPreview } from "./CsvPreview";
 import { EmptyState } from "./EmptyState";
+import { ExcelPreview } from "./ExcelPreview";
 import { JsonPreview } from "./JsonPreview";
 import { MarkdownPreview } from "./MarkdownPreview";
 
-export type Format = "markdown" | "json" | "csv" | "mdx";
+export type Format = "markdown" | "json" | "csv" | "mdx" | "xlsx";
 
 interface PreviewPanelProps {
 	content: string;
@@ -12,6 +13,7 @@ interface PreviewPanelProps {
 	isDark: boolean;
 	onOpenFile: () => void;
 	onContentChange?: (content: string) => void;
+	binaryContent?: Uint8Array;
 }
 
 export const PreviewPanel = memo(function PreviewPanel({
@@ -20,8 +22,9 @@ export const PreviewPanel = memo(function PreviewPanel({
 	isDark,
 	onOpenFile,
 	onContentChange,
+	binaryContent,
 }: PreviewPanelProps) {
-	if (!content.trim()) {
+	if (format !== "xlsx" && !content.trim()) {
 		return (
 			<div className="preview-panel">
 				<EmptyState onOpenFile={onOpenFile} />
@@ -35,6 +38,8 @@ export const PreviewPanel = memo(function PreviewPanel({
 				<MarkdownPreview content={content} isDark={isDark} />
 			) : format === "json" ? (
 				<JsonPreview content={content} isDark={isDark} />
+			) : format === "xlsx" ? (
+				<ExcelPreview binaryContent={binaryContent} />
 			) : (
 				<CsvPreview content={content} onContentChange={onContentChange} />
 			)}

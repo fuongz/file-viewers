@@ -5,6 +5,7 @@ import {
 	IconMoon,
 	IconSun,
 	IconTable,
+	IconTableFilled,
 } from "@tabler/icons-react";
 import type { Format } from "../components/PreviewPanel";
 import type { ThemePreference } from "../types";
@@ -15,6 +16,7 @@ export const EXT_TO_FORMAT: Record<string, Format> = {
 	mdx: "mdx",
 	json: "json",
 	csv: "csv",
+	xlsx: "xlsx",
 };
 
 export const FORMAT_LANGUAGE: Record<Format, string> = {
@@ -22,6 +24,7 @@ export const FORMAT_LANGUAGE: Record<Format, string> = {
 	mdx: "markdown",
 	json: "json",
 	csv: "plaintext",
+	xlsx: "plaintext",
 };
 
 export const FORMAT_ICONS: Record<Format, React.ReactNode> = {
@@ -29,6 +32,7 @@ export const FORMAT_ICONS: Record<Format, React.ReactNode> = {
 	mdx: <IconMarkdown size={13} stroke={1.5} />,
 	json: <IconBraces size={13} stroke={1.5} />,
 	csv: <IconTable size={13} stroke={1.5} />,
+	xlsx: <IconTableFilled size={13} stroke={1.5} />,
 };
 
 export const THEME_LABELS: Record<ThemePreference, string> = {

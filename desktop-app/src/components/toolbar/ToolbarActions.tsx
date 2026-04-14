@@ -31,7 +31,7 @@ export function ToolbarActions({
 }: ToolbarActionsProps) {
 	return (
 		<div className="toolbar-actions gap-2">
-			{format !== "csv" && (
+			{format !== "xlsx" && (
 				<Button
 					onClick={onToggleEditor}
 					title={showEditor ? "Hide editor" : "Show editor"}

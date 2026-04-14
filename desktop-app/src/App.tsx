@@ -15,6 +15,17 @@ import { persistSession } from "./hooks/useSession";
 import { useTabs } from "./hooks/useTabs";
 import { useTheme } from "./hooks/useTheme";
 
+function detectFormat(content: string): "markdown" | "json" | "csv" {
+	const trimmed = content.trimStart();
+	if (trimmed.startsWith("{") || trimmed.startsWith("[")) return "json";
+	const lines = content.split("\n").filter((l) => l.trim());
+	if (lines.length >= 2) {
+		const counts = lines.map((l) => (l.match(/,/g) ?? []).length);
+		if (counts[0] >= 1 && counts.every((c) => c === counts[0])) return "csv";
+	}
+	return "markdown";
+}
+
 function App() {
 	const {
 		tabs,
@@ -38,7 +49,11 @@ function App() {
 	const [showEditor, setShowEditor] = useState(true);
 	const [settingsOpen, setSettingsOpen] = useState(false);
 	const [commandOpen, setCommandOpen] = useState(false);
-	const { format, content, previewContent } = activeTab;
+	const { format, content, previewContent, binaryContent } = activeTab;
+
+	useEffect(() => {
+		setShowEditor(format !== "csv" && format !== "xlsx");
+	}, [format]);
 
 	const activeTabIdRef = useRef(activeTabId);
 	activeTabIdRef.current = activeTabId;
@@ -95,9 +110,11 @@ function App() {
 	const handleEditorChange = useCallback(
 		(val: string) => {
 			setTabs((prev) =>
-				prev.map((t) =>
-					t.id === activeTabId ? { ...t, content: val, isDirty: true } : t,
-				),
+				prev.map((t) => {
+					if (t.id !== activeTabId) return t;
+					const format = t.path ? t.format : detectFormat(val);
+					return { ...t, content: val, isDirty: true, format };
+				}),
 			);
 			if (previewTimer.current) clearTimeout(previewTimer.current);
 			previewTimer.current = setTimeout(() => {
@@ -157,7 +174,6 @@ function App() {
 				format={format}
 				content={content}
 				showEditor={showEditor}
-				onFormatChange={(f) => updateActiveTab({ format: f })}
 				onToggleEditor={() => setShowEditor((s) => !s)}
 				onFormatMarkdown={formatMarkdown}
 				onFormatJson={formatJson}
@@ -184,12 +200,13 @@ function App() {
 			/>
 
 			<main className="workspace">
-				{format === "csv" || !showEditor ? (
+				{!showEditor ? (
 					<PreviewPanel
 						content={previewContent}
 						format={format}
 						isDark={isDark}
 						onOpenFile={openFile}
+						binaryContent={binaryContent}
 						onContentChange={
 							format === "csv"
 								? (val) =>
@@ -216,6 +233,13 @@ function App() {
 								format={format}
 								isDark={isDark}
 								onOpenFile={openFile}
+								binaryContent={binaryContent}
+								onContentChange={
+									format === "csv"
+										? (val) =>
+												updateActiveTab({ content: val, previewContent: val })
+										: undefined
+								}
 							/>
 						</Panel>
 					</Group>
