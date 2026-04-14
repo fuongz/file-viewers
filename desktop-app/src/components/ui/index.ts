@@ -1,3 +1,4 @@
+export * from "../SettingsDialog";
 export * from "./Button";
 export * from "./CommandPalette";
 export * from "./ConfirmDialog";
@@ -5,7 +6,6 @@ export * from "./Dialog";
 export * from "./Input";
 export * from "./InputGroup";
 export * from "./Separator";
-export * from "./SettingsDialog";
 export * from "./Sheet";
 export * from "./Sidebar";
 export * from "./Skeleton";

@@ -5,6 +5,14 @@ import { cn } from "@/lib/utils";
 
 const buttonVariants = cva("cursor-pointer transition-colors", {
 	variants: {
+		size: {
+			sm: "text-[11px] px-2 py-[3px]",
+			md: "text-[13px] px-3 py-[5px]",
+			lg: "text-[15px] px-4 py-2",
+			"icon-sm": "inline-flex items-center justify-center w-4 h-4 rounded",
+			"icon-md": "inline-flex items-center justify-center w-5 h-5 rounded",
+			"icon-lg": "inline-flex items-center justify-center w-7 h-7 rounded",
+		},
 		variant: {
 			// Toolbar ghost buttons: Format, Minify, theme toggle
 			toolbar:
@@ -64,11 +72,11 @@ interface ButtonProps
 	active?: boolean;
 }
 
-export function Button({ variant, active, className, ...props }: ButtonProps) {
+export function Button({ variant, size, active, className, ...props }: ButtonProps) {
 	return (
 		<BaseButton
 			data-active={active || undefined}
-			className={cn(buttonVariants({ variant }), className)}
+			className={cn(buttonVariants({ variant, size }), className)}
 			{...props}
 		/>
 	);

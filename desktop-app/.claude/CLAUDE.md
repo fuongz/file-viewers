@@ -6,8 +6,8 @@ Desktop developer tool for viewing and editing Markdown, JSON, and CSV files wit
 ## User Preferences
 - **Package manager**: Bun — always use `bun` / `bunx`, never `npm` or `yarn`
 - **CSS**: Always use Tailwind CSS utility classes — never write raw CSS
-- **UI components**: Always use `src/components/ui/` primitives (`Button`, `Input`, `Textarea`) for all button/input/textarea elements — never use native HTML elements directly. Build new primitives there when a new element type is needed.
-- **Base UI**: Use `@base-ui/react` for higher-level components (Tabs, Dialog, Select, etc.) when available
+- **UI components**: Always use `src/components/ui/` primitives (`Button`, `Input`, `Textarea`, `Dialog`) for all button/input/textarea/dialog elements — never use native HTML elements directly. Build new primitives there when a new element type is needed.
+- **Base UI**: Use `@base-ui/react` for higher-level components (Tabs, Select, etc.) when available — **except Dialog**: always use `src/components/ui/Dialog.tsx`, never import directly from `@base-ui/react/dialog`
 - **Editor**: Monaco Editor (not CodeMirror) — bundled locally, no CDN
 - **No CDN dependencies**: Monaco must be bundled locally via Vite workers
 

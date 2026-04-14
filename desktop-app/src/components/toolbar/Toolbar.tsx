@@ -1,5 +1,6 @@
 import { IconSettings } from "@tabler/icons-react";
 import type { Format } from "../../types";
+import { Button } from "../ui";
 import { FormatTabs } from "./FormatTabs";
 import { ToolbarActions } from "./ToolbarActions";
 
@@ -42,15 +43,10 @@ export function Toolbar({
 				onMinifyJson={onMinifyJson}
 				onClearCsv={onClearCsv}
 			/>
-			<button
-				type="button"
-				className="toolbar-btn"
-				onClick={onOpenSettings}
-				title="Settings (Cmd+,)"
-			>
-				<IconSettings size={16} stroke={1.5} />
-				<span>Settings</span>
-			</button>
+			<Button onClick={onOpenSettings} title="Settings (Cmd+,)">
+				<IconSettings size={13} stroke={1.5} />
+				Settings
+			</Button>
 		</header>
 	);
 }

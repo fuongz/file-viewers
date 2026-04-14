@@ -1,5 +1,13 @@
 # File Viewers
 
+<p align="center">
+
+![](https://img.shields.io/github/release/fuongz/file-viewers.svg?style=flat)
+![](https://img.shields.io/github/downloads/fuongz/file-viewers/total.svg?style=flat)
+![Build & Release](https://github.com/fuongz/file-viewers/workflows/Release/badge.svg)
+
+</p>
+
 A cross-platform desktop app for viewing and editing **Markdown**, **JSON**, and **CSV** files.
 
 ## Features

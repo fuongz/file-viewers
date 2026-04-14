@@ -5,7 +5,7 @@ import { EditorPanel } from "./components/EditorPanel";
 import { FileTabsBar } from "./components/FileTabsBar";
 import { PreviewPanel } from "./components/PreviewPanel";
 import { Toolbar } from "./components/toolbar/Toolbar";
-import { ConfirmDialog, CommandPalette, SettingsDialog } from "./components/ui";
+import { CommandPalette, ConfirmDialog, SettingsDialog } from "./components/ui";
 import { FORMAT_LANGUAGE } from "./constants";
 import { useDragDrop } from "./hooks/useDragDrop";
 import { useFileManager, useRestoreSession } from "./hooks/useFileManager";
@@ -232,15 +232,37 @@ function App() {
 				onOpenChange={setCommandOpen}
 				items={[
 					{ id: "new-tab", label: "New Tab", shortcut: "⌘ T", action: addTab },
-					{ id: "close-tab", label: "Close Tab", shortcut: "⌘ W", action: () => closeTab(activeTabId) },
+					{
+						id: "close-tab",
+						label: "Close Tab",
+						shortcut: "⌘ W",
+						action: () => closeTab(activeTabId),
+					},
 					{ id: "save", label: "Save", shortcut: "⌘ S", action: saveFile },
 					{ id: "open", label: "Open File", shortcut: "⌘ O", action: openFile },
-					{ id: "settings", label: "Settings", shortcut: "⌘ ,", action: () => setSettingsOpen(true) },
-					{ id: "toggle-editor", label: "Toggle Editor", action: () => setShowEditor((s) => !s) },
-					{ id: "format-markdown", label: "Format Markdown", action: formatMarkdown },
+					{
+						id: "settings",
+						label: "Settings",
+						shortcut: "⌘ ,",
+						action: () => setSettingsOpen(true),
+					},
+					{
+						id: "toggle-editor",
+						label: "Toggle Editor",
+						action: () => setShowEditor((s) => !s),
+					},
+					{
+						id: "format-markdown",
+						label: "Format Markdown",
+						action: formatMarkdown,
+					},
 					{ id: "format-json", label: "Format JSON", action: formatJson },
 					{ id: "minify-json", label: "Minify JSON", action: minifyJson },
-					{ id: "clear-csv", label: "Clear CSV", action: () => updateActiveTab({ content: "", previewContent: "" }) },
+					{
+						id: "clear-csv",
+						label: "Clear CSV",
+						action: () => updateActiveTab({ content: "", previewContent: "" }),
+					},
 				]}
 			/>
 		</div>

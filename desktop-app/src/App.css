@@ -1,5 +1,28 @@
 @import "tailwindcss";
+@plugin "tailwindcss-animate";
 @custom-variant dark (&:is(.dark *));
+
+/* ── Sidebar color tokens (maps to app CSS vars at runtime) ── */
+@theme inline {
+  --color-sidebar: var(--bg-sidebar);
+  --color-sidebar-foreground: var(--text-primary);
+  --color-sidebar-accent: var(--tabs-bg);
+  --color-sidebar-accent-foreground: var(--text-primary);
+  --color-sidebar-border: var(--border);
+  --color-sidebar-ring: transparent;
+
+  /* base-ui token mappings */
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-foreground: var(--foreground);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--ui-accent);
+  --color-accent-foreground: var(--ui-accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+}
 
 /* ── Design tokens ────────────────────────────────────────── */
 :root {
@@ -25,6 +48,10 @@
   --resize-bar-bg: rgba(255, 255, 255, 0.15);
   --resize-bar-active-bg: rgba(255, 255, 255, 0.5);
   --input-bg: rgba(255, 255, 255, 0.06);
+  --bg-sidebar: #252526;
+  --toggle-group-bg: #1e1e1e;
+  --toggle-item-active-bg: #2d2d2d;
+  --toggle-item-color: #6a6a6a;
 
   /* Markdown adaptive tokens */
   --md-heading: #e6e6e6;
@@ -51,6 +78,17 @@
   --color-grenadier-800: #991e13;
   --color-grenadier-900: #7b1c13;
   --color-grenadier-950: #430a07;
+
+  --popover: #252526;
+  --popover-foreground: #cccccc;
+  --foreground: #cccccc;
+  --input: oklch(1 0 0 / 15%);
+  --ring: #e0330d;
+  --muted-foreground: #6a6a6a;
+  --accent-foreground: #ffffff;
+  --destructive: #cc3333;
+  --ui-accent: oklch(1 0 0 / 10%);
+  --ui-accent-foreground: #cccccc;
 
   /* CSV adaptive tokens */
   --csv-thead-bg: #2a2a2a;
@@ -106,6 +144,22 @@
   --csv-td-border: rgba(0, 0, 0, 0.08);
   --csv-td-border-right: rgba(0, 0, 0, 0.06);
   --csv-tr-hover-bg: rgba(0, 0, 0, 0.03);
+
+  --popover: #ffffff;
+  --popover-foreground: #1d1d1f;
+  --foreground: #1d1d1f;
+  --input: oklch(0.88 0 0);
+  --ring: #e0330d;
+  --muted-foreground: #8e8e93;
+  --accent-foreground: #1d1d1f;
+  --destructive: #c0392b;
+  --ui-accent: rgba(0, 0, 0, 0.07);
+  --ui-accent-foreground: #1d1d1f;
+
+  --bg-sidebar: #f5f5f7;
+  --toggle-group-bg: #e5e5e5;
+  --toggle-item-active-bg: #ffffff;
+  --toggle-item-color: #8e8e93;
 }
 
 /* ── Base Layer ────────────────────────────────────────────── */
@@ -247,7 +301,6 @@
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  gap: 4px;
   -webkit-app-region: no-drag;
 }
 
@@ -994,136 +1047,9 @@ td.csv-cell-selected {
   text-transform: uppercase;
 }
 
-/* ── Settings dialog ────────────────────────────────────────── */
-.settings-dialog-root {
-  display: flex;
-  width: 100%;
-  height: 100%;
-}
-
-.settings-sidebar {
-  width: 200px;
-  flex-shrink: 0;
-  border-right: 1px solid var(--border);
-  background: var(--bg-toolbar);
-  display: flex;
-  flex-direction: column;
-}
-
-.settings-sidebar-header {
-  padding: 16px 16px 12px;
-  font-size: 14px;
-  font-weight: 600;
-  color: var(--text-primary);
-  border-bottom: 1px solid var(--border);
-}
-
-.settings-sidebar-nav {
-  padding: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.settings-sidebar-item {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 12px;
-  border: none;
-  border-radius: 6px;
-  background: transparent;
-  color: var(--text-secondary);
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  text-align: left;
-  transition: all 0.12s;
-}
-
-.settings-sidebar-item:hover {
-  background: var(--tab-active-pill-bg);
-  color: var(--text-primary);
-}
-
-.settings-sidebar-item.active {
-  background: var(--accent);
-  color: var(--accent-fg);
-}
-
-.settings-main {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-width: 0;
-  overflow: hidden;
-  height: 100%;
-}
-
-.settings-header {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  height: 48px;
-  padding: 0 16px;
-  border-bottom: 1px solid var(--border);
-  flex-shrink: 0;
-}
-
-.settings-group {
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  overflow: hidden;
-}
-
-.settings-group-header {
-  padding: 10px 16px;
-  font-size: 12px;
-  font-weight: 600;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  background: var(--bg-app);
-  border-bottom: 1px solid var(--border);
-}
-
-.settings-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 14px 16px;
-  border-bottom: 1px solid var(--border);
-}
-
-.settings-row:last-child {
-  border-bottom: none;
-}
-
-.settings-row-label {
-  flex: 1;
-  min-width: 0;
-}
-
-.settings-row-label-text {
-  font-size: 14px;
-  font-weight: 500;
-  color: var(--text-primary);
-}
-
-.settings-row-description {
-  font-size: 12px;
-  color: var(--text-muted);
-  margin-top: 2px;
-}
-
-.settings-row-control {
-  flex-shrink: 0;
-  margin-left: 16px;
-}
-
 .theme-toggle-group {
+  @apply bg-zinc-100 dark:bg-zinc-900;
   display: inline-flex;
-  background: var(--bg-app);
   border-radius: 6px;
   padding: 2px;
   border: 1px solid var(--border);
@@ -1137,21 +1063,19 @@ td.csv-cell-selected {
   border: none;
   border-radius: 4px;
   background: transparent;
-  color: var(--text-secondary);
+  color: var(--toggle-item-color);
   font-size: 12px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.12s;
 }
 
-.theme-toggle-item:hover {
-  color: var(--text-primary);
+.theme-toggle-item:focus {
+  @apply outline-none ring-0;
 }
 
 .theme-toggle-item[data-pressed] {
-  background: var(--bg-toolbar);
-  color: var(--text-primary);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.12);
+  @apply bg-zinc-50 text-zinc-800 dark:text-zinc-200 rounded-xl border border-zinc-200 shadow-none ring-0 dark:bg-zinc-800 dark:border-zinc-700;
 }
 
 /* ── Shortcuts ──────────────────────────────────────────────── */
