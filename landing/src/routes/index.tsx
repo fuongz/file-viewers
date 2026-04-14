@@ -7,9 +7,9 @@ import { VERSION } from "../version";
 export const Route = createFileRoute("/")({ component: HomePage });
 
 const TABS = [
-	{ id: "001", label: "Markdown Viewer", icon: FileText },
-	{ id: "002", label: "CSV Viewer", icon: Table2 },
-	{ id: "003", label: "JSON Viewer", icon: Braces },
+	{ id: "001", label: "Markdown", icon: FileText },
+	{ id: "002", label: "CSV", icon: Table2 },
+	{ id: "003", label: "JSON", icon: Braces },
 ];
 
 function BannerImage({ src, alt }: { src: string; alt: string }) {
@@ -124,16 +124,13 @@ function HomePage() {
 
 				{/* Tabbed Banners */}
 				<motion.div
-					className="w-full max-w-4xl mx-auto mb-6 pt-8 border-t border-white/5 text-center"
+					className="w-full max-w-4xl mx-auto mb-6 pt-8 text-center"
 					initial={{ opacity: 0, y: 20 }}
 					animate={{ opacity: 1, y: 0 }}
 					transition={{ duration: 0.5, delay: 0.5, ease: "easeOut" }}
 				>
-					<h2 className="text-lg font-semibold text-white tracking-tight">
-						Everything you need to view your files
-					</h2>
 					<p className="text-white/40 mt-1 text-xs">
-						Open and preview any file format — no extra apps needed.
+						Open and preview any file format - no extra apps needed.
 					</p>
 				</motion.div>
 
