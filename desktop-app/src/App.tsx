@@ -2,6 +2,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Group, Panel, Separator } from "react-resizable-panels";
 import "./App.css";
 import { EditorPanel } from "./components/EditorPanel";
+import { EditorStatusBar } from "./components/EditorStatusBar";
 import { FileTabsBar } from "./components/FileTabsBar";
 import { PreviewPanel } from "./components/PreviewPanel";
 import { Toolbar } from "./components/toolbar/Toolbar";
@@ -139,8 +140,21 @@ function App() {
 	}, [activeTab.content, updateActiveTab]);
 
 	const formatJson = useCallback(() => {
+		const tryParse = (src: string) => JSON.stringify(JSON.parse(src), null, 2);
 		try {
-			const formatted = JSON.stringify(JSON.parse(activeTab.content), null, 2);
+			let formatted: string;
+			try {
+				formatted = tryParse(activeTab.content);
+			} catch {
+				// Fallback: unescape literal escape sequences then retry
+				const unescaped = activeTab.content
+					.replace(/\\n/g, "\n")
+					.replace(/\\t/g, "\t")
+					.replace(/\\r/g, "\r")
+					.replace(/\\"/g, '"')
+					.replace(/\\\\/g, "\\");
+				formatted = tryParse(unescaped);
+			}
 			updateActiveTab({ content: formatted, previewContent: formatted });
 		} catch {}
 	}, [activeTab.content, updateActiveTab]);
@@ -172,13 +186,8 @@ function App() {
 
 			<Toolbar
 				format={format}
-				content={content}
 				showEditor={showEditor}
 				onToggleEditor={() => setShowEditor((s) => !s)}
-				onFormatMarkdown={formatMarkdown}
-				onFormatJson={formatJson}
-				onMinifyJson={minifyJson}
-				onClearCsv={() => updateActiveTab({ content: "", previewContent: "" })}
 				onOpenSettings={() => setSettingsOpen(true)}
 			/>
 
@@ -213,6 +222,11 @@ function App() {
 										updateActiveTab({ content: val, previewContent: val })
 								: undefined
 						}
+						onClearCsv={
+							format === "csv"
+								? () => updateActiveTab({ content: "", previewContent: "" })
+								: undefined
+						}
 					/>
 				) : (
 					<Group orientation="horizontal" className="panel-group">
@@ -222,6 +236,15 @@ function App() {
 								onChange={handleEditorChange}
 								language={FORMAT_LANGUAGE[format]}
 								isDark={isDark}
+								statusBar={
+									<EditorStatusBar
+										format={format}
+										content={content}
+										onFormatMarkdown={formatMarkdown}
+										onFormatJson={formatJson}
+										onMinifyJson={minifyJson}
+									/>
+								}
 							/>
 						</Panel>
 						<Separator className="resize-handle">
@@ -238,6 +261,11 @@ function App() {
 									format === "csv"
 										? (val) =>
 												updateActiveTab({ content: val, previewContent: val })
+										: undefined
+								}
+								onClearCsv={
+									format === "csv"
+										? () => updateActiveTab({ content: "", previewContent: "" })
 										: undefined
 								}
 							/>

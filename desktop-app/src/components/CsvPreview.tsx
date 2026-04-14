@@ -6,6 +6,7 @@ import {
 	IconFilter,
 	IconPlayerPlay,
 	IconSearch,
+	IconTrash,
 } from "@tabler/icons-react";
 import {
 	type ColumnFiltersState,
@@ -27,6 +28,7 @@ import { Button, Input, Textarea } from "./ui";
 interface CsvPreviewProps {
 	content: string;
 	onContentChange?: (content: string) => void;
+	onClearCsv?: () => void;
 }
 
 interface SelectedCell {
@@ -228,7 +230,11 @@ function SqlInput({ onRun }: SqlInputProps) {
 
 // ── CsvPreview ────────────────────────────────────────────────────────────────
 
-export function CsvPreview({ content, onContentChange }: CsvPreviewProps) {
+export function CsvPreview({
+	content,
+	onContentChange,
+	onClearCsv,
+}: CsvPreviewProps) {
 	const [sorting, setSorting] = useState<SortingState>([]);
 	const [globalFilter, setGlobalFilter] = useState("");
 	const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -434,6 +440,12 @@ export function CsvPreview({ content, onContentChange }: CsvPreviewProps) {
 		<div className="csv-preview">
 			{/* ── Top toolbar ── */}
 			<div className="csv-toolbar">
+				{onClearCsv && (
+					<Button variant="destructive" onClick={onClearCsv} title="Clear data">
+						<IconTrash size={12} />
+						Clear
+					</Button>
+				)}
 				<div className="flex items-stretch rounded bg-[var(--border)] overflow-hidden flex-shrink-0">
 					<Button
 						variant={queryMode === "search" ? "primary" : "ghost"}

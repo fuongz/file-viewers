@@ -13,6 +13,7 @@ interface PreviewPanelProps {
 	isDark: boolean;
 	onOpenFile: () => void;
 	onContentChange?: (content: string) => void;
+	onClearCsv?: () => void;
 	binaryContent?: Uint8Array;
 }
 
@@ -22,6 +23,7 @@ export const PreviewPanel = memo(function PreviewPanel({
 	isDark,
 	onOpenFile,
 	onContentChange,
+	onClearCsv,
 	binaryContent,
 }: PreviewPanelProps) {
 	if (format !== "xlsx" && !content.trim()) {
@@ -41,7 +43,11 @@ export const PreviewPanel = memo(function PreviewPanel({
 			) : format === "xlsx" ? (
 				<ExcelPreview binaryContent={binaryContent} />
 			) : (
-				<CsvPreview content={content} onContentChange={onContentChange} />
+				<CsvPreview
+					content={content}
+					onContentChange={onContentChange}
+					onClearCsv={onClearCsv}
+				/>
 			)}
 		</div>
 	);

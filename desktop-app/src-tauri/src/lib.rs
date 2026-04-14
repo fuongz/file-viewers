@@ -1,3 +1,89 @@
+#[cfg(target_os = "macos")]
+fn center_traffic_lights(win: &tauri::WebviewWindow) {
+    use objc2::encode::{Encode, Encoding, RefEncode};
+    use objc2::msg_send;
+    use objc2::runtime::AnyObject;
+
+    // Mirror the C layout of NSPoint / NSSize / NSRect (= CGPoint / CGSize / CGRect on 64-bit)
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    struct Point {
+        x: f64,
+        y: f64,
+    }
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    struct Size {
+        width: f64,
+        height: f64,
+    }
+    #[repr(C)]
+    #[derive(Clone, Copy)]
+    struct Rect {
+        origin: Point,
+        size: Size,
+    }
+
+    unsafe impl Encode for Point {
+        const ENCODING: Encoding =
+            Encoding::Struct("CGPoint", &[f64::ENCODING, f64::ENCODING]);
+    }
+    unsafe impl RefEncode for Point {
+        const ENCODING_REF: Encoding = Encoding::Pointer(&Self::ENCODING);
+    }
+    unsafe impl Encode for Size {
+        const ENCODING: Encoding =
+            Encoding::Struct("CGSize", &[f64::ENCODING, f64::ENCODING]);
+    }
+    unsafe impl RefEncode for Size {
+        const ENCODING_REF: Encoding = Encoding::Pointer(&Self::ENCODING);
+    }
+    unsafe impl Encode for Rect {
+        const ENCODING: Encoding = Encoding::Struct(
+            "CGRect",
+            &[
+                Encoding::Struct("CGPoint", &[f64::ENCODING, f64::ENCODING]),
+                Encoding::Struct("CGSize", &[f64::ENCODING, f64::ENCODING]),
+            ],
+        );
+    }
+    unsafe impl RefEncode for Rect {
+        const ENCODING_REF: Encoding = Encoding::Pointer(&Self::ENCODING);
+    }
+
+    // Toolbar height 38px, traffic light buttons ~12px tall
+    // Vertical center = (38 - 12) / 2 = 13.0 from top
+    let target_y: f64 = 13.0;
+    let x_start: f64 = 8.0;
+
+    let ns_window: *mut AnyObject = win.ns_window().unwrap() as *mut AnyObject;
+    unsafe {
+        // NSWindowButton values: 0=close, 1=miniaturize, 2=zoom
+        let mut offset_x = x_start;
+        for btn_idx in 0usize..3 {
+            let btn: *mut AnyObject =
+                msg_send![ns_window, standardWindowButton: btn_idx];
+            if btn.is_null() {
+                continue;
+            }
+            let frame: Rect = msg_send![btn, frame];
+            let superview: *mut AnyObject = msg_send![btn, superview];
+            let sv_frame: Rect = msg_send![superview, frame];
+            // macOS coords: origin is bottom-left → flip y axis
+            let flipped_y = sv_frame.size.height - target_y - frame.size.height;
+            let new_frame = Rect {
+                origin: Point {
+                    x: offset_x,
+                    y: flipped_y,
+                },
+                size: frame.size,
+            };
+            let _: () = msg_send![btn, setFrame: new_frame];
+            offset_x += frame.size.width + 6.0;
+        }
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -14,6 +100,7 @@ pub fn run() {
                     _app.liquid_glass()
                         .set_effect(&win, LiquidGlassConfig::default())
                         .ok();
+                    center_traffic_lights(&win);
                 }
             }
             #[cfg(target_os = "macos")]

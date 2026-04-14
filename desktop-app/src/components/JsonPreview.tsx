@@ -1,6 +1,18 @@
-import { IconCheck, IconCopy } from "@tabler/icons-react";
+import { IconCopy } from "@tabler/icons-react";
 import type React from "react";
 import { useCallback, useMemo, useState } from "react";
+import {
+	ContextMenu,
+	ContextMenuContent,
+	ContextMenuItem,
+	ContextMenuSeparator,
+	ContextMenuTrigger,
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "./ui";
 
 // ── Stat helpers ─────────────────────────────────────────────────────────────
 
@@ -40,6 +52,53 @@ function nodeIsExpanded(
 ): boolean {
 	const def = expandDepth === "all" || depth < (expandDepth as number);
 	return toggled.has(path) ? !def : def;
+}
+
+// ── Row context menu wrapper ──────────────────────────────────────────────────
+
+async function copyText(text: string) {
+	try {
+		await navigator.clipboard.writeText(text);
+	} catch {}
+}
+
+function RowContextMenu({
+	data,
+	path,
+	children,
+}: { data: unknown; path: string; children: React.ReactNode }) {
+	const isObj = data !== null && typeof data === "object";
+
+	return (
+		<ContextMenu>
+			<ContextMenuTrigger render={<span style={{ display: "contents" }} />}>
+				{children}
+			</ContextMenuTrigger>
+			<ContextMenuContent>
+				{isObj && (
+					<ContextMenuItem
+						onClick={() => copyText(JSON.stringify(data, null, 2))}
+					>
+						<IconCopy size={13} />
+						Copy value (pretty)
+					</ContextMenuItem>
+				)}
+				<ContextMenuItem
+					onClick={() =>
+						copyText(isObj ? JSON.stringify(data) : String(data))
+					}
+				>
+					<IconCopy size={13} />
+					{isObj ? "Copy value (compact)" : "Copy value"}
+				</ContextMenuItem>
+				<ContextMenuSeparator />
+				<ContextMenuItem onClick={() => copyText(path)}>
+					<IconCopy size={13} />
+					Copy path
+				</ContextMenuItem>
+			</ContextMenuContent>
+		</ContextMenu>
+	);
 }
 
 // ── JsonValue ─────────────────────────────────────────────────────────────────
@@ -95,26 +154,31 @@ function JsonNodeView({
 		onToggle(path);
 	};
 
+	const keyLabel =
+		keyName !== null ? (
+			<>
+				<span className="json-key">
+					{typeof keyName === "number" ? keyName : `"${keyName}"`}
+				</span>
+				<span className="json-colon">: </span>
+			</>
+		) : null;
+
 	// ── Leaf value ──
 	if (!isObj) {
 		return (
-			// biome-ignore lint/a11y/useKeyWithClickEvents: tree row selection
-			// biome-ignore lint/a11y/noStaticElementInteractions: tree row selection
-			<div
-				className={`json-row${isSelected ? " json-row-selected" : ""}`}
-				onClick={handleSelect}
-			>
-				{keyName !== null && (
-					<>
-						<span className="json-key">
-							{typeof keyName === "number" ? keyName : `"${keyName}"`}
-						</span>
-						<span className="json-colon">: </span>
-					</>
-				)}
-				<JsonValue value={data} />
-				{!isLast && <span className="json-comma">,</span>}
-			</div>
+			<RowContextMenu data={data} path={path}>
+				{/* biome-ignore lint/a11y/useKeyWithClickEvents: tree row selection */}
+				{/* biome-ignore lint/a11y/noStaticElementInteractions: tree row selection */}
+				<div
+					className={`json-row${isSelected ? " json-row-selected" : ""}`}
+					onClick={handleSelect}
+				>
+					{keyLabel}
+					<JsonValue value={data} />
+					{!isLast && <span className="json-comma">,</span>}
+				</div>
+			</RowContextMenu>
 		);
 	}
 
@@ -129,26 +193,21 @@ function JsonNodeView({
 	// ── Empty object / array ──
 	if (count === 0) {
 		return (
-			// biome-ignore lint/a11y/useKeyWithClickEvents: tree row selection
-			// biome-ignore lint/a11y/noStaticElementInteractions: tree row selection
-			<div
-				className={`json-row${isSelected ? " json-row-selected" : ""}`}
-				onClick={handleSelect}
-			>
-				{keyName !== null && (
-					<>
-						<span className="json-key">
-							{typeof keyName === "number" ? keyName : `"${keyName}"`}
-						</span>
-						<span className="json-colon">: </span>
-					</>
-				)}
-				<span className="json-brace">
-					{open}
-					{close}
-				</span>
-				{!isLast && <span className="json-comma">,</span>}
-			</div>
+			<RowContextMenu data={data} path={path}>
+				{/* biome-ignore lint/a11y/useKeyWithClickEvents: tree row selection */}
+				{/* biome-ignore lint/a11y/noStaticElementInteractions: tree row selection */}
+				<div
+					className={`json-row${isSelected ? " json-row-selected" : ""}`}
+					onClick={handleSelect}
+				>
+					{keyLabel}
+					<span className="json-brace">
+						{open}
+						{close}
+					</span>
+					{!isLast && <span className="json-comma">,</span>}
+				</div>
+			</RowContextMenu>
 		);
 	}
 
@@ -158,68 +217,66 @@ function JsonNodeView({
 	// ── Collapsed ──
 	if (!expanded) {
 		return (
-			// biome-ignore lint/a11y/useKeyWithClickEvents: tree row selection
-			// biome-ignore lint/a11y/noStaticElementInteractions: tree row selection
-			<div
-				className={`json-row json-row-collapsible${isSelected ? " json-row-selected" : ""}`}
-				onClick={handleSelect}
-			>
-				<button type="button" className="json-toggle" onClick={handleToggle}>
-					▶
-				</button>
-				{keyName !== null && (
-					<>
-						<span className="json-key">
-							{typeof keyName === "number" ? keyName : `"${keyName}"`}
-						</span>
-						<span className="json-colon">: </span>
-					</>
-				)}
-				<span className="json-brace">{open}</span>
-				<span className="json-count"> {typeLabel} </span>
-				<button
-					type="button"
-					className="json-children-badge"
-					onClick={handleToggle}
+			<RowContextMenu data={data} path={path}>
+				{/* biome-ignore lint/a11y/useKeyWithClickEvents: tree row selection */}
+				{/* biome-ignore lint/a11y/noStaticElementInteractions: tree row selection */}
+				<div
+					className={`json-row json-row-collapsible${isSelected ? " json-row-selected" : ""}`}
+					onClick={handleSelect}
 				>
-					§ children
-				</button>
-				<span className="json-brace">{close}</span>
-				{!isLast && <span className="json-comma">,</span>}
-			</div>
+					<button
+						type="button"
+						className="json-toggle"
+						onClick={handleToggle}
+					>
+						▶
+					</button>
+					{keyLabel}
+					<span className="json-brace">{open}</span>
+					<span className="json-count"> {typeLabel} </span>
+					<button
+						type="button"
+						className="json-children-badge"
+						onClick={handleToggle}
+					>
+						§ children
+					</button>
+					<span className="json-brace">{close}</span>
+					{!isLast && <span className="json-comma">,</span>}
+				</div>
+			</RowContextMenu>
 		);
 	}
 
 	// ── Expanded ──
 	return (
 		<>
-			{/** biome-ignore lint/a11y/useKeyWithClickEvents: tree row selection */}
-			{/** biome-ignore lint/a11y/noStaticElementInteractions: tree row selection */}
-			<div
-				className={`json-row json-row-collapsible${isSelected ? " json-row-selected" : ""}`}
-				onClick={handleSelect}
-			>
-				<button type="button" className="json-toggle" onClick={handleToggle}>
-					▼
-				</button>
-				{keyName !== null && (
-					<>
-						<span className="json-key">
-							{typeof keyName === "number" ? keyName : `"${keyName}"`}
-						</span>
-						<span className="json-colon">: </span>
-					</>
-				)}
-				<span className="json-brace">{open}</span>
-				<span className="json-count"> {typeLabel} </span>
-				<button
-					type="button"
-					className="json-children-badge"
-					onClick={handleToggle}
+			<RowContextMenu data={data} path={path}>
+				{/** biome-ignore lint/a11y/useKeyWithClickEvents: tree row selection */}
+				{/** biome-ignore lint/a11y/noStaticElementInteractions: tree row selection */}
+				<div
+					className={`json-row json-row-collapsible${isSelected ? " json-row-selected" : ""}`}
+					onClick={handleSelect}
 				>
-					§ children
-				</button>
-			</div>
+					<button
+						type="button"
+						className="json-toggle"
+						onClick={handleToggle}
+					>
+						▼
+					</button>
+					{keyLabel}
+					<span className="json-brace">{open}</span>
+					<span className="json-count"> {typeLabel} </span>
+					<button
+						type="button"
+						className="json-children-badge"
+						onClick={handleToggle}
+					>
+						§ children
+					</button>
+				</div>
+			</RowContextMenu>
 
 			<div className="json-children-wrap">
 				{entries.map(([k, v], idx) => (
@@ -254,14 +311,11 @@ interface JsonPreviewProps {
 	isDark: boolean;
 }
 
-const DEPTH_OPTIONS: ExpandDepth[] = [1, 2, 3, 4, "all"];
-
 export function JsonPreview({ content }: JsonPreviewProps) {
 	const [selectedPath, setSelectedPath] = useState<string | null>(null);
 	const [expandDepth, setExpandDepth] = useState<ExpandDepth>("all");
 	const [toggled, setToggled] = useState<Set<string>>(new Set());
 	const [viewMode, setViewMode] = useState<"auto" | "raw">("auto");
-	const [copied, setCopied] = useState<"path" | "json" | null>(null);
 
 	const { parsed, parseError } = useMemo(() => {
 		if (!content.trim()) return { parsed: null, parseError: null };
@@ -288,14 +342,6 @@ export function JsonPreview({ content }: JsonPreviewProps) {
 	function changeDepth(d: ExpandDepth) {
 		setExpandDepth(d);
 		setToggled(new Set());
-	}
-
-	async function copyToClipboard(text: string, type: "path" | "json") {
-		try {
-			await navigator.clipboard.writeText(text);
-			setCopied(type);
-			setTimeout(() => setCopied(null), 1500);
-		} catch {}
 	}
 
 	if (!content.trim()) {
@@ -342,43 +388,34 @@ export function JsonPreview({ content }: JsonPreviewProps) {
 			{/* ── Status bar ── */}
 			<div className="json-statusbar">
 				<span className="json-statusbar-left">
-					{nodeCount} nodes · {maxDepth} levels deep
+					{nodeCount} nodes - {maxDepth} levels deep
 				</span>
 
 				<span className="json-statusbar-center">
 					{selectedPath && (
-						<>
-							<span className="json-path-chip">{selectedPath}</span>
-							<button
-								type="button"
-								className="json-statusbar-btn"
-								onClick={() => copyToClipboard(selectedPath, "path")}
-							>
-								{copied === "path" ? (
-									<IconCheck size={11} />
-								) : (
-									<IconCopy size={11} />
-								)}
-								Copy
-							</button>
-						</>
+						<span className="json-path-chip">{selectedPath}</span>
 					)}
 				</span>
 
 				<span className="json-statusbar-right">
-					{/* Depth buttons */}
-					<div className="json-depth-group">
-						{DEPTH_OPTIONS.map((d) => (
-							<button
-								key={d}
-								type="button"
-								className={`json-depth-btn${expandDepth === d ? " active" : ""}`}
-								onClick={() => changeDepth(d)}
-							>
-								{d === "all" ? "All" : d}
-							</button>
-						))}
-					</div>
+					{/* Depth select */}
+					<Select
+						value={String(expandDepth)}
+						onValueChange={(v) =>
+							changeDepth(v === "all" ? "all" : (Number(v) as ExpandDepth))
+						}
+					>
+						<SelectTrigger size="sm" className="h-5 text-[11px] px-1.5 py-0 min-w-[72px]">
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent side="top" align="end">
+							{([1, 2, 3, 4, "all"] as ExpandDepth[]).map((d) => (
+								<SelectItem key={d} value={String(d)}>
+									{d === "all" ? "All" : `Depth ${d}`}
+								</SelectItem>
+							))}
+						</SelectContent>
+					</Select>
 
 					{/* View mode */}
 					<div className="json-mode-group">
@@ -387,7 +424,7 @@ export function JsonPreview({ content }: JsonPreviewProps) {
 							className={`json-mode-btn${viewMode === "auto" ? " active" : ""}`}
 							onClick={() => setViewMode("auto")}
 						>
-							{viewMode === "auto" ? "• Auto" : "Auto"}
+							Auto
 						</button>
 						<button
 							type="button"
@@ -397,22 +434,6 @@ export function JsonPreview({ content }: JsonPreviewProps) {
 							Raw
 						</button>
 					</div>
-
-					{/* Copy JSON */}
-					<button
-						type="button"
-						className="json-statusbar-btn"
-						onClick={() =>
-							copyToClipboard(JSON.stringify(parsed, null, 2), "json")
-						}
-					>
-						{copied === "json" ? (
-							<IconCheck size={11} />
-						) : (
-							<IconCopy size={11} />
-						)}
-						Copy JSON
-					</button>
 				</span>
 			</div>
 		</div>

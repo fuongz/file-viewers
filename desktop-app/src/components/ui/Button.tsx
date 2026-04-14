@@ -59,6 +59,14 @@ const buttonVariants = cva("cursor-pointer transition-colors", {
 				"bg-transparent border-0 p-0 " +
 				"text-[13px] text-[var(--text-primary)] " +
 				"text-left hover:underline underline-offset-2",
+
+			// Destructive action buttons: delete, remove
+			destructive:
+				"inline-flex items-center gap-[5px] px-3 py-1 rounded-md " +
+				"bg-red-600 border-0 " +
+				"text-white text-[11px] font-medium duration-150 " +
+				"hover:bg-red-500 " +
+				"active:bg-red-700",
 		},
 	},
 	defaultVariants: {

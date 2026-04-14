@@ -245,8 +245,8 @@
 .toolbar {
   display: flex;
   align-items: center;
-  height: 52px;
-  padding: 0 16px;
+  height: 38px;
+  padding: 0 8px;
   background: var(--background);
   border-bottom: 1px solid var(--border);
   flex-shrink: 0;
@@ -256,8 +256,18 @@
 }
 
 .toolbar-spacer {
+  width: 72px;
+  flex-shrink: 0;
+}
+
+.toolbar-drag-fill {
   flex: 1;
-  min-width: 80px;
+}
+
+.toolbar-icon-btn {
+  -webkit-app-region: no-drag;
+  padding: 5px !important;
+  border-radius: 6px;
 }
 
 /* ── Segmented control — Liquid Glass ─────────────────────── */
@@ -516,6 +526,24 @@
 .editor-panel {
   height: 100%;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.editor-panel-monaco {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.editor-status-bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: var(--bg-toolbar);
+  border-top: 1px solid var(--border);
 }
 
 /* ── Resize handle ────────────────────────────────────────── */
@@ -979,35 +1007,6 @@
   border-color: var(--text-muted);
 }
 
-.json-depth-group {
-  display: flex;
-  border: 1px solid var(--border);
-  border-radius: 4px;
-  overflow: hidden;
-}
-
-.json-depth-btn {
-  font-size: 11px;
-  padding: 1px 6px;
-  color: var(--text-muted);
-  background: none;
-  border: none;
-  border-right: 1px solid var(--border);
-  cursor: pointer;
-  font-family: inherit;
-}
-
-.json-depth-btn:last-child { border-right: none; }
-
-.json-depth-btn:hover {
-  color: var(--text-primary);
-  background: var(--tabs-bg);
-}
-
-.json-depth-btn.active {
-  color: #fff;
-  background: var(--color-grenadier-600);
-}
 
 .json-mode-group {
   display: flex;
