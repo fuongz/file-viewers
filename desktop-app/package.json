@@ -14,6 +14,7 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.2.0",
+    "@duckdb/duckdb-wasm": "^1.33.1-dev45.0",
     "@mdx-js/mdx": "^3.1.1",
     "@monaco-editor/react": "^4.7.0",
     "@tabler/icons-react": "^3.38.0",
@@ -40,8 +41,7 @@
     "remark-gfm": "^4.0.1",
     "tailwind-merge": "^3.5.0",
     "tailwindcss": "^4.2.1",
-    "tailwindcss-animate": "^1.0.7",
-    "tauri-plugin-liquid-glass-api": "^0.1.6"
+    "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.12",

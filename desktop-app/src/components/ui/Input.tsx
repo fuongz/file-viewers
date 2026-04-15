@@ -5,9 +5,9 @@ import { cn } from "@/lib/utils";
 
 const inputVariants = cva(
 	"w-[180px] py-1 px-[10px] rounded border border-[var(--border)] " +
-		"bg-[var(--input-bg)] text-[var(--text-primary)] text-[13px] " +
+		"bg-[var(--input-bg)] text-[var(--text-primary)] text-xs " +
 		"outline-none transition-[border-color] duration-150 " +
-		"focus:border-[var(--color-grenadier-400)] focus:ring focus:ring-[var(--color-grenadier-200)] placeholder:text-[var(--text-muted)]",
+		"focus:border-primary focus:ring focus:ring-primary/10 placeholder:text-[var(--text-muted)]",
 );
 
 export function Input({

@@ -2,7 +2,7 @@ import { Tabs } from "@base-ui/react/tabs";
 import { FORMAT_ICONS } from "../../constants";
 import type { Format } from "../../types";
 
-const FORMAT_LIST: Format[] = ["markdown", "json", "csv"];
+const FORMAT_LIST: Format[] = ["markdown", "json", "csv", "parquet"];
 
 interface FormatTabsProps {
 	value: Format;

@@ -4,8 +4,9 @@ import { EmptyState } from "./EmptyState";
 import { ExcelPreview } from "./ExcelPreview";
 import { JsonPreview } from "./JsonPreview";
 import { MarkdownPreview } from "./MarkdownPreview";
+import { ParquetPreview } from "./ParquetPreview";
 
-export type Format = "markdown" | "json" | "csv" | "mdx" | "xlsx";
+export type Format = "markdown" | "json" | "csv" | "mdx" | "xlsx" | "parquet";
 
 interface PreviewPanelProps {
 	content: string;
@@ -26,7 +27,7 @@ export const PreviewPanel = memo(function PreviewPanel({
 	onClearCsv,
 	binaryContent,
 }: PreviewPanelProps) {
-	if (format !== "xlsx" && !content.trim()) {
+	if (format !== "xlsx" && format !== "parquet" && !content.trim()) {
 		return (
 			<div className="preview-panel">
 				<EmptyState onOpenFile={onOpenFile} />
@@ -41,6 +42,8 @@ export const PreviewPanel = memo(function PreviewPanel({
 				<JsonPreview content={content} isDark={isDark} />
 			) : format === "xlsx" ? (
 				<ExcelPreview binaryContent={binaryContent} />
+			) : format === "parquet" ? (
+				<ParquetPreview binaryContent={binaryContent} />
 			) : (
 				<CsvPreview
 					content={content}

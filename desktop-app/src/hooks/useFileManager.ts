@@ -33,12 +33,12 @@ export function useFileManager({
 		async (path: string) => {
 			const ext = path.split(".").pop()?.toLowerCase() ?? "";
 			const fmt = EXT_TO_FORMAT[ext] ?? "markdown";
-			const fileName = path.split("/").pop() ?? path;
+			const fileName = path.split(/[/\\]/).pop() ?? path;
 			const openedAt = Date.now();
 
 			setTabs((prev) => {
 				const existing = prev.find((t) => t.path === path);
-				const showEditor = fmt !== "csv" && fmt !== "xlsx";
+				const showEditor = fmt !== "csv" && fmt !== "xlsx" && fmt !== "parquet";
 				if (existing) {
 					setActiveTabId(existing.id);
 					return prev.map((t) =>
@@ -94,7 +94,7 @@ export function useFileManager({
 			});
 
 			try {
-				const isBinary = fmt === "xlsx";
+				const isBinary = fmt === "xlsx" || fmt === "parquet";
 				const binaryContent = isBinary ? await readFile(path) : undefined;
 				const fileContent = isBinary ? "" : await readTextFile(path);
 
@@ -134,7 +134,15 @@ export function useFileManager({
 			filters: [
 				{
 					name: "Developer Files",
-					extensions: ["md", "markdown", "mdx", "json", "csv", "xlsx"],
+					extensions: [
+						"md",
+						"markdown",
+						"mdx",
+						"json",
+						"csv",
+						"xlsx",
+						"parquet",
+					],
 				},
 			],
 		});
@@ -166,7 +174,7 @@ export function useFileManager({
 						? {
 								...t,
 								path: filePath,
-								name: filePath.split("/").pop() ?? t.name,
+								name: filePath.split(/[/\\]/).pop() ?? t.name,
 								isDirty: false,
 							}
 						: t,
@@ -199,7 +207,7 @@ export function useFileManager({
 					? {
 							...t,
 							path: filePath,
-							name: filePath.split("/").pop() ?? t.name,
+							name: filePath.split(/[/\\]/).pop() ?? t.name,
 							isDirty: false,
 						}
 					: t,
@@ -217,8 +225,13 @@ export function useFileManager({
 			const tab = tabs.find((t) => t.id === id);
 			if (!tab?.path) return;
 			try {
-				const dir = tab.path.substring(0, tab.path.lastIndexOf("/"));
-				const newPath = `${dir}/${newName}`;
+				const lastSep = Math.max(
+					tab.path.lastIndexOf("/"),
+					tab.path.lastIndexOf("\\"),
+				);
+				const dir = tab.path.substring(0, lastSep);
+				const sep = tab.path[lastSep];
+				const newPath = `${dir}${sep}${newName}`;
 				await rename(tab.path, newPath);
 				setTabs((prev) =>
 					prev.map((t) =>

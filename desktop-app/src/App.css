@@ -4,7 +4,11 @@
 
 /* ── Design tokens ────────────────────────────────────────── */
 :root {
-	--background: oklch(1 1 1 1);
+	--primary: oklch(0.5918 0.213 32.83);
+	--primary-foreground: oklch(0.205 0 0);
+	--secondary: oklch(0.269 0 0);
+	--secondary-foreground: oklch(0.985 0 0);
+	--background: oklch(0.145 0 0);
 	--bg-app: #1e1e1e;
 	--bg-toolbar: #252526;
 	--bg-preview: #1e1e1e;
@@ -45,6 +49,9 @@
 	--md-th-color: #e6e6e6;
 	--md-tr-even-bg: rgba(255, 255, 255, 0.02);
 
+	--muted: oklch(0.269 0 0);
+	--muted-foreground: oklch(0.708 0 0);
+
 	/* Grenadier palette */
 	--color-grenadier-50: #fff4ed;
 	--color-grenadier-100: #ffe6d5;
@@ -64,7 +71,6 @@
 	--foreground: #cccccc;
 	--input: oklch(1 0 0 / 15%);
 	--ring: #e0330d;
-	--muted-foreground: #6a6a6a;
 	--accent-foreground: #ffffff;
 	--destructive: #cc3333;
 	--ui-accent: oklch(1 0 0 / 10%);
@@ -102,6 +108,10 @@
 
 /* ── Light theme ──────────────────────────────────────────── */
 [data-theme="light"] {
+	--primary: oklch(0.5918 0.213 32.83);
+	--primary-foreground: oklch(0.985 0 0);
+	--secondary: oklch(0.97 0 0);
+	--secondary-foreground: oklch(0.205 0 0);
 	--background: oklch(1 0 0);
 	--bg-app: #f0f0f0;
 	--bg-toolbar: #e8e8e8;
@@ -113,6 +123,9 @@
 	--tab-inactive-text: #5a5a60;
 	--error-bg: #fff5f5;
 	--error-text: #c0392b;
+
+	--muted: oklch(0.97 0 0);
+	--muted-foreground: oklch(0.556 0 0);
 
 	--tabs-bg: rgba(0, 0, 0, 0.07);
 	--tab-active-pill-bg: rgba(255, 255, 255, 0.5);
@@ -157,7 +170,6 @@
 	--foreground: #1d1d1f;
 	--input: oklch(0.88 0 0);
 	--ring: #e0330d;
-	--muted-foreground: #8e8e93;
 	--accent-foreground: #1d1d1f;
 	--destructive: #c0392b;
 	--ui-accent: rgba(0, 0, 0, 0.07);
@@ -170,12 +182,20 @@
 }
 
 @theme inline {
+	--color-muted: var(--muted);
+	--color-muted-foreground: var(--muted-foreground);
+	--color-background: var(--background);
 	--color-sidebar: var(--bg-sidebar);
 	--color-sidebar-foreground: var(--text-primary);
 	--color-sidebar-accent: var(--tabs-bg);
 	--color-sidebar-accent-foreground: var(--text-primary);
 	--color-sidebar-border: var(--border);
 	--color-sidebar-ring: transparent;
+
+	--color-primary: var(--primary);
+	--color-primary-foreground: var(--primary-foreground);
+	--color-secondary: var(--secondary);
+	--color-secondary-foreground: var(--secondary-foreground);
 
 	/* base-ui token mappings */
 	--color-border: var(--border);
@@ -1128,20 +1148,13 @@
 	white-space: nowrap;
 }
 
-.csv-table thead {
-	background: var(--csv-thead-bg);
-}
-
 .csv-table th {
 	padding: 8px 14px;
-	text-align: left;
-	font-size: 12px;
-	font-weight: 600;
 	color: var(--md-th-color);
-	border-bottom: 2px solid var(--border);
+	border-bottom: 1px solid var(--border);
 	border-right: 1px solid var(--border);
-	background: var(--csv-thead-bg);
 	white-space: nowrap;
+	@apply bg-background font-bold font-mono text-sm text-left;
 	overflow: hidden;
 }
 
@@ -1149,10 +1162,6 @@
 	cursor: pointer;
 	user-select: none;
 	-webkit-user-select: none;
-}
-
-.csv-table th.sortable:hover {
-	background: var(--csv-thead-hover-bg);
 }
 
 .th-content {
@@ -1221,7 +1230,6 @@
 	flex-shrink: 0;
 	user-select: none;
 	-webkit-user-select: none;
-	background: var(--csv-thead-bg);
 	border-right: 1px solid var(--border) !important;
 }
 
@@ -1262,14 +1270,6 @@
 .csv-cell-tooltip[data-starting-style],
 .csv-cell-tooltip[data-ending-style] {
 	opacity: 0;
-}
-
-/* Selected cell highlight */
-td.csv-cell-selected {
-	background: rgba(14, 122, 228, 0.15) !important;
-	outline: 1px solid var(--accent);
-	outline-offset: -1px;
-	cursor: default;
 }
 
 /* ── CSV status bar ───────────────────────────────────────── */

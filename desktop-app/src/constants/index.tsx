@@ -1,5 +1,6 @@
 import {
 	IconCsv,
+	IconDatabase,
 	IconDeviceDesktop,
 	IconFileTypeXls,
 	IconJson,
@@ -17,6 +18,7 @@ export const EXT_TO_FORMAT: Record<string, Format> = {
 	json: "json",
 	csv: "csv",
 	xlsx: "xlsx",
+	parquet: "parquet",
 	txt: "markdown",
 };
 
@@ -26,6 +28,7 @@ export const FORMAT_LANGUAGE: Record<Format, string> = {
 	json: "json",
 	csv: "plaintext",
 	xlsx: "plaintext",
+	parquet: "plaintext",
 };
 
 export const FORMAT_ICONS: Record<Format, React.ReactNode> = {
@@ -59,6 +62,13 @@ export const FORMAT_ICONS: Record<Format, React.ReactNode> = {
 	),
 	xlsx: (
 		<IconFileTypeXls
+			size={13}
+			stroke={1.5}
+			className="stroke-zinc-500 dark:stroke-zinc-500"
+		/>
+	),
+	parquet: (
+		<IconDatabase
 			size={13}
 			stroke={1.5}
 			className="stroke-zinc-500 dark:stroke-zinc-500"
