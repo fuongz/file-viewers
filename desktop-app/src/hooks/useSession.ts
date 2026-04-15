@@ -52,6 +52,7 @@ export function readStoredSession(): {
 				previewContent: pt.path ? "" : pt.content,
 				showEditor: pt.format !== "csv" && pt.format !== "xlsx",
 				path: pt.path || undefined,
+				openedAt: pt.openedAt,
 			};
 		});
 		return {
@@ -90,6 +91,7 @@ export function persistSession(
 						format: t.format,
 						path: "",
 						content: "",
+						openedAt: t.openedAt,
 					};
 				}
 				return {
@@ -98,6 +100,7 @@ export function persistSession(
 					format: t.format,
 					path: t.path ?? "",
 					content,
+					openedAt: t.openedAt,
 				};
 			}),
 		};

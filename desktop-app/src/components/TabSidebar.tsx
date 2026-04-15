@@ -1,10 +1,12 @@
-import { IconPlus, IconX } from "@tabler/icons-react";
+import { IconLoader, IconPlus, IconX } from "@tabler/icons-react";
 import { useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { FORMAT_ICONS } from "../constants";
 import type { FileTab } from "../types";
+import { Tooltip, TooltipContent, TooltipTrigger } from "./ui";
 import { Button } from "./ui/Button";
 import { Input } from "./ui/Input";
+import { Kbd, KbdGroup } from "./ui/Kbd";
 
 interface TabSidebarProps {
 	tabs: FileTab[];
@@ -14,6 +16,7 @@ interface TabSidebarProps {
 	onAddTab: () => void;
 	onReorderTabs: (fromIndex: number, toIndex: number) => void;
 	onRenameTab: (id: string, newName: string) => void;
+	isAnyTabLoading?: boolean;
 }
 
 export function TabSidebar({
@@ -24,6 +27,7 @@ export function TabSidebar({
 	onAddTab,
 	onReorderTabs,
 	onRenameTab,
+	isAnyTabLoading = false,
 }: TabSidebarProps) {
 	const [editingTabId, setEditingTabId] = useState<string | null>(null);
 	const [editValue, setEditValue] = useState("");
@@ -64,15 +68,19 @@ export function TabSidebar({
 				<span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-muted)]">
 					Open Files
 				</span>
-				<Button
-					variant="ghost"
-					size="icon-sm"
-					onClick={onAddTab}
-					title="New tab (⌘T)"
-					className="w-5 h-5"
-				>
-					<IconPlus size={12} />
-				</Button>
+				<Tooltip>
+					<TooltipTrigger render={<Button onClick={onAddTab} />}>
+						<IconPlus className="size-3" />
+					</TooltipTrigger>
+					<TooltipContent>
+						New tab{" "}
+						<KbdGroup>
+							<Kbd>⌘</Kbd>
+							<Kbd>+</Kbd>
+							<Kbd>T</Kbd>
+						</KbdGroup>
+					</TooltipContent>
+				</Tooltip>
 			</div>
 
 			<div className="flex-1 overflow-y-auto overflow-x-hidden px-1 pb-1">
@@ -104,7 +112,10 @@ export function TabSidebar({
 								) : (
 									<button
 										type="button"
-										onClick={() => onSelectTab(tab.id)}
+										onClick={() => {
+											if (isAnyTabLoading) return;
+											onSelectTab(tab.id);
+										}}
 										onDoubleClick={() => startRename(tab)}
 										onMouseDown={(e) => {
 											if (e.button === 1) {
@@ -126,7 +137,11 @@ export function TabSidebar({
 												isActive ? "opacity-100" : "opacity-60",
 											)}
 										>
-											{FORMAT_ICONS[tab.format]}
+											{tab.isLoading ? (
+												<IconLoader className="animate-spin" size={16} />
+											) : (
+												FORMAT_ICONS[tab.format]
+											)}
 										</span>
 										<span
 											className={cn(

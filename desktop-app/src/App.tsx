@@ -1,3 +1,4 @@
+import { IconLoader, IconX } from "@tabler/icons-react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Group, Panel, Separator } from "react-resizable-panels";
 import "./App.css";
@@ -72,6 +73,8 @@ function App() {
 	const { format, content, previewContent, binaryContent, showEditor } =
 		activeTab;
 
+	const isAnyTabLoading = tabs.some((t) => t.isLoading);
+
 	const activeTabIdRef = useRef(activeTabId);
 	activeTabIdRef.current = activeTabId;
 
@@ -121,6 +124,7 @@ function App() {
 				Array.from({ length: 9 }, (_, i) => [
 					String(i + 1),
 					() => {
+						if (isAnyTabLoading) return;
 						const tab = tabs[i];
 						if (tab) setActiveTabId(tab.id);
 					},
@@ -217,7 +221,7 @@ function App() {
 						onClick={() => setNotification(null)}
 						className="notification-close"
 					>
-						×
+						<IconX />
 					</button>
 				</div>
 			)}
@@ -264,11 +268,19 @@ function App() {
 										renameTab(id, newName);
 									}
 								}}
+								isAnyTabLoading={isAnyTabLoading}
 							/>
 						</div>
 					)}
 					<div className="content-area">
-						{!showEditor ? (
+						{activeTab.isLoading ? (
+							<div className="flex items-center justify-center h-full">
+								<IconLoader
+									className="animate-spin text-[var(--text-muted)]"
+									size={32}
+								/>
+							</div>
+						) : !showEditor ? (
 							<PreviewPanel
 								content={previewContent}
 								format={format}

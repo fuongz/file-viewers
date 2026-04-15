@@ -1,11 +1,11 @@
 import {
-	IconBraces,
+	IconCsv,
 	IconDeviceDesktop,
+	IconFileTypeXls,
+	IconJson,
 	IconMarkdown,
 	IconMoon,
 	IconSun,
-	IconTable,
-	IconTableFilled,
 } from "@tabler/icons-react";
 import type { Format } from "../components/PreviewPanel";
 import type { ThemePreference } from "../types";
@@ -17,6 +17,7 @@ export const EXT_TO_FORMAT: Record<string, Format> = {
 	json: "json",
 	csv: "csv",
 	xlsx: "xlsx",
+	txt: "markdown",
 };
 
 export const FORMAT_LANGUAGE: Record<Format, string> = {
@@ -28,11 +29,41 @@ export const FORMAT_LANGUAGE: Record<Format, string> = {
 };
 
 export const FORMAT_ICONS: Record<Format, React.ReactNode> = {
-	markdown: <IconMarkdown size={13} stroke={1.5} />,
-	mdx: <IconMarkdown size={13} stroke={1.5} />,
-	json: <IconBraces size={13} stroke={1.5} />,
-	csv: <IconTable size={13} stroke={1.5} />,
-	xlsx: <IconTableFilled size={13} stroke={1.5} />,
+	markdown: (
+		<IconMarkdown
+			size={13}
+			stroke={1.5}
+			className="stroke-zinc-500 dark:stroke-zinc-500"
+		/>
+	),
+	mdx: (
+		<IconMarkdown
+			size={13}
+			stroke={1.5}
+			className="stroke-zinc-500 dark:stroke-zinc-500"
+		/>
+	),
+	json: (
+		<IconJson
+			size={13}
+			stroke={1.5}
+			className="stroke-zinc-500 dark:stroke-zinc-500"
+		/>
+	),
+	csv: (
+		<IconCsv
+			size={13}
+			stroke={1.5}
+			className="stroke-zinc-500 dark:stroke-zinc-500"
+		/>
+	),
+	xlsx: (
+		<IconFileTypeXls
+			size={13}
+			stroke={1.5}
+			className="stroke-zinc-500 dark:stroke-zinc-500"
+		/>
+	),
 };
 
 export const THEME_LABELS: Record<ThemePreference, string> = {

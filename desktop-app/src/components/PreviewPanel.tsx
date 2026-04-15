@@ -33,7 +33,6 @@ export const PreviewPanel = memo(function PreviewPanel({
 			</div>
 		);
 	}
-
 	return (
 		<div className="preview-panel">
 			{format === "markdown" ? (

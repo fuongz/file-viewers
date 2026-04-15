@@ -19,6 +19,7 @@ import {
 	type SortingState,
 	useReactTable,
 } from "@tanstack/react-table";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import alasql from "alasql";
 import Papa from "papaparse";
 import type React from "react";
@@ -235,6 +236,8 @@ export function CsvPreview({
 	onContentChange,
 	onClearCsv,
 }: CsvPreviewProps) {
+	const tableContainerRef = useRef<HTMLDivElement>(null);
+
 	const [sorting, setSorting] = useState<SortingState>([]);
 	const [globalFilter, setGlobalFilter] = useState("");
 	const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([]);
@@ -393,6 +396,20 @@ export function CsvPreview({
 		getFilteredRowModel: getFilteredRowModel(),
 	});
 
+	const { rows: tableRows } = table.getRowModel();
+
+	const rowVirtualizer = useVirtualizer({
+		count: tableRows.length,
+		estimateSize: () => 33,
+		getScrollElement: () => tableContainerRef.current,
+		measureElement:
+			typeof window !== "undefined" &&
+			navigator.userAgent.indexOf("Firefox") === -1
+				? (element) => element?.getBoundingClientRect().height
+				: undefined,
+		overscan: 5,
+	});
+
 	function commitEdit() {
 		const cell = editingCellRef.current;
 		if (!cell) return;
@@ -431,9 +448,11 @@ export function CsvPreview({
 		);
 	}
 
-	const filteredRowCount = table.getFilteredRowModel().rows.length;
+	const filteredRowCount = tableRows.length;
 	const totalRows = displayData.length;
 	const colCount = displayHeaders.length;
+	// row-num column width (matches .csv-row-num width in CSS)
+	const ROW_NUM_W = 40;
 
 	return (
 		<div className="csv-preview">
@@ -487,26 +506,49 @@ export function CsvPreview({
 				</div>
 			)}
 
-			{/* ── Table ── */}
-			<div className="csv-table-wrapper overscroll-none">
+			{/* ── Table (virtualized) ── */}
+			<div
+				ref={tableContainerRef}
+				className="csv-table-wrapper overscroll-none"
+			>
 				<table
 					className="csv-table"
-					style={{ width: table.getCenterTotalSize() }}
+					style={{
+						display: "grid",
+						width: table.getCenterTotalSize() + ROW_NUM_W,
+					}}
 				>
-					<thead>
+					<thead
+						style={{
+							display: "grid",
+							position: "sticky",
+							top: 0,
+							zIndex: 2,
+						}}
+					>
 						{table.getHeaderGroups().map((hg) => (
-							<tr key={hg.id}>
-								<th className="csv-row-num w-16 bg-background">#</th>
+							<tr key={hg.id} style={{ display: "flex", width: "100%" }}>
+								<th
+									className="csv-row-num"
+									style={{
+										display: "flex",
+										width: ROW_NUM_W,
+										alignItems: "center",
+									}}
+								>
+									#
+								</th>
 								{hg.headers.map((header) => (
 									<th
 										key={header.id}
-										style={{ width: header.getSize(), position: "relative" }}
+										style={{
+											display: "flex",
+											width: header.getSize(),
+											position: "relative",
+											alignItems: "center",
+										}}
 										onClick={header.column.getToggleSortingHandler()}
-										className={
-											header.column.getCanSort()
-												? "sortable bg-background"
-												: " bg-background"
-										}
+										className={header.column.getCanSort() ? "sortable" : ""}
 									>
 										<span className="th-content">
 											<span className="th-label">
@@ -537,52 +579,85 @@ export function CsvPreview({
 							</tr>
 						))}
 					</thead>
-					<tbody>
-						{table.getRowModel().rows.map((row) => (
-							<tr key={row.id}>
-								<td className="csv-row-num">{row.index + 1}</td>
-								{row.getVisibleCells().map((cell, colIdx) => {
-									const value = String(cell.getValue() ?? "");
-									const isSelected =
-										selectedCell?.row === row.index + 1 &&
-										selectedCell?.col === colIdx + 1;
-									return (
-										<td
-											key={cell.id}
-											style={{ width: cell.column.getSize() }}
-											className={isSelected ? "csv-cell-selected" : ""}
-											onClick={() =>
-												setSelectedCell({
-													row: row.index + 1,
-													col: colIdx + 1,
-													value,
-												})
-											}
-											onDoubleClick={(e) => {
-												if (queryMode === "sql") return;
-												commitEdit();
-												setEditingCell({
-													rowIndex: row.index,
-													colIndex: colIdx,
-													draftValue: value,
-													anchorEl: e.currentTarget,
-												});
-												setSelectedCell({
-													row: row.index + 1,
-													col: colIdx + 1,
-													value,
-												});
-											}}
-										>
-											{flexRender(
-												cell.column.columnDef.cell,
-												cell.getContext(),
-											)}
-										</td>
-									);
-								})}
-							</tr>
-						))}
+					<tbody
+						style={{
+							display: "grid",
+							height: `${rowVirtualizer.getTotalSize()}px`,
+							position: "relative",
+						}}
+					>
+						{rowVirtualizer.getVirtualItems().map((virtualRow) => {
+							const row = tableRows[virtualRow.index];
+							return (
+								<tr
+									key={row.id}
+									data-index={virtualRow.index}
+									ref={(node) => rowVirtualizer.measureElement(node)}
+									style={{
+										display: "flex",
+										position: "absolute",
+										transform: `translateY(${virtualRow.start}px)`,
+										width: "100%",
+									}}
+								>
+									<td
+										className="csv-row-num"
+										style={{
+											display: "flex",
+											width: ROW_NUM_W,
+											alignItems: "center",
+										}}
+									>
+										{row.index + 1}
+									</td>
+									{row.getVisibleCells().map((cell, colIdx) => {
+										const value = String(cell.getValue() ?? "");
+										const isSelected =
+											selectedCell?.row === row.index + 1 &&
+											selectedCell?.col === colIdx + 1;
+										return (
+											<td
+												key={cell.id}
+												style={{
+													display: "flex",
+													width: cell.column.getSize(),
+													alignItems: "center",
+													overflow: "hidden",
+												}}
+												className={isSelected ? "csv-cell-selected" : ""}
+												onClick={() =>
+													setSelectedCell({
+														row: row.index + 1,
+														col: colIdx + 1,
+														value,
+													})
+												}
+												onDoubleClick={(e) => {
+													if (queryMode === "sql") return;
+													commitEdit();
+													setEditingCell({
+														rowIndex: row.index,
+														colIndex: colIdx,
+														draftValue: value,
+														anchorEl: e.currentTarget,
+													});
+													setSelectedCell({
+														row: row.index + 1,
+														col: colIdx + 1,
+														value,
+													});
+												}}
+											>
+												{flexRender(
+													cell.column.columnDef.cell,
+													cell.getContext(),
+												)}
+											</td>
+										);
+									})}
+								</tr>
+							);
+						})}
 					</tbody>
 				</table>
 				{filteredRowCount === 0 && (
@@ -594,8 +669,8 @@ export function CsvPreview({
 			<div className="csv-statusbar">
 				<span className="csv-statusbar-left">
 					{filteredRowCount === totalRows
-						? `${totalRows} rows × ${colCount} columns`
-						: `${filteredRowCount} / ${totalRows} rows × ${colCount} columns`}
+						? `${totalRows} rows × ${colCount} cols`
+						: `${filteredRowCount} / ${totalRows} rows × ${colCount} cols`}
 				</span>
 				<span className="csv-statusbar-center">
 					{selectedCell

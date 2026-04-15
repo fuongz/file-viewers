@@ -2,28 +2,6 @@
 @plugin "tailwindcss-animate";
 @custom-variant dark (&:is(.dark *));
 
-/* ── Sidebar color tokens (maps to app CSS vars at runtime) ── */
-@theme inline {
-	--color-sidebar: var(--bg-sidebar);
-	--color-sidebar-foreground: var(--text-primary);
-	--color-sidebar-accent: var(--tabs-bg);
-	--color-sidebar-accent-foreground: var(--text-primary);
-	--color-sidebar-border: var(--border);
-	--color-sidebar-ring: transparent;
-
-	/* base-ui token mappings */
-	--color-border: var(--border);
-	--color-input: var(--input);
-	--color-ring: var(--ring);
-	--color-foreground: var(--foreground);
-	--color-muted-foreground: var(--muted-foreground);
-	--color-accent: var(--ui-accent);
-	--color-accent-foreground: var(--ui-accent-foreground);
-	--color-destructive: var(--destructive);
-	--color-popover: var(--popover);
-	--color-popover-foreground: var(--popover-foreground);
-}
-
 /* ── Design tokens ────────────────────────────────────────── */
 :root {
 	--background: oklch(1 1 1 1);
@@ -80,8 +58,9 @@
 	--color-grenadier-900: #7b1c13;
 	--color-grenadier-950: #430a07;
 
-	--popover: #252526;
-	--popover-foreground: #cccccc;
+	--popover: oklch(0.216 0.006 56.043);
+	--popover-foreground: oklch(0.985 0.001 106.423);
+
 	--foreground: #cccccc;
 	--input: oklch(1 0 0 / 15%);
 	--ring: #e0330d;
@@ -172,8 +151,9 @@
 	--csv-td-border-right: rgba(0, 0, 0, 0.06);
 	--csv-tr-hover-bg: rgba(0, 0, 0, 0.03);
 
-	--popover: #ffffff;
-	--popover-foreground: #1d1d1f;
+	--popover: oklch(1 0 0);
+	--popover-foreground: oklch(0.147 0.004 49.25);
+
 	--foreground: #1d1d1f;
 	--input: oklch(0.88 0 0);
 	--ring: #e0330d;
@@ -189,11 +169,32 @@
 	--toggle-item-color: #8e8e93;
 }
 
+@theme inline {
+	--color-sidebar: var(--bg-sidebar);
+	--color-sidebar-foreground: var(--text-primary);
+	--color-sidebar-accent: var(--tabs-bg);
+	--color-sidebar-accent-foreground: var(--text-primary);
+	--color-sidebar-border: var(--border);
+	--color-sidebar-ring: transparent;
+
+	/* base-ui token mappings */
+	--color-border: var(--border);
+	--color-input: var(--input);
+	--color-ring: var(--ring);
+	--color-foreground: var(--foreground);
+	--color-muted-foreground: var(--muted-foreground);
+	--color-accent: var(--ui-accent);
+	--color-accent-foreground: var(--ui-accent-foreground);
+	--color-destructive: var(--destructive);
+	--color-popover: var(--popover);
+	--color-popover-foreground: var(--popover-foreground);
+}
+
 /* ── Base Layer ────────────────────────────────────────────── */
 @layer base {
 	button:not([disabled]),
 	[role="button"]:not([disabled]) {
-		cursor: pointer;
+		@apply cursor-pointer;
 	}
 
 	html,
@@ -1125,13 +1126,9 @@
 	border-collapse: collapse;
 	font-size: 13px;
 	white-space: nowrap;
-	table-layout: fixed;
 }
 
 .csv-table thead {
-	position: sticky;
-	top: 0;
-	z-index: 2;
 	background: var(--csv-thead-bg);
 }
 
@@ -1216,13 +1213,12 @@
 }
 
 .csv-row-num {
-	position: sticky;
-	left: 0;
-	z-index: 1;
 	color: var(--text-muted) !important;
 	font-size: 11px !important;
 	text-align: right !important;
-	min-width: 40px;
+	justify-content: flex-end;
+	padding-right: 10px !important;
+	flex-shrink: 0;
 	user-select: none;
 	-webkit-user-select: none;
 	background: var(--csv-thead-bg);
@@ -1237,10 +1233,6 @@
 	background:
 		linear-gradient(var(--csv-tr-hover-bg), var(--csv-tr-hover-bg)),
 		var(--bg-preview);
-}
-
-.csv-table thead th.csv-row-num {
-	z-index: 3;
 }
 
 .csv-no-results {

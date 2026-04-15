@@ -14,6 +14,8 @@ export interface FileTab {
 	path?: string;
 	isDirty?: boolean;
 	binaryContent?: Uint8Array;
+	isLoading?: boolean;
+	openedAt?: number;
 }
 
 export interface PersistedTab {
@@ -22,6 +24,7 @@ export interface PersistedTab {
 	format: Format;
 	path: string;
 	content: string;
+	openedAt?: number;
 }
 
 export interface PersistedSession {

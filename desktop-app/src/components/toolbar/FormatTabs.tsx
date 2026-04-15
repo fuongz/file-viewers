@@ -7,18 +7,22 @@ const FORMAT_LIST: Format[] = ["markdown", "json", "csv"];
 interface FormatTabsProps {
 	value: Format;
 	onChange: (format: Format) => void;
+	isDisabled?: boolean;
 }
 
-export function FormatTabs({ value, onChange }: FormatTabsProps) {
+export function FormatTabs({ value, onChange, isDisabled }: FormatTabsProps) {
 	return (
 		<Tabs.Root
 			value={value}
-			onValueChange={(val) => onChange(val as Format)}
+			onValueChange={(val) => {
+				if (isDisabled) return;
+				onChange(val as Format);
+			}}
 			className="format-tabs-root"
 		>
 			<Tabs.List className="format-tabs">
 				{FORMAT_LIST.map((f) => (
-					<Tabs.Tab key={f} value={f} className="tab-btn">
+					<Tabs.Tab key={f} value={f} className="tab-btn" disabled={isDisabled}>
 						{FORMAT_ICONS[f]}
 						{f}
 					</Tabs.Tab>

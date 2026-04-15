@@ -34,10 +34,7 @@ export function useFileManager({
 			const ext = path.split(".").pop()?.toLowerCase() ?? "";
 			const fmt = EXT_TO_FORMAT[ext] ?? "markdown";
 			const fileName = path.split("/").pop() ?? path;
-
-			const isBinary = fmt === "xlsx";
-			const binaryContent = isBinary ? await readFile(path) : undefined;
-			const fileContent = isBinary ? "" : await readTextFile(path);
+			const openedAt = Date.now();
 
 			setTabs((prev) => {
 				const existing = prev.find((t) => t.path === path);
@@ -48,12 +45,14 @@ export function useFileManager({
 						t.path === path
 							? {
 									...t,
-									content: fileContent,
-									previewContent: fileContent,
+									content: "",
+									previewContent: "",
 									format: fmt,
 									showEditor,
 									isDirty: false,
-									binaryContent,
+									binaryContent: undefined,
+									isLoading: true,
+									openedAt,
 								}
 							: t,
 					);
@@ -68,11 +67,13 @@ export function useFileManager({
 									name: fileName,
 									format: fmt,
 									showEditor,
-									content: fileContent,
-									previewContent: fileContent,
+									content: "",
+									previewContent: "",
 									path,
 									isDirty: false,
-									binaryContent,
+									binaryContent: undefined,
+									isLoading: true,
+									openedAt,
 								}
 							: t,
 					);
@@ -80,15 +81,49 @@ export function useFileManager({
 				const newTab = createTab({
 					name: fileName,
 					format: fmt,
-					content: fileContent,
-					previewContent: fileContent,
+					content: "",
+					previewContent: "",
 					path,
 					isDirty: false,
-					binaryContent,
+					binaryContent: undefined,
+					isLoading: true,
+					openedAt,
 				});
 				setActiveTabId(newTab.id);
 				return [...prev, newTab];
 			});
+
+			try {
+				const isBinary = fmt === "xlsx";
+				const binaryContent = isBinary ? await readFile(path) : undefined;
+				const fileContent = isBinary ? "" : await readTextFile(path);
+
+				const duration = Date.now() - openedAt;
+				const MIN_LOADING_TIME = 300;
+				const remainingTime = Math.max(0, MIN_LOADING_TIME - duration);
+
+				setTimeout(() => {
+					setTabs((prev) =>
+						prev.map((t) =>
+							t.openedAt === openedAt
+								? {
+										...t,
+										content: fileContent,
+										previewContent: fileContent,
+										binaryContent,
+										isLoading: false,
+									}
+								: t,
+						),
+					);
+				}, remainingTime);
+			} catch {
+				setTabs((prev) =>
+					prev.map((t) =>
+						t.openedAt === openedAt ? { ...t, isLoading: false } : t,
+					),
+				);
+			}
 		},
 		[setTabs, setActiveTabId, activeTabIdRef],
 	);
