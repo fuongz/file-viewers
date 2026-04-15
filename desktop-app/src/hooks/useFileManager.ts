@@ -1,7 +1,15 @@
-import { open as openDialog, save as saveDialog } from "@tauri-apps/plugin-dialog";
-import { readFile, readTextFile, writeTextFile, rename } from "@tauri-apps/plugin-fs";
-import { useCallback, useEffect, useRef } from "react";
+import {
+	open as openDialog,
+	save as saveDialog,
+} from "@tauri-apps/plugin-dialog";
+import {
+	readFile,
+	readTextFile,
+	rename,
+	writeTextFile,
+} from "@tauri-apps/plugin-fs";
 import type { Dispatch, SetStateAction } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import { EXT_TO_FORMAT } from "../constants";
 import type { FileTab } from "../types";
 import { createTab } from "./useSession";
@@ -33,6 +41,7 @@ export function useFileManager({
 
 			setTabs((prev) => {
 				const existing = prev.find((t) => t.path === path);
+				const showEditor = fmt !== "csv" && fmt !== "xlsx";
 				if (existing) {
 					setActiveTabId(existing.id);
 					return prev.map((t) =>
@@ -42,6 +51,7 @@ export function useFileManager({
 									content: fileContent,
 									previewContent: fileContent,
 									format: fmt,
+									showEditor,
 									isDirty: false,
 									binaryContent,
 								}
@@ -57,6 +67,7 @@ export function useFileManager({
 									...t,
 									name: fileName,
 									format: fmt,
+									showEditor,
 									content: fileContent,
 									previewContent: fileContent,
 									path,
@@ -117,7 +128,12 @@ export function useFileManager({
 			setTabs((prev) =>
 				prev.map((t) =>
 					t.id === activeTabId
-						? { ...t, path: filePath, name: filePath.split("/").pop() ?? t.name, isDirty: false }
+						? {
+								...t,
+								path: filePath,
+								name: filePath.split("/").pop() ?? t.name,
+								isDirty: false,
+							}
 						: t,
 				),
 			);
@@ -145,7 +161,12 @@ export function useFileManager({
 		setTabs((prev) =>
 			prev.map((t) =>
 				t.id === activeTabId
-					? { ...t, path: filePath, name: filePath.split("/").pop() ?? t.name, isDirty: false }
+					? {
+							...t,
+							path: filePath,
+							name: filePath.split("/").pop() ?? t.name,
+							isDirty: false,
+						}
 					: t,
 			),
 		);
@@ -189,6 +210,7 @@ export function useRestoreSession(
 	const initialPathTabsRef = useRef(initialPathTabs);
 	const initialActiveTabIdRef = useRef(initialActiveTabId);
 
+	// biome-ignore lint/correctness/useExhaustiveDependencies: no need
 	useEffect(() => {
 		const pathTabs = initialPathTabsRef.current;
 		if (!pathTabs.length) return;

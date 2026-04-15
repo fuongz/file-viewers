@@ -510,10 +510,12 @@ export function CsvPreview({
 										}
 									>
 										<span className="th-content">
-											{flexRender(
-												header.column.columnDef.header,
-												header.getContext(),
-											)}
+											<span className="th-label">
+												{flexRender(
+													header.column.columnDef.header,
+													header.getContext(),
+												)}
+											</span>
 											<span className="sort-indicator">
 												{header.column.getIsSorted() === "asc"
 													? " ↑"

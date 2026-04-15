@@ -1,16 +1,16 @@
+import { nanoid } from "nanoid";
 import { STORAGE_SESSION_KEY, STORAGE_THEME_KEY } from "../constants";
 import type { FileTab, PersistedSession, ThemePreference } from "../types";
 
-let _tabCounter = 0;
-
 export function createTab(overrides?: Partial<Omit<FileTab, "id">>): FileTab {
-	_tabCounter++;
+	const format = overrides?.format ?? "markdown";
 	return {
-		id: `tab-${_tabCounter}`,
+		id: nanoid(),
 		name: "New File",
-		format: "markdown",
+		format,
 		content: "",
 		previewContent: "",
+		showEditor: format !== "csv" && format !== "xlsx",
 		...overrides,
 	};
 }
@@ -35,21 +35,12 @@ export function readStoredSession(): {
 			format: pt.format,
 			content: pt.path ? "" : pt.content,
 			previewContent: pt.path ? "" : pt.content,
+			showEditor: pt.format !== "csv" && pt.format !== "xlsx",
 			path: pt.path || undefined,
 		}));
 		return { tabs, activeTabId: parsed.activeTabId ?? tabs[0].id };
 	} catch {
 		return null;
-	}
-}
-
-export function advanceTabCounter(
-	session: ReturnType<typeof readStoredSession>,
-): void {
-	if (!session) return;
-	for (const t of session.tabs) {
-		const n = parseInt(t.id.replace("tab-", ""), 10);
-		if (!Number.isNaN(n) && n > _tabCounter) _tabCounter = n;
 	}
 }
 

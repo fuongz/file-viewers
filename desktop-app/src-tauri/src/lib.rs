@@ -89,7 +89,7 @@ pub fn run() {
     #[allow(unused_mut)]
     let mut builder = tauri::Builder::default();
     #[cfg(target_os = "macos")]
-    let mut builder = builder.plugin(tauri_plugin_liquid_glass::init());
+    let builder = builder.plugin(tauri_plugin_liquid_glass::init());
     builder
         .plugin(tauri_plugin_opener::init())
         .plugin(tauri_plugin_dialog::init())

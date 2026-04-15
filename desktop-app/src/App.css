@@ -541,7 +541,7 @@
   display: flex;
   align-items: center;
   gap: 4px;
-  padding: 4px 8px;
+  padding: 2.5px 8px;
   background: var(--bg-toolbar);
   border-top: 1px solid var(--border);
 }
@@ -1158,6 +1158,7 @@
   border-right: 1px solid var(--border);
   background: var(--csv-thead-bg);
   white-space: nowrap;
+  overflow: hidden;
 }
 
 .csv-table th.sortable {
@@ -1171,14 +1172,25 @@
 }
 
 .th-content {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 2px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.th-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  min-width: 0;
+  flex-shrink: 1;
 }
 
 .sort-indicator {
   font-size: 10px;
   color: var(--text-muted);
+  flex-shrink: 0;
 }
 
 /* ── Column resizer ───────────────────────────────────────── */

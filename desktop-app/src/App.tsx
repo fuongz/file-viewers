@@ -47,14 +47,9 @@ function App() {
 
 	const { themePref, setThemePref, isDark } = useTheme();
 
-	const [showEditor, setShowEditor] = useState(true);
 	const [settingsOpen, setSettingsOpen] = useState(false);
 	const [commandOpen, setCommandOpen] = useState(false);
-	const { format, content, previewContent, binaryContent } = activeTab;
-
-	useEffect(() => {
-		setShowEditor(format !== "csv" && format !== "xlsx");
-	}, [format]);
+	const { format, content, previewContent, binaryContent, showEditor } = activeTab;
 
 	const activeTabIdRef = useRef(activeTabId);
 	activeTabIdRef.current = activeTabId;
@@ -187,7 +182,7 @@ function App() {
 			<Toolbar
 				format={format}
 				showEditor={showEditor}
-				onToggleEditor={() => setShowEditor((s) => !s)}
+				onToggleEditor={() => updateActiveTab({ showEditor: !showEditor })}
 				onOpenSettings={() => setSettingsOpen(true)}
 			/>
 
@@ -301,7 +296,7 @@ function App() {
 					{
 						id: "toggle-editor",
 						label: "Toggle Editor",
-						action: () => setShowEditor((s) => !s),
+						action: () => updateActiveTab({ showEditor: !showEditor }),
 					},
 					{
 						id: "format-markdown",

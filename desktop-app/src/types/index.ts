@@ -10,6 +10,7 @@ export interface FileTab {
 	format: Format;
 	content: string;
 	previewContent: string;
+	showEditor: boolean;
 	path?: string;
 	isDirty?: boolean;
 	binaryContent?: Uint8Array;

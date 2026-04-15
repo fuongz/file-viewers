@@ -1,10 +1,9 @@
 import { useCallback, useState } from "react";
 import type { FileTab } from "../types";
-import { advanceTabCounter, createTab, readStoredSession } from "./useSession";
+import { createTab, readStoredSession } from "./useSession";
 
 export function useTabs() {
 	const storedSession = readStoredSession();
-	advanceTabCounter(storedSession);
 	const initialTabs = storedSession?.tabs ?? [createTab()];
 
 	const [tabs, setTabs] = useState<FileTab[]>(initialTabs);
