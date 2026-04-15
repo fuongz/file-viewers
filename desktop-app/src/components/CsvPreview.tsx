@@ -324,7 +324,6 @@ export function CsvPreview({
 		if (queryMode !== "sql") return null;
 		try {
 			// Register parsed CSV rows as table "csv"
-			// biome-ignore lint/suspicious/noExplicitAny: alasql internal API
 			(alasql as any).tables.csv = { data };
 			const rows = alasql(sqlQuery) as Record<string, string>[];
 			return {
@@ -524,7 +523,6 @@ export function CsvPreview({
 														: " ⇅"}
 											</span>
 										</span>
-										{/** biome-ignore lint/a11y/useKeyWithClickEvents: no need */}
 										{/** biome-ignore lint/a11y/noStaticElementInteractions: no need */}
 										<div
 											onMouseDown={header.getResizeHandler()}
@@ -549,7 +547,6 @@ export function CsvPreview({
 										selectedCell?.row === row.index + 1 &&
 										selectedCell?.col === colIdx + 1;
 									return (
-										// biome-ignore lint/a11y/useKeyWithClickEvents: no need
 										<td
 											key={cell.id}
 											style={{ width: cell.column.getSize() }}

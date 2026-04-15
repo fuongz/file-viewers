@@ -3,11 +3,15 @@ import { Group, Panel, Separator } from "react-resizable-panels";
 import "./App.css";
 import { EditorPanel } from "./components/EditorPanel";
 import { EditorStatusBar } from "./components/EditorStatusBar";
-import { FileTabsBar } from "./components/FileTabsBar";
 import { PreviewPanel } from "./components/PreviewPanel";
+import { TabSidebar } from "./components/TabSidebar";
 import { Toolbar } from "./components/toolbar/Toolbar";
 import { CommandPalette, ConfirmDialog, SettingsDialog } from "./components/ui";
-import { FORMAT_LANGUAGE } from "./constants";
+import {
+	FORMAT_LANGUAGE,
+	STORAGE_SESSION_KEY,
+	STORAGE_THEME_KEY,
+} from "./constants";
 import { useDragDrop } from "./hooks/useDragDrop";
 import { useFileManager, useRestoreSession } from "./hooks/useFileManager";
 import { useKeyboard } from "./hooks/useKeyboard";
@@ -43,13 +47,30 @@ function App() {
 		reorderTabs,
 		renameTab,
 		initialPathTabs,
+		initialContentTooLarge,
 	} = useTabs();
 
 	const { themePref, setThemePref, isDark } = useTheme();
 
 	const [settingsOpen, setSettingsOpen] = useState(false);
 	const [commandOpen, setCommandOpen] = useState(false);
-	const { format, content, previewContent, binaryContent, showEditor } = activeTab;
+	const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+	const [notification, setNotification] = useState<string | null>(null);
+
+	useEffect(() => {
+		if (initialContentTooLarge) {
+			setNotification(
+				"Some unsaved tabs were too large and not restored. Open the files to continue editing.",
+			);
+			setTimeout(() => setNotification(null), 5000);
+		}
+	}, [initialContentTooLarge]);
+
+	function toggleSidebar() {
+		setSidebarCollapsed((v) => !v);
+	}
+	const { format, content, previewContent, binaryContent, showEditor } =
+		activeTab;
 
 	const activeTabIdRef = useRef(activeTabId);
 	activeTabIdRef.current = activeTabId;
@@ -73,8 +94,20 @@ function App() {
 		setActiveTabId,
 	);
 
-	useNativeMenu(openFile, closeTab, activeTabIdRef, addTab, saveFile, () =>
-		setSettingsOpen(true),
+	const clearStorage = () => {
+		localStorage.removeItem(STORAGE_SESSION_KEY);
+		localStorage.removeItem(STORAGE_THEME_KEY);
+		window.location.reload();
+	};
+
+	useNativeMenu(
+		openFile,
+		closeTab,
+		activeTabIdRef,
+		addTab,
+		saveFile,
+		() => setSettingsOpen(true),
+		clearStorage,
 	);
 	useKeyboard(
 		{
@@ -83,6 +116,7 @@ function App() {
 			t: addTab,
 			",": () => setSettingsOpen(true),
 			k: () => setCommandOpen(true),
+			b: toggleSidebar,
 			...Object.fromEntries(
 				Array.from({ length: 9 }, (_, i) => [
 					String(i + 1),
@@ -98,7 +132,17 @@ function App() {
 
 	// Persist session on any relevant state change
 	useEffect(() => {
-		persistSession(tabs, activeTabId, themePref);
+		const { skippedLargeContent } = persistSession(
+			tabs,
+			activeTabId,
+			themePref,
+		);
+		if (skippedLargeContent) {
+			setNotification(
+				"Large content not saved to session. Save to file to preserve.",
+			);
+			setTimeout(() => setNotification(null), 4000);
+		}
 	}, [tabs, activeTabId, themePref]);
 
 	// Debounced preview update on editor change
@@ -165,6 +209,18 @@ function App() {
 
 	return (
 		<div className="app">
+			{notification && (
+				<div className="notification-banner">
+					<span>{notification}</span>
+					<button
+						type="button"
+						onClick={() => setNotification(null)}
+						className="notification-close"
+					>
+						×
+					</button>
+				</div>
+			)}
 			<ConfirmDialog
 				open={closeConfirmTabId !== null}
 				title="Close unsaved file?"
@@ -182,70 +238,37 @@ function App() {
 			<Toolbar
 				format={format}
 				showEditor={showEditor}
+				sidebarCollapsed={sidebarCollapsed}
+				tabName={activeTab.name}
 				onToggleEditor={() => updateActiveTab({ showEditor: !showEditor })}
+				onToggleSidebar={toggleSidebar}
 				onOpenSettings={() => setSettingsOpen(true)}
 			/>
 
-			<FileTabsBar
-				tabs={tabs}
-				activeTabId={activeTabId}
-				onSelectTab={setActiveTabId}
-				onCloseTab={closeTab}
-				onAddTab={addTab}
-				onReorderTabs={reorderTabs}
-				onRenameTab={(id, newName) => {
-					const tab = tabs.find((t) => t.id === id);
-					if (tab?.path) {
-						renameFile(id, newName);
-					} else {
-						renameTab(id, newName);
-					}
-				}}
-			/>
-
 			<main className="workspace">
-				{!showEditor ? (
-					<PreviewPanel
-						content={previewContent}
-						format={format}
-						isDark={isDark}
-						onOpenFile={openFile}
-						binaryContent={binaryContent}
-						onContentChange={
-							format === "csv"
-								? (val) =>
-										updateActiveTab({ content: val, previewContent: val })
-								: undefined
-						}
-						onClearCsv={
-							format === "csv"
-								? () => updateActiveTab({ content: "", previewContent: "" })
-								: undefined
-						}
-					/>
-				) : (
-					<Group orientation="horizontal" className="panel-group">
-						<Panel defaultSize={50} minSize={20}>
-							<EditorPanel
-								value={content}
-								onChange={handleEditorChange}
-								language={FORMAT_LANGUAGE[format]}
-								isDark={isDark}
-								statusBar={
-									<EditorStatusBar
-										format={format}
-										content={content}
-										onFormatMarkdown={formatMarkdown}
-										onFormatJson={formatJson}
-										onMinifyJson={minifyJson}
-									/>
-								}
+				<div className="workspace-inner">
+					{!sidebarCollapsed && (
+						<div className="sidebar-fixed">
+							<TabSidebar
+								tabs={tabs}
+								activeTabId={activeTabId}
+								onSelectTab={setActiveTabId}
+								onCloseTab={closeTab}
+								onAddTab={addTab}
+								onReorderTabs={reorderTabs}
+								onRenameTab={(id: string, newName: string) => {
+									const tab = tabs.find((t) => t.id === id);
+									if (tab?.path) {
+										renameFile(id, newName);
+									} else {
+										renameTab(id, newName);
+									}
+								}}
 							/>
-						</Panel>
-						<Separator className="resize-handle">
-							<div className="resize-handle-bar" />
-						</Separator>
-						<Panel defaultSize={50} minSize={20}>
+						</div>
+					)}
+					<div className="content-area">
+						{!showEditor ? (
 							<PreviewPanel
 								content={previewContent}
 								format={format}
@@ -264,9 +287,56 @@ function App() {
 										: undefined
 								}
 							/>
-						</Panel>
-					</Group>
-				)}
+						) : (
+							<Group orientation="horizontal" className="panel-group">
+								<Panel defaultSize={50} minSize={20}>
+									<EditorPanel
+										value={content}
+										onChange={handleEditorChange}
+										language={FORMAT_LANGUAGE[format]}
+										isDark={isDark}
+										statusBar={
+											<EditorStatusBar
+												format={format}
+												content={content}
+												onFormatMarkdown={formatMarkdown}
+												onFormatJson={formatJson}
+												onMinifyJson={minifyJson}
+											/>
+										}
+									/>
+								</Panel>
+								<Separator className="resize-handle">
+									<div className="resize-handle-bar" />
+								</Separator>
+								<Panel defaultSize={50} minSize={20}>
+									<PreviewPanel
+										content={previewContent}
+										format={format}
+										isDark={isDark}
+										onOpenFile={openFile}
+										binaryContent={binaryContent}
+										onContentChange={
+											format === "csv"
+												? (val) =>
+														updateActiveTab({
+															content: val,
+															previewContent: val,
+														})
+												: undefined
+										}
+										onClearCsv={
+											format === "csv"
+												? () =>
+														updateActiveTab({ content: "", previewContent: "" })
+												: undefined
+										}
+									/>
+								</Panel>
+							</Group>
+						)}
+					</div>
+				</div>
 			</main>
 			<SettingsDialog
 				open={settingsOpen}
@@ -287,6 +357,12 @@ function App() {
 					},
 					{ id: "save", label: "Save", shortcut: "⌘ S", action: saveFile },
 					{ id: "open", label: "Open File", shortcut: "⌘ O", action: openFile },
+					{
+						id: "toggle-sidebar",
+						label: "Toggle Sidebar",
+						shortcut: "⌘ B",
+						action: toggleSidebar,
+					},
 					{
 						id: "settings",
 						label: "Settings",

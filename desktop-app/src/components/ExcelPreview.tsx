@@ -274,7 +274,6 @@ function SheetTable({
 														: " ⇅"}
 											</span>
 										</span>
-										{/** biome-ignore lint/a11y/useKeyWithClickEvents: no need */}
 										{/** biome-ignore lint/a11y/noStaticElementInteractions: no need */}
 										<div
 											onMouseDown={header.getResizeHandler()}
@@ -298,7 +297,10 @@ function SheetTable({
 									return (
 										<td
 											key={cell.id}
-											style={{ width: cell.column.getSize(), position: "relative" }}
+											style={{
+												width: cell.column.getSize(),
+												position: "relative",
+											}}
 											className={
 												selectedCell?.row === row.index &&
 												selectedCell?.col === colIdx
@@ -318,10 +320,14 @@ function SheetTable({
 										>
 											{isHovered && (
 												<span className="absolute top-0 left-0 z-20 px-1 leading-tight text-[9px] font-mono font-semibold rounded-br bg-[var(--accent)] text-white pointer-events-none select-none">
-													{colLabel(colIdx)}{row.index + 1}
+													{colLabel(colIdx)}
+													{row.index + 1}
 												</span>
 											)}
-											{flexRender(cell.column.columnDef.cell, cell.getContext())}
+											{flexRender(
+												cell.column.columnDef.cell,
+												cell.getContext(),
+											)}
 										</td>
 									);
 								})}

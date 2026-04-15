@@ -66,7 +66,11 @@ function RowContextMenu({
 	data,
 	path,
 	children,
-}: { data: unknown; path: string; children: React.ReactNode }) {
+}: {
+	data: unknown;
+	path: string;
+	children: React.ReactNode;
+}) {
 	const isObj = data !== null && typeof data === "object";
 
 	return (
@@ -84,9 +88,7 @@ function RowContextMenu({
 					</ContextMenuItem>
 				)}
 				<ContextMenuItem
-					onClick={() =>
-						copyText(isObj ? JSON.stringify(data) : String(data))
-					}
+					onClick={() => copyText(isObj ? JSON.stringify(data) : String(data))}
 				>
 					<IconCopy size={13} />
 					{isObj ? "Copy value (compact)" : "Copy value"}
@@ -168,7 +170,6 @@ function JsonNodeView({
 	if (!isObj) {
 		return (
 			<RowContextMenu data={data} path={path}>
-				{/* biome-ignore lint/a11y/useKeyWithClickEvents: tree row selection */}
 				{/* biome-ignore lint/a11y/noStaticElementInteractions: tree row selection */}
 				<div
 					className={`json-row${isSelected ? " json-row-selected" : ""}`}
@@ -194,7 +195,6 @@ function JsonNodeView({
 	if (count === 0) {
 		return (
 			<RowContextMenu data={data} path={path}>
-				{/* biome-ignore lint/a11y/useKeyWithClickEvents: tree row selection */}
 				{/* biome-ignore lint/a11y/noStaticElementInteractions: tree row selection */}
 				<div
 					className={`json-row${isSelected ? " json-row-selected" : ""}`}
@@ -218,17 +218,12 @@ function JsonNodeView({
 	if (!expanded) {
 		return (
 			<RowContextMenu data={data} path={path}>
-				{/* biome-ignore lint/a11y/useKeyWithClickEvents: tree row selection */}
 				{/* biome-ignore lint/a11y/noStaticElementInteractions: tree row selection */}
 				<div
 					className={`json-row json-row-collapsible${isSelected ? " json-row-selected" : ""}`}
 					onClick={handleSelect}
 				>
-					<button
-						type="button"
-						className="json-toggle"
-						onClick={handleToggle}
-					>
+					<button type="button" className="json-toggle" onClick={handleToggle}>
 						▶
 					</button>
 					{keyLabel}
@@ -252,17 +247,12 @@ function JsonNodeView({
 	return (
 		<>
 			<RowContextMenu data={data} path={path}>
-				{/** biome-ignore lint/a11y/useKeyWithClickEvents: tree row selection */}
 				{/** biome-ignore lint/a11y/noStaticElementInteractions: tree row selection */}
 				<div
 					className={`json-row json-row-collapsible${isSelected ? " json-row-selected" : ""}`}
 					onClick={handleSelect}
 				>
-					<button
-						type="button"
-						className="json-toggle"
-						onClick={handleToggle}
-					>
+					<button type="button" className="json-toggle" onClick={handleToggle}>
 						▼
 					</button>
 					{keyLabel}
@@ -306,6 +296,14 @@ function JsonNodeView({
 
 // ── JsonPreview ───────────────────────────────────────────────────────────────
 
+const LARGE_JSON_THRESHOLD = 3 * 1024 * 1024;
+
+function formatBytes(bytes: number): string {
+	if (bytes < 1024) return `${bytes} B`;
+	if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+	return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 interface JsonPreviewProps {
 	content: string;
 	isDark: boolean;
@@ -317,14 +315,18 @@ export function JsonPreview({ content }: JsonPreviewProps) {
 	const [toggled, setToggled] = useState<Set<string>>(new Set());
 	const [viewMode, setViewMode] = useState<"auto" | "raw">("auto");
 
+	const contentSize = content.length;
+	const isLargeFile = contentSize > LARGE_JSON_THRESHOLD;
+
 	const { parsed, parseError } = useMemo(() => {
 		if (!content.trim()) return { parsed: null, parseError: null };
+		if (isLargeFile) return { parsed: null, parseError: null };
 		try {
 			return { parsed: JSON.parse(content), parseError: null };
 		} catch (e) {
 			return { parsed: null, parseError: (e as Error).message };
 		}
-	}, [content]);
+	}, [content, isLargeFile]);
 
 	const { nodeCount, maxDepth } = useMemo(() => {
 		if (parsed == null) return { nodeCount: 0, maxDepth: 0 };
@@ -348,6 +350,20 @@ export function JsonPreview({ content }: JsonPreviewProps) {
 		return (
 			<div className="preview-empty">
 				<p>Start typing JSON in the editor...</p>
+			</div>
+		);
+	}
+
+	if (isLargeFile) {
+		return (
+			<div className="json-error">
+				<div className="json-error-badge">Large File</div>
+				<div className="json-error-message">
+					<p>
+						This JSON file is <strong>{formatBytes(contentSize)}</strong> and
+						cannot be previewed. Use the Monaco editor to view and edit.
+					</p>
+				</div>
 			</div>
 		);
 	}
@@ -405,7 +421,10 @@ export function JsonPreview({ content }: JsonPreviewProps) {
 							changeDepth(v === "all" ? "all" : (Number(v) as ExpandDepth))
 						}
 					>
-						<SelectTrigger size="sm" className="h-5 text-[11px] px-1.5 py-0 min-w-[72px]">
+						<SelectTrigger
+							size="sm"
+							className="h-5 text-[11px] px-1.5 py-0 min-w-[72px]"
+						>
 							<SelectValue />
 						</SelectTrigger>
 						<SelectContent side="top" align="end">

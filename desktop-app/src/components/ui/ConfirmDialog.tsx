@@ -36,16 +36,10 @@ export function ConfirmDialog({
 						</BaseDialog.Description>
 					)}
 					<div className="flex justify-end gap-2 mt-1">
-						<Button
-							variant="outline"
-							onClick={onCancel}
-						>
+						<Button variant="outline" onClick={onCancel}>
 							{cancelLabel}
 						</Button>
-						<Button
-							variant="primary"
-							onClick={onConfirm}
-						>
+						<Button variant="primary" onClick={onConfirm}>
 							{confirmLabel}
 						</Button>
 					</div>

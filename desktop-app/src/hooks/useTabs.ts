@@ -5,6 +5,7 @@ import { createTab, readStoredSession } from "./useSession";
 export function useTabs() {
 	const storedSession = readStoredSession();
 	const initialTabs = storedSession?.tabs ?? [createTab()];
+	const initialContentTooLarge = storedSession?.contentTooLarge ?? false;
 
 	const [tabs, setTabs] = useState<FileTab[]>(initialTabs);
 	const [activeTabId, setActiveTabId] = useState<string>(
@@ -34,11 +35,16 @@ export function useTabs() {
 	const closeTabForce = useCallback(
 		(id: string) => {
 			setTabs((prev) => {
-				if (prev.length === 1) return prev;
-				const idx = prev.findIndex((t) => t.id === id);
 				const next = prev.filter((t) => t.id !== id);
-				if (id === activeTabId) {
-					setActiveTabId(next[Math.min(idx, next.length - 1)].id);
+				if (next.length === 0) {
+					const newTab = createTab();
+					setActiveTabId(newTab.id);
+					return [newTab];
+				}
+				if (id === activeTabId && next.length > 0) {
+					const idx = prev.findIndex((t) => t.id === id);
+					const targetIdx = Math.min(idx, next.length - 1);
+					setActiveTabId(next[targetIdx].id);
 				}
 				return next;
 			});
@@ -58,26 +64,20 @@ export function useTabs() {
 		[tabs, closeTabForce],
 	);
 
-	const reorderTabs = useCallback(
-		(fromIndex: number, toIndex: number) => {
-			setTabs((prev) => {
-				const newTabs = [...prev];
-				const [removed] = newTabs.splice(fromIndex, 1);
-				newTabs.splice(toIndex, 0, removed);
-				return newTabs;
-			});
-		},
-		[],
-	);
+	const reorderTabs = useCallback((fromIndex: number, toIndex: number) => {
+		setTabs((prev) => {
+			const newTabs = [...prev];
+			const [removed] = newTabs.splice(fromIndex, 1);
+			newTabs.splice(toIndex, 0, removed);
+			return newTabs;
+		});
+	}, []);
 
-	const renameTab = useCallback(
-		(id: string, newName: string) => {
-			setTabs((prev) =>
-				prev.map((t) => (t.id === id ? { ...t, name: newName } : t)),
-			);
-		},
-		[],
-	);
+	const renameTab = useCallback((id: string, newName: string) => {
+		setTabs((prev) =>
+			prev.map((t) => (t.id === id ? { ...t, name: newName } : t)),
+		);
+	}, []);
 
 	return {
 		tabs,
@@ -94,5 +94,6 @@ export function useTabs() {
 		reorderTabs,
 		renameTab,
 		initialPathTabs: initialTabs.filter((t) => t.path),
+		initialContentTooLarge,
 	};
 }

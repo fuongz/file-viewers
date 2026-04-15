@@ -25,15 +25,13 @@ fn center_traffic_lights(win: &tauri::WebviewWindow) {
     }
 
     unsafe impl Encode for Point {
-        const ENCODING: Encoding =
-            Encoding::Struct("CGPoint", &[f64::ENCODING, f64::ENCODING]);
+        const ENCODING: Encoding = Encoding::Struct("CGPoint", &[f64::ENCODING, f64::ENCODING]);
     }
     unsafe impl RefEncode for Point {
         const ENCODING_REF: Encoding = Encoding::Pointer(&Self::ENCODING);
     }
     unsafe impl Encode for Size {
-        const ENCODING: Encoding =
-            Encoding::Struct("CGSize", &[f64::ENCODING, f64::ENCODING]);
+        const ENCODING: Encoding = Encoding::Struct("CGSize", &[f64::ENCODING, f64::ENCODING]);
     }
     unsafe impl RefEncode for Size {
         const ENCODING_REF: Encoding = Encoding::Pointer(&Self::ENCODING);
@@ -61,8 +59,7 @@ fn center_traffic_lights(win: &tauri::WebviewWindow) {
         // NSWindowButton values: 0=close, 1=miniaturize, 2=zoom
         let mut offset_x = x_start;
         for btn_idx in 0usize..3 {
-            let btn: *mut AnyObject =
-                msg_send![ns_window, standardWindowButton: btn_idx];
+            let btn: *mut AnyObject = msg_send![ns_window, standardWindowButton: btn_idx];
             if btn.is_null() {
                 continue;
             }
@@ -182,32 +179,29 @@ pub fn run() {
                 let win_menu = Submenu::with_items(app, "Window", true, &[&minimize, &zoom])?;
 
                 // ── Help ─────────────────────────────────────────────
-                #[cfg(debug_assertions)]
-                {
-                    let toggle_devtools = MenuItem::with_id(
-                        app,
-                        "toggle-devtools",
-                        "Toggle Developer Tools",
-                        true,
-                        Some("cmd+shift+i"),
-                    )?;
-                    let help_menu = Submenu::with_items(app, "Help", true, &[&toggle_devtools])?;
-                    let menu = Menu::with_items(
-                        app,
-                        &[
-                            &app_menu, &file_menu, &edit_menu, &view_menu, &win_menu, &help_menu,
-                        ],
-                    )?;
-                    app.set_menu(menu)?;
-                }
-                #[cfg(not(debug_assertions))]
-                {
-                    let menu = Menu::with_items(
-                        app,
-                        &[&app_menu, &file_menu, &edit_menu, &view_menu, &win_menu],
-                    )?;
-                    app.set_menu(menu)?;
-                }
+                let toggle_devtools = MenuItem::with_id(
+                    app,
+                    "toggle-devtools",
+                    "Toggle Developer Tools",
+                    true,
+                    Some("cmd+shift+i"),
+                )?;
+                let clear_storage = MenuItem::with_id(
+                    app,
+                    "clear-storage",
+                    "Clear All localStorage",
+                    true,
+                    None::<&str>,
+                )?;
+                let help_menu =
+                    Submenu::with_items(app, "Help", true, &[&toggle_devtools, &clear_storage])?;
+                let menu = Menu::with_items(
+                    app,
+                    &[
+                        &app_menu, &file_menu, &edit_menu, &view_menu, &win_menu, &help_menu,
+                    ],
+                )?;
+                app.set_menu(menu)?;
             }
             Ok(())
         })
@@ -237,6 +231,9 @@ pub fn run() {
                         win.open_devtools();
                     }
                 }
+            }
+            if event.id() == "clear-storage" {
+                app.emit("menu-clear-storage", ()).ok();
             }
         })
         .run(tauri::generate_context!())

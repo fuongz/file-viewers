@@ -10,7 +10,6 @@ import { Textarea } from "./Textarea";
 
 function InputGroup({ className, ...props }: React.ComponentProps<"div">) {
 	return (
-		// biome-ignore lint/a11y/useSemanticElements: no need
 		<div
 			data-slot="input-group"
 			role="group"
@@ -50,8 +49,6 @@ function InputGroupAddon({
 	...props
 }: React.ComponentProps<"div"> & VariantProps<typeof inputGroupAddonVariants>) {
 	return (
-		// biome-ignore lint/a11y/useKeyWithClickEvents: no need
-		// biome-ignore lint/a11y/useSemanticElements: no need
 		<div
 			role="group"
 			data-slot="input-group-addon"

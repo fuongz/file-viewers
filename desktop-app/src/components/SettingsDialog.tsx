@@ -139,6 +139,7 @@ function ShortcutsPanel() {
 		{ action: "New Tab", keys: ["⌘", "T"] },
 		{ action: "Close Tab", keys: ["⌘", "W"] },
 		{ action: "Open File", keys: ["⌘", "O"] },
+		{ action: "Toggle Sidebar", keys: ["⌘", "B"] },
 		{ action: "Settings", keys: ["⌘", ","] },
 		{ action: "Move Tab Left", keys: ["⇧", "←"] },
 		{ action: "Move Tab Right", keys: ["⇧", "→"] },

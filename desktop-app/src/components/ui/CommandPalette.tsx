@@ -15,7 +15,11 @@ interface CommandPaletteProps {
 	items: CommandItemData[];
 }
 
-export function CommandPalette({ open, onOpenChange, items }: CommandPaletteProps) {
+export function CommandPalette({
+	open,
+	onOpenChange,
+	items,
+}: CommandPaletteProps) {
 	const [search, setSearch] = useState("");
 	const [selectedIndex, setSelectedIndex] = useState(0);
 	const inputRef = useRef<HTMLInputElement>(null);
@@ -66,9 +70,15 @@ export function CommandPalette({ open, onOpenChange, items }: CommandPaletteProp
 			<BaseDialog.Portal>
 				<BaseDialog.Backdrop className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" />
 				<BaseDialog.Popup className="command-palette">
-					<BaseDialog.Title className="sr-only">Command Palette</BaseDialog.Title>
+					<BaseDialog.Title className="sr-only">
+						Command Palette
+					</BaseDialog.Title>
 					<div className="command-palette-input">
-						<IconSearch size={16} stroke={1.5} className="command-palette-icon" />
+						<IconSearch
+							size={16}
+							stroke={1.5}
+							className="command-palette-icon"
+						/>
 						<input
 							ref={inputRef}
 							type="text"
@@ -96,7 +106,9 @@ export function CommandPalette({ open, onOpenChange, items }: CommandPaletteProp
 								>
 									<span className="command-palette-label">{item.label}</span>
 									{item.shortcut && (
-										<span className="command-palette-shortcut">{item.shortcut}</span>
+										<span className="command-palette-shortcut">
+											{item.shortcut}
+										</span>
 									)}
 								</button>
 							))

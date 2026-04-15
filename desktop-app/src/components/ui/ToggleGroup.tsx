@@ -1,5 +1,5 @@
-import { ToggleGroup as ToggleGroupPrimitive } from "@base-ui/react/toggle-group";
 import { Toggle as TogglePrimitive } from "@base-ui/react/toggle";
+import { ToggleGroup as ToggleGroupPrimitive } from "@base-ui/react/toggle-group";
 import { createContext, useContext } from "react";
 import { cn } from "@/lib/utils";
 

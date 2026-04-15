@@ -42,10 +42,7 @@ const buttonVariants = cva("cursor-pointer transition-colors", {
 				"inline-flex items-center gap-[5px] px-2 py-[3px] rounded " +
 				"bg-transparent border border-[var(--border)] " +
 				"text-[var(--text-muted)] text-[11px] font-medium " +
-				"flex-shrink-0 duration-150 " +
-				"hover:text-[var(--text-primary)] hover:border-[var(--color-grenadier-400)] " +
-				"data-[active]:text-[var(--color-grenadier-400)] data-[active]:border-[var(--color-grenadier-400)] " +
-				"data-[active]:bg-[color-mix(in_srgb,var(--color-grenadier-400)_12%,transparent)]",
+				"flex-shrink-0 duration-150 ",
 
 			// Filled primary button using grenadier palette
 			primary:
@@ -80,7 +77,13 @@ interface ButtonProps
 	active?: boolean;
 }
 
-export function Button({ variant, size, active, className, ...props }: ButtonProps) {
+export function Button({
+	variant,
+	size,
+	active,
+	className,
+	...props
+}: ButtonProps) {
 	return (
 		<BaseButton
 			data-active={active || undefined}

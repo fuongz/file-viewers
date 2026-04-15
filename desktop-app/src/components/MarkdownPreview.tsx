@@ -159,7 +159,6 @@ export function MarkdownPreview({ content, isDark }: MarkdownPreviewProps) {
 				remarkPlugins={[remarkGfm]}
 				rehypePlugins={[rehypeHighlight]}
 				components={{
-					// biome-ignore lint/suspicious/noExplicitAny: hast node type
 					pre: ({ node, children }: any) => (
 						<CodeBlock node={node}>{children}</CodeBlock>
 					),

@@ -8,6 +8,7 @@ export function useNativeMenu(
 	addTab: () => void,
 	saveFile: () => Promise<void>,
 	openSettings: () => void,
+	clearStorage: () => void,
 ) {
 	useEffect(() => {
 		let cancelled = false;
@@ -80,6 +81,23 @@ export function useNativeMenu(
 		let unlisten: (() => void) | null = null;
 		listen("menu-settings", () => {
 			openSettingsRef.current();
+		}).then((fn) => {
+			if (cancelled) fn();
+			else unlisten = fn;
+		});
+		return () => {
+			cancelled = true;
+			unlisten?.();
+		};
+	}, []);
+
+	const clearStorageRef = useRef(clearStorage);
+	clearStorageRef.current = clearStorage;
+	useEffect(() => {
+		let cancelled = false;
+		let unlisten: (() => void) | null = null;
+		listen("menu-clear-storage", () => {
+			clearStorageRef.current();
 		}).then((fn) => {
 			if (cancelled) fn();
 			else unlisten = fn;
