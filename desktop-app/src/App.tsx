@@ -83,7 +83,9 @@ function App() {
 		{
 			s: saveFile,
 			w: closeTab,
-			t: () => { if (!isAnyTabBusy) addTab(); },
+			t: () => {
+				if (!isAnyTabBusy) addTab();
+			},
 			",": () => setSettingsOpen(true),
 			k: () => setCommandOpen(true),
 			b: toggleSidebar,

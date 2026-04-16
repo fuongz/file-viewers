@@ -45,7 +45,10 @@ export const PreviewPanel = memo(function PreviewPanel({
 			) : format === "xlsx" ? (
 				<ExcelPreview binaryContent={binaryContent} />
 			) : format === "parquet" ? (
-				<ParquetPreview binaryContent={binaryContent} onProcessingChange={onProcessingChange} />
+				<ParquetPreview
+					binaryContent={binaryContent}
+					onProcessingChange={onProcessingChange}
+				/>
 			) : (
 				<CsvPreview
 					content={content}

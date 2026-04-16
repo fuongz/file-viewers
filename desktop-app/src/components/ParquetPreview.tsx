@@ -11,6 +11,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from "./ui";
 interface ParquetPreviewProps {
 	binaryContent?: Uint8Array;
 	fileName?: string;
+	onProcessingChange?: (loading: boolean) => void;
 }
 
 const BUNDLES: duckdb.DuckDBBundles = {
