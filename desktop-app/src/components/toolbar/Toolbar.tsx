@@ -1,10 +1,13 @@
 import {
+	IconKeyboard,
+	IconKeyboardFilled,
 	IconLayoutSidebarLeftCollapse,
-	IconLayoutSidebarLeftExpand,
+	IconLayoutSidebarLeftExpandFilled,
 	IconSettings,
 } from "@tabler/icons-react";
+import { cn } from "@/lib/utils";
 import type { Format } from "../../types";
-import { Button } from "../ui";
+import { Button, Toggle, Tooltip, TooltipContent, TooltipTrigger } from "../ui";
 
 interface ToolbarProps {
 	format: Format;
@@ -26,54 +29,65 @@ export function Toolbar({
 	onOpenSettings,
 }: ToolbarProps) {
 	return (
-		<header className="toolbar" data-tauri-drag-region>
-			<div className="toolbar-spacer" />
-			<Button
-				variant="toolbar"
-				onClick={onToggleSidebar}
-				title={sidebarCollapsed ? "Show sidebar (⌘B)" : "Hide sidebar (⌘B)"}
-			>
-				{sidebarCollapsed ? (
-					<>
-						<IconLayoutSidebarLeftExpand size={15} stroke={1.5} />
-						Show sidebar
-					</>
-				) : (
-					<>
-						<IconLayoutSidebarLeftCollapse size={15} stroke={1.5} />
-						Hide sidebar
-					</>
-				)}
-			</Button>
-			<div className="toolbar-drag-fill" />
-			<span className="toolbar-tab-name">{tabName}</span>
-			<div className="toolbar-drag-fill" />
-			{format !== "xlsx" && (
-				<Button
-					onClick={onToggleEditor}
-					title={showEditor ? "Hide editor" : "Show editor"}
-					variant="toolbar"
+		<header
+			className="flex items-center h-[40px] flex-shrink-0 border-b"
+			data-tauri-drag-region
+		>
+			<div className={cn("flex-shrink-0 w-20")} />
+			<Tooltip>
+				<TooltipTrigger
+					render={
+						<Toggle
+							aria-label="Toggle sidebar"
+							variant="default"
+							size="icon-lg"
+							onPressedChange={onToggleSidebar}
+							pressed={!sidebarCollapsed}
+						/>
+					}
 				>
-					{showEditor ? (
-						<>
-							<IconLayoutSidebarLeftCollapse size={15} stroke={1.5} />
-							Hide editor
-						</>
+					{!sidebarCollapsed ? (
+						<IconLayoutSidebarLeftExpandFilled stroke={1} />
 					) : (
-						<>
-							<IconLayoutSidebarLeftExpand size={15} stroke={1.5} />
-							Show editor
-						</>
+						<IconLayoutSidebarLeftCollapse stroke={1} />
 					)}
+				</TooltipTrigger>
+				<TooltipContent>
+					{!sidebarCollapsed ? "Collapse sidebar" : "Expand sidebar"}
+				</TooltipContent>
+			</Tooltip>
+			<div className="flex-1" />
+			<span className="font-semibold text-sm">{tabName}</span>
+			<div className="flex-1" />
+			<div className="flex gap-2 items-center">
+				{format !== "xlsx" && (
+					<Tooltip>
+						<TooltipTrigger
+							render={
+								<Toggle
+									aria-label="Toggle sidebar"
+									variant="default"
+									size="icon-lg"
+									onPressedChange={onToggleEditor}
+									pressed={showEditor}
+								/>
+							}
+						>
+							{showEditor ? (
+								<IconKeyboardFilled stroke={1} />
+							) : (
+								<IconKeyboard stroke={1} />
+							)}
+						</TooltipTrigger>
+						<TooltipContent>
+							{!showEditor ? "Hide editor" : "Show editor"}
+						</TooltipContent>
+					</Tooltip>
+				)}
+				<Button size="icon-lg" onClick={onOpenSettings} variant="ghost">
+					<IconSettings />
 				</Button>
-			)}
-			<Button
-				onClick={onOpenSettings}
-				title="Settings (Cmd+,)"
-				className="toolbar-icon-btn"
-			>
-				<IconSettings size={15} stroke={1.5} />
-			</Button>
+			</div>
 		</header>
 	);
 }

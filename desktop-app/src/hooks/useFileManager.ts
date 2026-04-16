@@ -8,27 +8,16 @@ import {
 	rename,
 	writeTextFile,
 } from "@tauri-apps/plugin-fs";
-import type { Dispatch, SetStateAction } from "react";
 import { useCallback, useEffect, useRef } from "react";
 import { EXT_TO_FORMAT } from "../constants";
+import { useAppStore } from "../store";
 import type { FileTab } from "../types";
 import { createTab } from "./useSession";
 
-interface UseFileManagerArgs {
-	tabs: FileTab[];
-	activeTabId: string;
-	setTabs: Dispatch<SetStateAction<FileTab[]>>;
-	setActiveTabId: Dispatch<SetStateAction<string>>;
-	activeTabIdRef: React.RefObject<string>;
-}
+export function useFileManager() {
+	const setTabs = useAppStore((s) => s.setTabs);
+	const setActiveTabId = useAppStore((s) => s.setActiveTabId);
 
-export function useFileManager({
-	tabs,
-	activeTabId,
-	setTabs,
-	setActiveTabId,
-	activeTabIdRef,
-}: UseFileManagerArgs) {
 	const loadFile = useCallback(
 		async (path: string) => {
 			const ext = path.split(".").pop()?.toLowerCase() ?? "";
@@ -57,7 +46,8 @@ export function useFileManager({
 							: t,
 					);
 				}
-				const currentId = activeTabIdRef.current;
+				// Use getState() to avoid stale closure on activeTabId
+				const currentId = useAppStore.getState().activeTabId;
 				const currentTab = prev.find((t) => t.id === currentId);
 				if (currentTab && !currentTab.path && !currentTab.content) {
 					return prev.map((t) =>
@@ -125,7 +115,7 @@ export function useFileManager({
 				);
 			}
 		},
-		[setTabs, setActiveTabId, activeTabIdRef],
+		[setTabs, setActiveTabId],
 	);
 
 	const openFile = useCallback(async () => {
@@ -151,6 +141,7 @@ export function useFileManager({
 	}, [loadFile]);
 
 	const saveFile = useCallback(async () => {
+		const { tabs, activeTabId } = useAppStore.getState();
 		const tab = tabs.find((t) => t.id === activeTabId);
 		if (!tab) return;
 		if (tab.path) {
@@ -185,9 +176,10 @@ export function useFileManager({
 		setTabs((prev) =>
 			prev.map((t) => (t.id === activeTabId ? { ...t, isDirty: false } : t)),
 		);
-	}, [tabs, activeTabId, setTabs]);
+	}, [setTabs]);
 
 	const saveAsFile = useCallback(async (): Promise<boolean> => {
+		const { tabs, activeTabId } = useAppStore.getState();
 		const tab = tabs.find((t) => t.id === activeTabId);
 		if (!tab) return false;
 		const filePath = await saveDialog({
@@ -214,14 +206,14 @@ export function useFileManager({
 			),
 		);
 		return true;
-	}, [tabs, activeTabId, setTabs]);
+	}, [setTabs]);
 
-	// Restore file-backed tabs on mount
 	const loadFileRef = useRef(loadFile);
 	loadFileRef.current = loadFile;
 
 	const renameFile = useCallback(
 		async (id: string, newName: string) => {
+			const { tabs } = useAppStore.getState();
 			const tab = tabs.find((t) => t.id === id);
 			if (!tab?.path) return;
 			try {
@@ -242,23 +234,24 @@ export function useFileManager({
 				console.error("Failed to rename file:", err);
 			}
 		},
-		[tabs, setTabs],
+		[setTabs],
 	);
 
 	return { loadFile, openFile, saveFile, saveAsFile, renameFile, loadFileRef };
 }
 
 export function useRestoreSession(
-	initialPathTabs: FileTab[],
-	initialActiveTabId: string,
 	loadFileRef: React.RefObject<(path: string) => Promise<void>>,
-	setTabs: Dispatch<SetStateAction<FileTab[]>>,
-	setActiveTabId: Dispatch<SetStateAction<string>>,
 ) {
+	const initialPathTabs = useAppStore.getState().initialPathTabs;
+	const initialActiveTabId = useAppStore.getState().activeTabId;
+	const setTabs = useAppStore((s) => s.setTabs);
+	const setActiveTabId = useAppStore((s) => s.setActiveTabId);
+
 	const initialPathTabsRef = useRef(initialPathTabs);
 	const initialActiveTabIdRef = useRef(initialActiveTabId);
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: no need
+	// biome-ignore lint/correctness/useExhaustiveDependencies: runs once on mount
 	useEffect(() => {
 		const pathTabs = initialPathTabsRef.current;
 		if (!pathTabs.length) return;
@@ -278,12 +271,12 @@ export function useRestoreSession(
 					return remaining.length ? remaining : [createTab()];
 				});
 			}
-			setActiveTabId((cur) =>
-				toRemove.includes(cur)
-					? (pathTabs.find((t) => !toRemove.includes(t.id))?.id ??
-						createTab().id)
-					: savedActiveTabId,
-			);
+			const cur = useAppStore.getState().activeTabId;
+			const nextActiveId = toRemove.includes(cur)
+				? (pathTabs.find((t: FileTab) => !toRemove.includes(t.id))?.id ??
+					createTab().id)
+				: savedActiveTabId;
+			setActiveTabId(nextActiveId);
 		})();
 	}, []);
 }

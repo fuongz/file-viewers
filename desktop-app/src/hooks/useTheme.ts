@@ -1,41 +1,22 @@
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { STORAGE_THEME_KEY } from "../constants";
-import type { ThemePreference } from "../types";
-
-function readStoredTheme(): ThemePreference {
-	try {
-		const raw = localStorage.getItem(STORAGE_THEME_KEY);
-		if (raw === "system" || raw === "dark" || raw === "light") {
-			const isDark =
-				raw === "dark" ||
-				(raw === "system" &&
-					window.matchMedia("(prefers-color-scheme: dark)").matches);
-			document.documentElement.setAttribute(
-				"data-theme",
-				isDark ? "dark" : "light",
-			);
-			document.documentElement.classList.toggle("dark", isDark);
-			return raw;
-		}
-	} catch {}
-	return "system";
-}
+import { selectIsDark, useAppStore } from "../store";
 
 export function useTheme() {
-	const [themePref, setThemePref] = useState<ThemePreference>(readStoredTheme);
-	const [systemDark, setSystemDark] = useState(
-		() => window.matchMedia("(prefers-color-scheme: dark)").matches,
-	);
-
-	const isDark = themePref === "dark" || (themePref === "system" && systemDark);
+	const themePref = useAppStore((s) => s.themePref);
+	const setSystemDark = useAppStore((s) => s.setSystemDark);
+	const isDark = useAppStore(selectIsDark);
 
 	useEffect(() => {
+		try {
+			localStorage.setItem(STORAGE_THEME_KEY, themePref);
+		} catch {}
 		document.documentElement.setAttribute(
 			"data-theme",
 			isDark ? "dark" : "light",
 		);
 		document.documentElement.classList.toggle("dark", isDark);
-	}, [isDark]);
+	}, [isDark, themePref]);
 
 	useEffect(() => {
 		if (themePref !== "system") return;
@@ -43,11 +24,5 @@ export function useTheme() {
 		const handler = (e: MediaQueryListEvent) => setSystemDark(e.matches);
 		mq.addEventListener("change", handler);
 		return () => mq.removeEventListener("change", handler);
-	}, [themePref]);
-
-	return {
-		themePref,
-		setThemePref,
-		isDark,
-	};
+	}, [themePref, setSystemDark]);
 }

@@ -16,6 +16,7 @@ interface PreviewPanelProps {
 	onContentChange?: (content: string) => void;
 	onClearCsv?: () => void;
 	binaryContent?: Uint8Array;
+	onProcessingChange?: (loading: boolean) => void;
 }
 
 export const PreviewPanel = memo(function PreviewPanel({
@@ -26,6 +27,7 @@ export const PreviewPanel = memo(function PreviewPanel({
 	onContentChange,
 	onClearCsv,
 	binaryContent,
+	onProcessingChange,
 }: PreviewPanelProps) {
 	if (format !== "xlsx" && format !== "parquet" && !content.trim()) {
 		return (
@@ -43,7 +45,7 @@ export const PreviewPanel = memo(function PreviewPanel({
 			) : format === "xlsx" ? (
 				<ExcelPreview binaryContent={binaryContent} />
 			) : format === "parquet" ? (
-				<ParquetPreview binaryContent={binaryContent} />
+				<ParquetPreview binaryContent={binaryContent} onProcessingChange={onProcessingChange} />
 			) : (
 				<CsvPreview
 					content={content}

@@ -1,94 +1,58 @@
-import { Button as BaseButton } from "@base-ui/react";
+import { Button as ButtonPrimitive } from "@base-ui/react/button";
 import { cva, type VariantProps } from "class-variance-authority";
-import type { ComponentProps } from "react";
+
 import { cn } from "@/lib/utils";
 
-const buttonVariants = cva("cursor-pointer transition-colors", {
-	variants: {
-		size: {
-			sm: "text-[11px] px-2 py-[3px]",
-			md: "text-[13px] px-3 py-[5px]",
-			lg: "text-[15px] px-4 py-2",
-			"icon-sm": "inline-flex items-center justify-center w-4 h-4 rounded",
-			"icon-md": "inline-flex items-center justify-center w-5 h-5 rounded",
-			"icon-lg": "inline-flex items-center justify-center w-7 h-7 rounded",
+const buttonVariants = cva(
+	"group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+	{
+		variants: {
+			variant: {
+				default: "bg-primary text-primary-foreground [a]:hover:bg-primary/80",
+				outline:
+					"border-border bg-background hover:bg-muted hover:text-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:border-input dark:bg-input/30 dark:hover:bg-input/50",
+				secondary:
+					"bg-secondary text-secondary-foreground hover:bg-secondary/80 aria-expanded:bg-secondary aria-expanded:text-secondary-foreground",
+				ghost:
+					"hover:bg-muted hover:text-foreground text-muted-foreground aria-expanded:bg-muted aria-expanded:text-foreground dark:hover:bg-muted/50",
+				destructive:
+					"bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
+				link: "text-primary underline-offset-4 hover:underline",
+			},
+			size: {
+				default:
+					"h-8 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
+				xs: "h-6 gap-1 rounded-[min(var(--radius-md),10px)] px-2 text-xs in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3",
+				sm: "h-7 gap-1 rounded-[min(var(--radius-md),12px)] px-2.5 text-[0.8rem] in-data-[slot=button-group]:rounded-lg has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 [&_svg:not([class*='size-'])]:size-3.5",
+				lg: "h-9 gap-1.5 px-2.5 has-data-[icon=inline-end]:pr-2 has-data-[icon=inline-start]:pl-2",
+				icon: "size-8",
+				"icon-xs":
+					"size-6 rounded-[min(var(--radius-md),10px)] in-data-[slot=button-group]:rounded-lg [&_svg:not([class*='size-'])]:size-3",
+				"icon-sm":
+					"size-7 rounded-[min(var(--radius-md),12px)] in-data-[slot=button-group]:rounded-lg",
+				"icon-lg": "size-9",
+			},
 		},
-		variant: {
-			// Toolbar ghost buttons: Format, Minify, theme toggle
-			toolbar:
-				"inline-flex items-center gap-[5px] px-[10px] py-[3px] rounded-md " +
-				"bg-transparent border-0 " +
-				"text-[var(--text-muted)] text-[11px] font-medium uppercase duration-150 " +
-				"hover:text-[var(--text-primary)] hover:bg-[var(--tabs-bg)]",
-
-			// Dropdown menu items: theme options
-			ghost:
-				"flex items-center gap-[7px] w-full px-[10px] py-[5px] " +
-				"bg-transparent border-0 " +
-				"text-[var(--text-muted)] text-xs " +
-				"text-left duration-[120ms] " +
-				"hover:text-[var(--text-primary)] hover:bg-[var(--tabs-bg)] " +
-				"data-[active]:text-[var(--tab-active-text)] data-[active]:bg-[var(--tab-active-pill-bg)]",
-
-			// Square icon-only buttons: code block collapse/copy
-			icon:
-				"inline-flex items-center justify-center w-5 h-5 rounded " +
-				"bg-transparent border-0 " +
-				"text-[var(--text-muted)] duration-150 " +
-				"hover:text-[var(--text-primary)] hover:bg-[var(--tabs-bg)]",
-
-			// Bordered buttons with primary hover: CSV mode toggle
-			outline:
-				"inline-flex items-center gap-[5px] px-2 py-[3px] rounded " +
-				"bg-transparent border border-[var(--border)] " +
-				"text-[var(--text-muted)] text-[11px] font-medium " +
-				"flex-shrink-0 duration-150 ",
-
-			// Filled primary button using grenadier palette
-			primary:
-				"inline-flex items-center gap-[5px] px-3 py-1 rounded-md " +
-				"bg-[var(--color-grenadier-600)] border-0 " +
-				"text-white text-[11px] font-medium duration-150 " +
-				"hover:bg-[var(--color-grenadier-500)] " +
-				"active:bg-[var(--color-grenadier-700)]",
-
-			link:
-				"bg-transparent border-0 p-0 " +
-				"text-[13px] text-[var(--text-primary)] " +
-				"text-left hover:underline underline-offset-2",
-
-			// Destructive action buttons: delete, remove
-			destructive:
-				"inline-flex items-center gap-[5px] px-3 py-1 rounded-md " +
-				"bg-red-600 border-0 " +
-				"text-white text-[11px] font-medium duration-150 " +
-				"hover:bg-red-500 " +
-				"active:bg-red-700",
+		defaultVariants: {
+			variant: "default",
+			size: "default",
 		},
 	},
-	defaultVariants: {
-		variant: "toolbar",
-	},
-});
+);
 
-interface ButtonProps
-	extends ComponentProps<typeof BaseButton>,
-		VariantProps<typeof buttonVariants> {
-	active?: boolean;
-}
-
-export function Button({
-	variant,
-	size,
-	active,
+function Button({
 	className,
+	variant = "default",
+	size = "default",
 	...props
-}: ButtonProps) {
+}: ButtonPrimitive.Props & VariantProps<typeof buttonVariants>) {
 	return (
-		<BaseButton
-			data-active={active || undefined}
-			className={cn(buttonVariants({ variant, size }), className)}
+		<ButtonPrimitive
+			data-slot="button"
+			className={cn(buttonVariants({ variant, size, className }))}
 			{...props}
 		/>
 	);
 }
+
+export { Button, buttonVariants };

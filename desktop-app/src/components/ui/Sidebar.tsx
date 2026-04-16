@@ -2,12 +2,11 @@
 
 import { mergeProps } from "@base-ui/react/merge-props";
 import { useRender } from "@base-ui/react/use-render";
-import { IconLayoutSidebar } from "@tabler/icons-react";
+import { IconLayoutSidebarRightExpand } from "@tabler/icons-react";
 import { cva, type VariantProps } from "class-variance-authority";
 import * as React from "react";
-
+import { useIsMobile } from "@/hooks/useMobile";
 import { cn } from "@/lib/utils";
-import { useIsMobile } from "./../../hooks/useMobile";
 import { Button } from "./Button";
 import { Input } from "./Input";
 import { Separator } from "./Separator";
@@ -78,7 +77,6 @@ function SidebarProvider({
 				_setOpen(openState);
 			}
 
-			// This sets the cookie to keep the sidebar state.
 			// biome-ignore lint/suspicious/noDocumentCookie: no need
 			document.cookie = `${SIDEBAR_COOKIE_NAME}=${openState}; path=/; max-age=${SIDEBAR_COOKIE_MAX_AGE}`;
 		},
@@ -262,6 +260,7 @@ function SidebarTrigger({
 			data-sidebar="trigger"
 			data-slot="sidebar-trigger"
 			variant="ghost"
+			size="icon-sm"
 			className={cn(className)}
 			onClick={(event) => {
 				onClick?.(event);
@@ -269,7 +268,7 @@ function SidebarTrigger({
 			}}
 			{...props}
 		>
-			<IconLayoutSidebar className="cn-rtl-flip" />
+			<IconLayoutSidebarRightExpand className="cn-rtl-flip" />
 			<span className="sr-only">Toggle Sidebar</span>
 		</Button>
 	);
@@ -455,7 +454,7 @@ function SidebarMenu({ className, ...props }: React.ComponentProps<"ul">) {
 		<ul
 			data-slot="sidebar-menu"
 			data-sidebar="menu"
-			className={cn("flex w-full min-w-0 flex-col gap-1", className)}
+			className={cn("flex w-full min-w-0 flex-col gap-0", className)}
 			{...props}
 		/>
 	);

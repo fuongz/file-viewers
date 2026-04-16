@@ -45,11 +45,13 @@ export interface DataTableProps {
 	// ── Query mode ───────────────────────────────────────────────────────────
 	queryMode: QueryMode;
 	/** Called when the Filter button is clicked */
-	onFilterMode: () => void;
+	onFilterMode?: () => void;
 	/** Called when the SQL button is clicked */
-	onSqlMode: () => void;
+	onSqlMode?: () => void;
 	/** Hide the Filter/SQL toggle entirely (e.g. Excel has no SQL mode) */
 	hideSqlToggle?: boolean;
+	/** Hide the Filter button — always show SQL input (e.g. Parquet) */
+	hideFilterToggle?: boolean;
 	/** True while an async SQL connection is being opened (e.g. DuckDB) */
 	sqlConnecting?: boolean;
 	/** True while an async SQL query is running */
@@ -64,10 +66,10 @@ export interface DataTableProps {
 	// ── Controlled table state ───────────────────────────────────────────────
 	sorting: SortingState;
 	onSortingChange: Dispatch<SetStateAction<SortingState>>;
-	globalFilter: string;
-	onGlobalFilterChange: Dispatch<SetStateAction<string>>;
-	columnFilters: ColumnFiltersState;
-	onColumnFiltersChange: Dispatch<SetStateAction<ColumnFiltersState>>;
+	globalFilter?: string;
+	onGlobalFilterChange?: Dispatch<SetStateAction<string>>;
+	columnFilters?: ColumnFiltersState;
+	onColumnFiltersChange?: Dispatch<SetStateAction<ColumnFiltersState>>;
 	columnSizing: ColumnSizingState;
 	onColumnSizingChange: Dispatch<SetStateAction<ColumnSizingState>>;
 
@@ -112,6 +114,7 @@ export function DataTable({
 	onFilterMode,
 	onSqlMode,
 	hideSqlToggle,
+	hideFilterToggle,
 	sqlConnecting,
 	sqlLoading,
 	sqlError,
@@ -167,8 +170,8 @@ export function DataTable({
 		columnResizeMode: "onChange",
 		state: {
 			sorting,
-			globalFilter: queryMode === "sql" ? "" : globalFilter,
-			columnFilters,
+			globalFilter: queryMode === "sql" ? "" : (globalFilter ?? ""),
+			columnFilters: columnFilters ?? [],
 			columnSizing,
 		},
 		onSortingChange,
@@ -203,10 +206,10 @@ export function DataTable({
 			{/* ── Toolbar ── */}
 			<div className="csv-toolbar">
 				{toolbarLeading}
-				{!hideSqlToggle && (
+				{!hideSqlToggle && !hideFilterToggle && (
 					<div className="flex items-stretch rounded border border-[var(--border)] overflow-hidden flex-shrink-0 divide-x divide-[var(--border)]">
 						<Button
-							variant={queryMode === "search" ? "primary" : "ghost"}
+							variant={queryMode === "search" ? "default" : "ghost"}
 							onClick={onFilterMode}
 							className="w-auto rounded-none py-[3px] px-[8px] text-[11px] font-medium uppercase"
 						>
@@ -214,7 +217,7 @@ export function DataTable({
 							Filter
 						</Button>
 						<Button
-							variant={queryMode === "sql" ? "primary" : "ghost"}
+							variant={queryMode === "sql" ? "default" : "ghost"}
 							onClick={onSqlMode}
 							disabled={sqlConnecting}
 							className="w-auto rounded-none py-[3px] px-[8px] text-[11px] font-medium uppercase"
@@ -224,8 +227,8 @@ export function DataTable({
 						</Button>
 					</div>
 				)}
-				{queryMode === "search" || hideSqlToggle ? (
-					<SearchInput onFilter={(v) => onGlobalFilterChange(v)} />
+				{(queryMode === "search" && !hideFilterToggle) || hideSqlToggle ? (
+					<SearchInput onFilter={(v) => onGlobalFilterChange?.(v)} />
 				) : (
 					<SqlInput
 						onRun={onSqlRun ?? (() => {})}

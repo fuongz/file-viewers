@@ -94,15 +94,11 @@ export function CodeBlock({
 			<div className="flex items-center justify-between px-2 py-1 bg-[var(--bg-toolbar)] border-b border-[var(--border)]">
 				<div className="flex items-center gap-1.5">
 					<Button
-						variant="icon"
+						size="icon"
 						onClick={() => setCollapsed((c) => !c)}
 						title={collapsed ? "Expand" : "Collapse"}
 					>
-						{collapsed ? (
-							<IconChevronRight size={11} stroke={2} />
-						) : (
-							<IconChevronDown size={11} stroke={2} />
-						)}
+						{collapsed ? <IconChevronRight /> : <IconChevronDown />}
 					</Button>
 					{lang && (
 						<span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-primary)]">
@@ -113,12 +109,8 @@ export function CodeBlock({
 						{lineCount} {lineCount === 1 ? "line" : "lines"}
 					</span>
 				</div>
-				<Button variant="icon" onClick={handleCopy} title="Copy">
-					{copied ? (
-						<IconCheck size={13} stroke={2} />
-					) : (
-						<IconCopy size={13} stroke={1.5} />
-					)}
+				<Button size="icon" onClick={handleCopy} title="Copy">
+					{copied ? <IconCheck /> : <IconCopy />}
 				</Button>
 			</div>
 			{!collapsed && <pre>{children}</pre>}

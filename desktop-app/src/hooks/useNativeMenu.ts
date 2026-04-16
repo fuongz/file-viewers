@@ -1,19 +1,24 @@
 import { listen } from "@tauri-apps/api/event";
 import { useEffect, useRef } from "react";
+import { useAppStore } from "../store";
 
 export function useNativeMenu(
 	openFile: () => Promise<void>,
-	closeTab: (id: string) => void,
-	activeTabIdRef: React.RefObject<string>,
-	addTab: () => void,
 	saveFile: () => Promise<void>,
 	openSettings: () => void,
 	clearStorage: () => void,
+	disabled?: boolean,
 ) {
+	const addTab = useAppStore((s) => s.addTab);
+	const closeTab = useAppStore((s) => s.closeTab);
+
+	const openFileRef = useRef(openFile);
+	openFileRef.current = openFile;
 	useEffect(() => {
+		if (disabled) return;
 		let cancelled = false;
 		let unlisten: (() => void) | null = null;
-		listen("menu-open-file", () => openFile()).then((fn) => {
+		listen("menu-open-file", () => openFileRef.current()).then((fn) => {
 			if (cancelled) fn();
 			else unlisten = fn;
 		});
@@ -21,15 +26,16 @@ export function useNativeMenu(
 			cancelled = true;
 			unlisten?.();
 		};
-	}, [openFile]);
+	}, [disabled]);
 
 	const closeTabRef = useRef(closeTab);
 	closeTabRef.current = closeTab;
 	useEffect(() => {
+		if (disabled) return;
 		let cancelled = false;
 		let unlisten: (() => void) | null = null;
 		listen("menu-close-tab", () => {
-			closeTabRef.current(activeTabIdRef.current);
+			closeTabRef.current(useAppStore.getState().activeTabId);
 		}).then((fn) => {
 			if (cancelled) fn();
 			else unlisten = fn;
@@ -38,11 +44,12 @@ export function useNativeMenu(
 			cancelled = true;
 			unlisten?.();
 		};
-	}, [activeTabIdRef.current]);
+	}, [disabled]);
 
 	const addTabRef = useRef(addTab);
 	addTabRef.current = addTab;
 	useEffect(() => {
+		if (disabled) return;
 		let cancelled = false;
 		let unlisten: (() => void) | null = null;
 		listen("menu-new-tab", () => {
@@ -55,11 +62,12 @@ export function useNativeMenu(
 			cancelled = true;
 			unlisten?.();
 		};
-	}, []);
+	}, [disabled]);
 
 	const saveFileRef = useRef(saveFile);
 	saveFileRef.current = saveFile;
 	useEffect(() => {
+		if (disabled) return;
 		let cancelled = false;
 		let unlisten: (() => void) | null = null;
 		listen("menu-save", () => {
@@ -72,11 +80,12 @@ export function useNativeMenu(
 			cancelled = true;
 			unlisten?.();
 		};
-	}, []);
+	}, [disabled]);
 
 	const openSettingsRef = useRef(openSettings);
 	openSettingsRef.current = openSettings;
 	useEffect(() => {
+		if (disabled) return;
 		let cancelled = false;
 		let unlisten: (() => void) | null = null;
 		listen("menu-settings", () => {
@@ -89,11 +98,12 @@ export function useNativeMenu(
 			cancelled = true;
 			unlisten?.();
 		};
-	}, []);
+	}, [disabled]);
 
 	const clearStorageRef = useRef(clearStorage);
 	clearStorageRef.current = clearStorage;
 	useEffect(() => {
+		if (disabled) return;
 		let cancelled = false;
 		let unlisten: (() => void) | null = null;
 		listen("menu-clear-storage", () => {
@@ -106,5 +116,5 @@ export function useNativeMenu(
 			cancelled = true;
 			unlisten?.();
 		};
-	}, []);
+	}, [disabled]);
 }

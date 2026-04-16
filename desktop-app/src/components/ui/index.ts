@@ -1,5 +1,7 @@
 export * from "../SettingsDialog";
+export * from "./AlertDialog";
 export * from "./Button";
+export * from "./Collapsible";
 export * from "./CommandPalette";
 export * from "./ConfirmDialog";
 export * from "./ContextMenu";
@@ -7,6 +9,8 @@ export * from "./Dialog";
 export * from "./DropdownMenu";
 export * from "./Input";
 export * from "./InputGroup";
+export * from "./Resizeable";
+export * from "./ScrollArea";
 export * from "./Select";
 export * from "./Separator";
 export * from "./Sheet";

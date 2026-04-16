@@ -15,6 +15,7 @@ export interface FileTab {
 	isDirty?: boolean;
 	binaryContent?: Uint8Array;
 	isLoading?: boolean;
+	isProcessing?: boolean;
 	openedAt?: number;
 }
 

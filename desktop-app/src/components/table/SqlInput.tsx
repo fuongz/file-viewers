@@ -57,11 +57,7 @@ export function SqlInput({
 				}}
 				spellCheck={false}
 			/>
-			<Button
-				variant="primary"
-				onClick={() => onRun(buildQuery())}
-				disabled={disabled}
-			>
+			<Button onClick={() => onRun(buildQuery())} disabled={disabled}>
 				<IconPlayerPlay size={11} />
 				Run
 			</Button>

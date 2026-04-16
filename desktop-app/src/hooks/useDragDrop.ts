@@ -1,9 +1,10 @@
 import { getCurrentWebview } from "@tauri-apps/api/webview";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 import { EXT_TO_FORMAT } from "../constants";
+import { useAppStore } from "../store";
 
 export function useDragDrop(loadFile: (path: string) => Promise<void>) {
-	const [isDragOver, setIsDragOver] = useState(false);
+	const setIsDragOver = useAppStore((s) => s.setIsDragOver);
 
 	useEffect(() => {
 		let cancelled = false;
@@ -34,7 +35,5 @@ export function useDragDrop(loadFile: (path: string) => Promise<void>) {
 			cancelled = true;
 			unlisten?.();
 		};
-	}, [loadFile]);
-
-	return { isDragOver };
+	}, [loadFile, setIsDragOver]);
 }
