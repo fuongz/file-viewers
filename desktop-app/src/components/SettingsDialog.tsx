@@ -11,14 +11,14 @@ import {
 	DialogContent,
 	DialogDescription,
 	DialogTitle,
-} from "./ui/Dialog";
+} from "./ui/dialog";
 import {
 	Select,
 	SelectContent,
 	SelectItem,
 	SelectTrigger,
 	SelectValue,
-} from "./ui/Select";
+} from "./ui/select";
 import {
 	Sidebar,
 	SidebarContent,
@@ -29,7 +29,7 @@ import {
 	SidebarMenuButton,
 	SidebarMenuItem,
 	SidebarProvider,
-} from "./ui/Sidebar";
+} from "./ui/sidebar";
 
 interface SettingsDialogProps {
 	open: boolean;

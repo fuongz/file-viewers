@@ -8,7 +8,7 @@ import {
 	CommandItem,
 	CommandList,
 	CommandShortcut,
-} from "./Command";
+} from "./command";
 
 interface CommandItemData {
 	id: string;
@@ -44,7 +44,7 @@ export function CommandPalette({
 
 	return (
 		<CommandDialog open={open} onOpenChange={onOpenChange}>
-			<Command shouldFilter={false}>
+			<Command shouldFilter={false} className="bg-transparent">
 				<CommandInput
 					ref={inputRef}
 					placeholder="Type a command..."

@@ -393,15 +393,16 @@ export function JsonPreview({ content }: JsonPreviewProps) {
 					{/* Depth select */}
 					<Select
 						value={String(expandDepth)}
-						onValueChange={(v) =>
-							changeDepth(v === "all" ? "all" : Number(v))
-						}
+						onValueChange={(v) => changeDepth(v === "all" ? "all" : Number(v))}
 					>
 						<SelectTrigger size="xs" className="text-xs">
 							<SelectValue />
 						</SelectTrigger>
 						<SelectContent side="bottom" align="end">
-							{Array.from({ length: Math.max(maxDepth, 1) }, (_, i) => i + 1).map((d) => (
+							{Array.from(
+								{ length: Math.max(maxDepth, 1) },
+								(_, i) => i + 1,
+							).map((d) => (
 								<SelectItem className="text-xs" key={d} value={String(d)}>
 									Depth {d}
 								</SelectItem>

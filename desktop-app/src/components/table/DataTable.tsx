@@ -24,6 +24,7 @@ import type { Dispatch, ReactNode, SetStateAction } from "react";
 import { useMemo, useRef } from "react";
 import {
 	Button,
+	ButtonGroup,
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
@@ -141,7 +142,6 @@ export function DataTable({
 
 	const columnHelper = createColumnHelper<Record<string, unknown>>();
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: renderCellValue identity is stable per call site
 	const columns = useMemo(
 		() =>
 			displayHeaders.map((h, i) =>
@@ -183,6 +183,12 @@ export function DataTable({
 		getFilteredRowModel: getFilteredRowModel(),
 	});
 
+	const columnSizeVars: Record<string, number> = {};
+	for (const header of table.getFlatHeaders()) {
+		columnSizeVars[`--header-${header.id}-size`] = header.getSize();
+		columnSizeVars[`--col-${header.column.id}-size`] = header.column.getSize();
+	}
+
 	const { rows: tableRows } = table.getRowModel();
 
 	const rowVirtualizer = useVirtualizer({
@@ -202,30 +208,28 @@ export function DataTable({
 	const colCount = displayHeaders.length;
 
 	return (
-		<div className="csv-preview">
+		<div className="csv-preview max-w-full">
 			{/* ── Toolbar ── */}
-			<div className="csv-toolbar">
+			<div className="flex gap-2 px-2 py-1 border-b w-full wrap-flex">
 				{toolbarLeading}
 				{!hideSqlToggle && !hideFilterToggle && (
-					<div className="flex items-stretch rounded border border-[var(--border)] overflow-hidden flex-shrink-0 divide-x divide-[var(--border)]">
+					<ButtonGroup>
 						<Button
-							variant={queryMode === "search" ? "default" : "ghost"}
+							variant={queryMode === "search" ? "default" : "outline"}
 							onClick={onFilterMode}
-							className="w-auto rounded-none py-[3px] px-[8px] text-[11px] font-medium uppercase"
 						>
-							<IconFilter size={13} />
+							<IconFilter />
 							Filter
 						</Button>
 						<Button
-							variant={queryMode === "sql" ? "default" : "ghost"}
+							variant={queryMode === "sql" ? "default" : "outline"}
 							onClick={onSqlMode}
 							disabled={sqlConnecting}
-							className="w-auto rounded-none py-[3px] px-[8px] text-[11px] font-medium uppercase"
 						>
-							<IconDatabase size={13} />
+							<IconDatabase />
 							{sqlConnecting ? "Connecting..." : "SQL"}
 						</Button>
-					</div>
+					</ButtonGroup>
 				)}
 				{(queryMode === "search" && !hideFilterToggle) || hideSqlToggle ? (
 					<SearchInput onFilter={(v) => onGlobalFilterChange?.(v)} />
@@ -254,6 +258,7 @@ export function DataTable({
 				<table
 					className="csv-table"
 					style={{
+						...(columnSizeVars as React.CSSProperties),
 						display: "grid",
 						width: table.getCenterTotalSize() + ROW_NUM_W,
 					}}
@@ -276,7 +281,7 @@ export function DataTable({
 										key={header.id}
 										style={{
 											display: "flex",
-											width: header.getSize(),
+											width: `calc(var(--header-${header.id}-size) * 1px)`,
 											position: "relative",
 											alignItems: "center",
 											padding: 0,
@@ -397,7 +402,7 @@ export function DataTable({
 												key={cell.id}
 												style={{
 													display: "flex",
-													width: cell.column.getSize(),
+													width: `calc(var(--col-${cell.column.id}-size) * 1px)`,
 													alignItems: "center",
 													overflow: "hidden",
 													outlineOffset: "-1px",

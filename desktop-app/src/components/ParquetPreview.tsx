@@ -107,7 +107,6 @@ export function ParquetPreview({ binaryContent }: ParquetPreviewProps) {
 
 	// ── Initial file load (one-shot DuckDB) ──────────────────────────────────
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: setQueryMode is stable; teardown inlined to avoid unstable function deps
 	useEffect(() => {
 		if (!binaryContent) {
 			setLoading(false);

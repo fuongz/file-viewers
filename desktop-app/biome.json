@@ -25,6 +25,9 @@
 		"enabled": true,
 		"rules": {
 			"recommended": true,
+			"correctness": {
+				"useExhaustiveDependencies": "off"
+			},
 			"complexity": {
 				"noImportantStyles": "off"
 			},
@@ -33,7 +36,8 @@
 			},
 			"suspicious": {
 				"noArrayIndexKey": "off",
-				"noExplicitAny": "off"
+				"noExplicitAny": "off",
+				"noDocumentCookie": "off"
 			},
 			"a11y": {
 				"useSemanticElements": "off",

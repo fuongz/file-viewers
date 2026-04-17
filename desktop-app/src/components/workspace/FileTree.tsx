@@ -1,9 +1,6 @@
-import {
-	IconLoader2,
-	IconPencil,
-	IconPlus,
-	IconTrash,
-} from "@tabler/icons-react";
+import { Trash } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
+import { IconLoader2, IconPencil, IconPlus } from "@tabler/icons-react";
 import { useEffect, useRef, useState } from "react";
 import { FORMAT_ICONS } from "@/constants";
 import { useAppStore } from "../../store";
@@ -28,7 +25,7 @@ import {
 	TooltipContent,
 	TooltipTrigger,
 } from "../ui";
-import { Kbd, KbdGroup } from "../ui/Kbd";
+import { Kbd, KbdGroup } from "../ui/kbd";
 
 export function FileTree(props: React.ComponentProps<typeof Sidebar>) {
 	const { tabs, activeTabId, setActiveTabId, closeTab, addTab, renameTab } =
@@ -186,7 +183,7 @@ export function FileTree(props: React.ComponentProps<typeof Sidebar>) {
 													disabled={isAnyTabBusy}
 													onClick={() => closeTab(tab.id)}
 												>
-													<IconTrash />
+													<HugeiconsIcon icon={Trash} />
 													Delete
 												</ContextMenuItem>
 											</ContextMenuContent>

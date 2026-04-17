@@ -11,7 +11,7 @@ import {
 	SidebarProvider,
 	TooltipProvider,
 } from "./components/ui";
-import { Toaster } from "./components/ui/Sonner";
+import { Toaster } from "./components/ui/sonner";
 import { Workspace } from "./components/Workspace";
 import { FileTree } from "./components/workspace/FileTree";
 import { STORAGE_SESSION_KEY, STORAGE_THEME_KEY } from "./constants";
@@ -141,7 +141,7 @@ function App() {
 						onToggleSidebar={toggleSidebar}
 						onOpenSettings={() => setSettingsOpen(true)}
 					/>
-					<div className="flex flex-1">
+					<div className="flex flex-1 overflow-hidden">
 						<FileTree />
 						<SidebarInset className="app relative top-10 h-[calc(100svh-40px)]!">
 							<CloseTabDialog />

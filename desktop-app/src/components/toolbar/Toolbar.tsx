@@ -7,7 +7,15 @@ import {
 } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
 import type { Format } from "../../types";
-import { Button, Toggle, Tooltip, TooltipContent, TooltipTrigger } from "../ui";
+import {
+	Button,
+	Kbd,
+	KbdGroup,
+	Toggle,
+	Tooltip,
+	TooltipContent,
+	TooltipTrigger,
+} from "../ui";
 
 interface ToolbarProps {
 	format: Format;
@@ -33,7 +41,7 @@ export function Toolbar({
 			className="flex items-center h-[40px] flex-shrink-0 border-b px-2 fixed top-0 w-full z-10 bg-background"
 			data-tauri-drag-region
 		>
-			<div className={cn("flex-shrink-0 w-16")} />
+			<div className={cn("flex-shrink-0 w-20")} />
 			<Tooltip>
 				<TooltipTrigger
 					render={
@@ -54,6 +62,10 @@ export function Toolbar({
 				</TooltipTrigger>
 				<TooltipContent>
 					{!sidebarCollapsed ? "Collapse sidebar" : "Expand sidebar"}
+					<KbdGroup>
+						<Kbd>⌘</Kbd>
+						<Kbd>B</Kbd>
+					</KbdGroup>
 				</TooltipContent>
 			</Tooltip>
 			<div className="flex-1" />
@@ -79,7 +91,7 @@ export function Toolbar({
 								<IconKeyboard stroke={1} />
 							)}
 						</TooltipTrigger>
-						<TooltipContent>
+						<TooltipContent className="flex items-center gap-2">
 							{!showEditor ? "Hide editor" : "Show editor"}
 						</TooltipContent>
 					</Tooltip>

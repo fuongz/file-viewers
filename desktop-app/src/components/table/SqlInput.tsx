@@ -1,7 +1,13 @@
-import { IconPlayerPlay } from "@tabler/icons-react";
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
-import { Button, Input } from "../ui";
+import {
+	InputGroup,
+	InputGroupAddon,
+	InputGroupButton,
+	InputGroupInput,
+	Kbd,
+	KbdGroup,
+} from "../ui";
 
 interface SqlInputProps {
 	onRun: (query: string) => void;
@@ -39,11 +45,10 @@ export function SqlInput({
 	}, []);
 
 	return (
-		<div className="csv-sql-wrapper gap-2">
-			<Input
+		<InputGroup>
+			<InputGroupInput
 				ref={inputRef}
-				className="flex-1 w-full font-mono text-xs"
-				placeholder="age > 30 AND name = 'Alice'  (⌘↵)"
+				placeholder="age > 30 AND name = 'Alice'"
 				value={condition}
 				disabled={disabled}
 				onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
@@ -57,10 +62,17 @@ export function SqlInput({
 				}}
 				spellCheck={false}
 			/>
-			<Button onClick={() => onRun(buildQuery())} disabled={disabled}>
-				<IconPlayerPlay size={11} />
-				Run
-			</Button>
-		</div>
+			<InputGroupAddon align="inline-end">
+				<InputGroupButton
+					onClick={() => onRun(buildQuery())}
+					disabled={disabled}
+				>
+					<KbdGroup>
+						<Kbd>⌘</Kbd>
+						<Kbd>enter</Kbd>
+					</KbdGroup>
+				</InputGroupButton>
+			</InputGroupAddon>
+		</InputGroup>
 	);
 }

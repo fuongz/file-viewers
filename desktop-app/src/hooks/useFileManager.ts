@@ -251,7 +251,6 @@ export function useRestoreSession(
 	const initialPathTabsRef = useRef(initialPathTabs);
 	const initialActiveTabIdRef = useRef(initialActiveTabId);
 
-	// biome-ignore lint/correctness/useExhaustiveDependencies: runs once on mount
 	useEffect(() => {
 		const pathTabs = initialPathTabsRef.current;
 		if (!pathTabs.length) return;

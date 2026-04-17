@@ -1,14 +1,15 @@
 /** biome-ignore-all lint/suspicious/noArrayIndexKey: no need */
 
 import { Popover } from "@base-ui/react";
-import { IconTrash } from "@tabler/icons-react";
+import { Trash } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import alasql from "alasql";
 import Papa from "papaparse";
 import type React from "react";
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { useTableState } from "../hooks/useTableState";
 import { DataTable, TableSkeleton } from "./table";
-import { Textarea } from "./ui";
+import { Button, Textarea } from "./ui";
 
 interface CsvPreviewProps {
 	content: string;
@@ -92,7 +93,6 @@ export function CsvPreview({
 	}, [deferredContent]);
 
 	// When rows change due to external file load, reset editRows
-	// biome-ignore lint/correctness/useExhaustiveDependencies: intentional
 	useEffect(() => {
 		if (isMyEditRef.current) {
 			isMyEditRef.current = false;
@@ -218,15 +218,10 @@ export function CsvPreview({
 			}}
 			toolbarLeading={
 				onClearCsv ? (
-					<button
-						type="button"
-						className="inline-flex items-center gap-[5px] px-3 py-1 rounded-md bg-red-600 border-0 text-white text-[11px] font-medium duration-150 hover:bg-red-500 active:bg-red-700 cursor-pointer"
-						onClick={onClearCsv}
-						title="Clear data"
-					>
-						<IconTrash size={12} />
-						Clear
-					</button>
+					<Button type="button" variant="destructive" onClick={onClearCsv}>
+						<HugeiconsIcon icon={Trash} />
+						Clear file
+					</Button>
 				) : undefined
 			}
 			statusRight={

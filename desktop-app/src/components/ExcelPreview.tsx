@@ -1,9 +1,21 @@
 /** biome-ignore-all lint/suspicious/noArrayIndexKey: no need */
 
+import { Cancel01Icon, FileCorruptIcon } from "@hugeicons/core-free-icons";
+import { HugeiconsIcon } from "@hugeicons/react";
 import { readXlsx } from "hucre/xlsx";
 import { useEffect, useMemo, useState } from "react";
 import { useTableState } from "../hooks/useTableState";
+import { useAppStore } from "../store";
 import { DataTable, TableSkeleton } from "./table";
+import {
+	Button,
+	Empty,
+	EmptyContent,
+	EmptyDescription,
+	EmptyHeader,
+	EmptyMedia,
+	EmptyTitle,
+} from "./ui";
 
 interface ExcelPreviewProps {
 	binaryContent: Uint8Array | undefined;
@@ -125,6 +137,7 @@ function SheetTable({
 // ── ExcelPreview ──────────────────────────────────────────────────────────────
 
 export function ExcelPreview({ binaryContent }: ExcelPreviewProps) {
+	const { closeTab, activeTabId } = useAppStore();
 	const [sheets, setSheets] = useState<ParsedSheet[] | null>(null);
 	const [activeSheet, setActiveSheet] = useState(0);
 	const [error, setError] = useState<string | null>(null);
@@ -167,8 +180,28 @@ export function ExcelPreview({ binaryContent }: ExcelPreviewProps) {
 
 	if (!binaryContent) {
 		return (
-			<div className="preview-empty">
-				<p>No Excel file loaded.</p>
+			<div className="flex h-full items-center justify-center">
+				<Empty>
+					<EmptyHeader>
+						<EmptyMedia variant="default" className="size-24">
+							<HugeiconsIcon
+								strokeWidth={0.5}
+								className="size-20 text-[var(--text-muted)]"
+								icon={FileCorruptIcon}
+							/>
+						</EmptyMedia>
+					</EmptyHeader>
+					<EmptyTitle>File not found.</EmptyTitle>
+					<EmptyDescription>
+						Select an Excel file to preview it.
+					</EmptyDescription>
+					<EmptyContent>
+						<Button variant="destructive" onClick={() => closeTab(activeTabId)}>
+							<HugeiconsIcon icon={Cancel01Icon} />
+							Close Preview
+						</Button>
+					</EmptyContent>
+				</Empty>
 			</div>
 		);
 	}
