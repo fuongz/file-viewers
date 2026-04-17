@@ -2,6 +2,8 @@ import { IconCopy } from "@tabler/icons-react";
 import type React from "react";
 import { useCallback, useMemo, useState } from "react";
 import {
+	Button,
+	ButtonGroup,
 	ContextMenu,
 	ContextMenuContent,
 	ContextMenuItem,
@@ -42,7 +44,7 @@ function buildPath(parent: string, key: string | number): string {
 
 // ── Expand state ─────────────────────────────────────────────────────────────
 
-type ExpandDepth = 1 | 2 | 3 | 4 | "all";
+type ExpandDepth = number | "all";
 
 function nodeIsExpanded(
 	path: string,
@@ -311,7 +313,7 @@ interface JsonPreviewProps {
 
 export function JsonPreview({ content }: JsonPreviewProps) {
 	const [selectedPath, setSelectedPath] = useState<string | null>(null);
-	const [expandDepth, setExpandDepth] = useState<ExpandDepth>("all");
+	const [expandDepth, setExpandDepth] = useState<ExpandDepth>(2);
 	const [toggled, setToggled] = useState<Set<string>>(new Set());
 	const [viewMode, setViewMode] = useState<"auto" | "raw">("auto");
 
@@ -379,6 +381,59 @@ export function JsonPreview({ content }: JsonPreviewProps) {
 
 	return (
 		<div className="json-preview">
+			{/* ── Status bar ── */}
+			<div className="text-xs h-8 px-2 py-1 bg-card border-b flex gap-2 justify-between flex-shrink-0 items-center">
+				<span className="json-statusbar-left">{nodeCount} nodes</span>
+				<span>
+					{selectedPath && (
+						<span className="json-path-chip">{selectedPath}</span>
+					)}
+				</span>
+				<div className="flex items-center gap-1">
+					{/* Depth select */}
+					<Select
+						value={String(expandDepth)}
+						onValueChange={(v) =>
+							changeDepth(v === "all" ? "all" : Number(v))
+						}
+					>
+						<SelectTrigger size="xs" className="text-xs">
+							<SelectValue />
+						</SelectTrigger>
+						<SelectContent side="bottom" align="end">
+							{Array.from({ length: Math.max(maxDepth, 1) }, (_, i) => i + 1).map((d) => (
+								<SelectItem className="text-xs" key={d} value={String(d)}>
+									Depth {d}
+								</SelectItem>
+							))}
+							<SelectItem className="text-xs" key="all" value="all">
+								All
+							</SelectItem>
+						</SelectContent>
+					</Select>
+
+					{/* View mode */}
+					<ButtonGroup>
+						<Button
+							type="button"
+							variant={viewMode === "auto" ? "default" : "outline"}
+							size="xs"
+							onClick={() => setViewMode("auto")}
+						>
+							Auto
+						</Button>
+						<Button
+							type="button"
+							variant={viewMode === "raw" ? "default" : "outline"}
+							size="xs"
+							onClick={() => setViewMode("raw")}
+						>
+							Raw
+						</Button>
+					</ButtonGroup>
+				</div>
+			</div>
+
 			{/* ── Tree / Raw area ── */}
 			<div className="json-tree-area">
 				{viewMode === "raw" ? (
@@ -399,61 +454,6 @@ export function JsonPreview({ content }: JsonPreviewProps) {
 						/>
 					</div>
 				)}
-			</div>
-
-			{/* ── Status bar ── */}
-			<div className="json-statusbar">
-				<span className="json-statusbar-left">
-					{nodeCount} nodes - {maxDepth} levels deep
-				</span>
-
-				<span className="json-statusbar-center">
-					{selectedPath && (
-						<span className="json-path-chip">{selectedPath}</span>
-					)}
-				</span>
-
-				<span className="json-statusbar-right">
-					{/* Depth select */}
-					<Select
-						value={String(expandDepth)}
-						onValueChange={(v) =>
-							changeDepth(v === "all" ? "all" : (Number(v) as ExpandDepth))
-						}
-					>
-						<SelectTrigger
-							size="sm"
-							className="h-5 text-[11px] px-1.5 py-0 min-w-[72px]"
-						>
-							<SelectValue />
-						</SelectTrigger>
-						<SelectContent side="top" align="end">
-							{([1, 2, 3, 4, "all"] as ExpandDepth[]).map((d) => (
-								<SelectItem key={d} value={String(d)}>
-									{d === "all" ? "All" : `Depth ${d}`}
-								</SelectItem>
-							))}
-						</SelectContent>
-					</Select>
-
-					{/* View mode */}
-					<div className="json-mode-group">
-						<button
-							type="button"
-							className={`json-mode-btn${viewMode === "auto" ? " active" : ""}`}
-							onClick={() => setViewMode("auto")}
-						>
-							Auto
-						</button>
-						<button
-							type="button"
-							className={`json-mode-btn${viewMode === "raw" ? " active" : ""}`}
-							onClick={() => setViewMode("raw")}
-						>
-							Raw
-						</button>
-					</div>
-				</span>
 			</div>
 		</div>
 	);

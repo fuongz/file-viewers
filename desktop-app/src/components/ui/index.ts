@@ -1,6 +1,7 @@
 export * from "../SettingsDialog";
 export * from "./AlertDialog";
 export * from "./Button";
+export * from "./ButtonGroup";
 export * from "./Collapsible";
 export * from "./CommandPalette";
 export * from "./ConfirmDialog";

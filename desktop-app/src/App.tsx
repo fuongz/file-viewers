@@ -1,11 +1,11 @@
 import { useEffect } from "react";
 import "./App.css";
 import { toast } from "sonner";
+import { CloseTabDialog } from "./components/CloseTabDialog";
 import { DragOverlay } from "./components/DragOverlay";
 import { Toolbar } from "./components/toolbar/Toolbar";
 import {
 	CommandPalette,
-	ConfirmDialog,
 	SettingsDialog,
 	SidebarInset,
 	SidebarProvider,
@@ -31,9 +31,6 @@ function App() {
 		activeTabId,
 		themePref,
 		setThemePref,
-		setCloseConfirmTabId,
-		closeConfirmTabId,
-		closeTabForce,
 		closeTab,
 		addTab,
 		updateActiveTab,
@@ -125,11 +122,9 @@ function App() {
 		}
 	}, [tabs, activeTabId, themePref]);
 
-	const closeConfirmTab = tabs.find((t) => t.id === closeConfirmTabId);
-
 	return (
 		<TooltipProvider delay={0}>
-			<div className="[--header-height:calc(--spacing(14))]">
+			<div>
 				<SidebarProvider
 					className="flex flex-col"
 					open={!sidebarCollapsed}
@@ -148,53 +143,39 @@ function App() {
 					/>
 					<div className="flex flex-1">
 						<FileTree />
-						<SidebarInset className="app">
-							<ConfirmDialog
-								open={closeConfirmTabId !== null}
-								title="Close unsaved file?"
-								description={`"${closeConfirmTab?.name}" has unsaved changes. Close without saving?`}
-								confirmLabel="Close without saving"
-								cancelLabel="Cancel"
-								onConfirm={() => {
-									if (closeConfirmTabId) closeTabForce(closeConfirmTabId);
-									setCloseConfirmTabId(null);
-								}}
-								onCancel={() => setCloseConfirmTabId(null)}
-							/>
+						<SidebarInset className="app relative top-10 h-[calc(100svh-40px)]!">
+							<CloseTabDialog />
 
 							{isDragOver && <DragOverlay />}
 
-							<div className="workspace">
-								<Workspace
-									showEditor={showEditor}
-									content={content}
-									previewContent={previewContent}
-									format={format}
-									isDark={isDark}
-									isLoading={isAnyTabLoading}
-									binaryContent={binaryContent}
-									onProcessingChange={(loading) =>
-										updateActiveTab({ isProcessing: loading })
-									}
-									onOpenFile={openFile}
-									onEditorChange={handleEditorChange}
-									onFormatMarkdown={formatMarkdown}
-									onFormatJson={formatJson}
-									onMinifyJson={minifyJson}
-									onContentChange={
-										format === "csv"
-											? (val) =>
-													updateActiveTab({ content: val, previewContent: val })
-											: undefined
-									}
-									onClearCsv={
-										format === "csv"
-											? () =>
-													updateActiveTab({ content: "", previewContent: "" })
-											: undefined
-									}
-								/>
-							</div>
+							<Workspace
+								showEditor={showEditor}
+								content={content}
+								previewContent={previewContent}
+								format={format}
+								isDark={isDark}
+								isLoading={isAnyTabLoading}
+								binaryContent={binaryContent}
+								onProcessingChange={(loading) =>
+									updateActiveTab({ isProcessing: loading })
+								}
+								onOpenFile={openFile}
+								onEditorChange={handleEditorChange}
+								onFormatMarkdown={formatMarkdown}
+								onFormatJson={formatJson}
+								onMinifyJson={minifyJson}
+								onContentChange={
+									format === "csv"
+										? (val) =>
+												updateActiveTab({ content: val, previewContent: val })
+										: undefined
+								}
+								onClearCsv={
+									format === "csv"
+										? () => updateActiveTab({ content: "", previewContent: "" })
+										: undefined
+								}
+							/>
 
 							<SettingsDialog
 								open={settingsOpen}

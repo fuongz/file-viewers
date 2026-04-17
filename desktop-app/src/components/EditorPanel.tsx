@@ -6,7 +6,7 @@ interface EditorPanelProps {
 	onChange: (value: string) => void;
 	language: string;
 	isDark: boolean;
-	statusBar?: ReactNode;
+	actionsBar?: ReactNode;
 }
 
 export function EditorPanel({
@@ -14,11 +14,12 @@ export function EditorPanel({
 	onChange,
 	language,
 	isDark,
-	statusBar,
+	actionsBar,
 }: EditorPanelProps) {
 	return (
 		<div className="editor-panel">
 			<div className="editor-panel-monaco">
+				{actionsBar && <div className="editor-panel-actions">{actionsBar}</div>}
 				<Editor
 					height="100%"
 					language={language}
@@ -27,11 +28,11 @@ export function EditorPanel({
 					onChange={(val) => onChange(val ?? "")}
 					options={{
 						minimap: { enabled: false },
-						fontSize: 14,
+						fontSize: 13,
 						lineNumbers: "on",
 						wordWrap: "on",
 						scrollBeyondLastLine: false,
-						padding: { top: 16, bottom: 16 },
+						padding: { top: 16, bottom: 56 },
 						fontFamily:
 							"'JetBrains Mono', 'Fira Code', 'Cascadia Code', Menlo, monospace",
 						fontLigatures: true,
@@ -41,7 +42,6 @@ export function EditorPanel({
 					}}
 				/>
 			</div>
-			{statusBar}
 		</div>
 	);
 }

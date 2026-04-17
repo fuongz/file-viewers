@@ -13,9 +13,11 @@ import {
 interface ConfirmDialogProps {
 	open: boolean;
 	title: string;
-	description?: string;
+	description?: ReactNode;
 	confirmLabel?: string;
 	cancelLabel?: string;
+	confirmVariant?: "default" | "destructive";
+	size?: "sm" | "default";
 	onConfirm: () => void;
 	onCancel: () => void;
 	children?: ReactNode;
@@ -27,12 +29,14 @@ export function ConfirmDialog({
 	description,
 	confirmLabel = "Confirm",
 	cancelLabel = "Cancel",
+	confirmVariant = "default",
+	size = "default",
 	onConfirm,
 	onCancel,
 }: ConfirmDialogProps) {
 	return (
 		<AlertDialog open={open} onOpenChange={(o) => !o && onCancel()}>
-			<AlertDialogContent>
+			<AlertDialogContent size={size}>
 				<AlertDialogHeader>
 					<AlertDialogTitle>{title}</AlertDialogTitle>
 					<AlertDialogDescription>{description}</AlertDialogDescription>
@@ -41,7 +45,7 @@ export function ConfirmDialog({
 					<AlertDialogCancel onClick={onCancel}>
 						{cancelLabel}
 					</AlertDialogCancel>
-					<AlertDialogAction onClick={onConfirm}>
+					<AlertDialogAction variant={confirmVariant} onClick={onConfirm}>
 						{confirmLabel}
 					</AlertDialogAction>
 				</AlertDialogFooter>

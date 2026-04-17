@@ -1,8 +1,8 @@
 import { IconLoader } from "@tabler/icons-react";
 import { FORMAT_LANGUAGE } from "@/constants";
 import type { Format } from "@/types";
+import { EditorActionsBar } from "./EditorActionsBar";
 import { EditorPanel } from "./EditorPanel";
-import { EditorStatusBar } from "./EditorStatusBar";
 import { PreviewPanel } from "./PreviewPanel";
 import { ResizableHandle, ResizablePanel, ResizablePanelGroup } from "./ui";
 
@@ -65,15 +65,15 @@ export function Workspace({
 	}
 
 	return (
-		<ResizablePanelGroup orientation="horizontal" className="h-full">
+		<ResizablePanelGroup orientation="horizontal">
 			<ResizablePanel defaultSize={50} minSize={20}>
 				<EditorPanel
 					value={content}
 					onChange={onEditorChange}
 					language={FORMAT_LANGUAGE[format]}
 					isDark={isDark}
-					statusBar={
-						<EditorStatusBar
+					actionsBar={
+						<EditorActionsBar
 							format={format}
 							content={content}
 							onFormatMarkdown={onFormatMarkdown}

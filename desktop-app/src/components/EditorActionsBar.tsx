@@ -10,7 +10,7 @@ interface EditorStatusBarProps {
 	onMinifyJson: () => void;
 }
 
-export function EditorStatusBar({
+export function EditorActionsBar({
 	format,
 	content,
 	onFormatMarkdown,
@@ -20,24 +20,22 @@ export function EditorStatusBar({
 	const hasActions =
 		((format === "markdown" || format === "mdx") && !!content) ||
 		(format === "json" && !!content);
-
 	if (!hasActions) return null;
-
 	return (
-		<div className="editor-status-bar">
+		<div className="py-1 px-2 h-8 bg-card border-b flex items-center justify-end gap-1">
 			{(format === "markdown" || format === "mdx") && content && (
-				<Button onClick={onFormatMarkdown}>
+				<Button variant="outline" size="xs" onClick={onFormatMarkdown}>
 					<IconWand size={12} stroke={1.5} />
 					Format
 				</Button>
 			)}
 			{format === "json" && content && (
 				<>
-					<Button onClick={onFormatJson}>
+					<Button variant="outline" size="xs" onClick={onFormatJson}>
 						<IconWand size={12} stroke={1.5} />
 						Format
 					</Button>
-					<Button onClick={onMinifyJson}>
+					<Button variant="outline" size="xs" onClick={onMinifyJson}>
 						<IconMinimize size={12} stroke={1.5} />
 						Minify
 					</Button>

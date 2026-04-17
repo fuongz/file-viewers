@@ -328,21 +328,6 @@
 	align-items: center;
 	-webkit-app-region: no-drag;
 }
-
-/* ── Workspace ────────────────────────────────────────────── */
-.workspace {
-	flex: 1;
-	min-height: 0;
-	overflow: hidden;
-}
-
-.workspace-inner {
-	display: flex;
-	flex-direction: row;
-	height: 100%;
-	overflow: hidden;
-}
-
 .sidebar-fixed {
 	width: 220px;
 	flex-shrink: 0;
@@ -385,7 +370,6 @@
 	border-top: 1px solid var(--border);
 }
 
-/* ── Resize handle ────────────────────────────────────────── */
 .resize-handle {
 	position: relative;
 	width: 6px;

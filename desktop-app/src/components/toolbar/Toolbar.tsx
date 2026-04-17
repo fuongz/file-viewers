@@ -30,17 +30,17 @@ export function Toolbar({
 }: ToolbarProps) {
 	return (
 		<header
-			className="flex items-center h-[40px] flex-shrink-0 border-b"
+			className="flex items-center h-[40px] flex-shrink-0 border-b px-2 fixed top-0 w-full z-10 bg-background"
 			data-tauri-drag-region
 		>
-			<div className={cn("flex-shrink-0 w-20")} />
+			<div className={cn("flex-shrink-0 w-16")} />
 			<Tooltip>
 				<TooltipTrigger
 					render={
 						<Toggle
 							aria-label="Toggle sidebar"
 							variant="default"
-							size="icon-lg"
+							size="icon"
 							onPressedChange={onToggleSidebar}
 							pressed={!sidebarCollapsed}
 						/>
@@ -59,7 +59,7 @@ export function Toolbar({
 			<div className="flex-1" />
 			<span className="font-semibold text-sm">{tabName}</span>
 			<div className="flex-1" />
-			<div className="flex gap-2 items-center">
+			<div className="flex gap-0.5 items-center">
 				{format !== "xlsx" && (
 					<Tooltip>
 						<TooltipTrigger
@@ -67,7 +67,7 @@ export function Toolbar({
 								<Toggle
 									aria-label="Toggle sidebar"
 									variant="default"
-									size="icon-lg"
+									size="icon"
 									onPressedChange={onToggleEditor}
 									pressed={showEditor}
 								/>
@@ -84,7 +84,7 @@ export function Toolbar({
 						</TooltipContent>
 					</Tooltip>
 				)}
-				<Button size="icon-lg" onClick={onOpenSettings} variant="ghost">
+				<Button size="icon-sm" onClick={onOpenSettings} variant="ghost">
 					<IconSettings />
 				</Button>
 			</div>
