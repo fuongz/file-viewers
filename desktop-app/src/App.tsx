@@ -53,7 +53,8 @@ function App() {
 	const isAnyTabLoading = tabs.some((t) => t.isLoading);
 	const isAnyTabBusy = tabs.some((t) => t.isLoading || t.isProcessing);
 
-	const { loadFile, openFile, saveFile, loadFileRef } = useFileManager();
+	const { loadFile, openFile, saveFile, loadFileRef, loadUrl } =
+		useFileManager();
 
 	const { handleEditorChange, formatMarkdown, formatJson, minifyJson } =
 		useEditorActions();
@@ -187,6 +188,7 @@ function App() {
 							<CommandPalette
 								open={commandOpen}
 								onOpenChange={setCommandOpen}
+								onLoadUrl={loadUrl}
 								items={[
 									{
 										id: "new-tab",

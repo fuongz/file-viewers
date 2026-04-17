@@ -1,4 +1,4 @@
-import { Trash } from "@hugeicons/core-free-icons";
+import { SearchIcon, Trash } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { IconLoader2, IconPencil, IconPlus } from "@tabler/icons-react";
 import { useEffect, useRef, useState } from "react";
@@ -18,6 +18,7 @@ import {
 	SidebarGroupAction,
 	SidebarGroupContent,
 	SidebarGroupLabel,
+	SidebarHeader,
 	SidebarMenu,
 	SidebarMenuButton,
 	SidebarMenuItem,
@@ -28,8 +29,15 @@ import {
 import { Kbd, KbdGroup } from "../ui/kbd";
 
 export function FileTree(props: React.ComponentProps<typeof Sidebar>) {
-	const { tabs, activeTabId, setActiveTabId, closeTab, addTab, renameTab } =
-		useAppStore();
+	const {
+		tabs,
+		activeTabId,
+		setActiveTabId,
+		closeTab,
+		addTab,
+		renameTab,
+		setCommandOpen,
+	} = useAppStore();
 
 	const isAnyTabBusy = tabs.some((t) => t.isLoading || t.isProcessing);
 
@@ -74,6 +82,26 @@ export function FileTree(props: React.ComponentProps<typeof Sidebar>) {
 			className="top-10 h-[calc(100svh-40px)]!"
 			{...props}
 		>
+			<SidebarHeader className="p-2 group-data-[collapsible=icon]:hidden">
+				<button
+					type="button"
+					onClick={() => setCommandOpen(true)}
+					className="flex h-7 w-full items-center gap-1.5 rounded-md border border-input bg-input/20 px-2 text-left transition-colors hover:bg-input/40"
+				>
+					<HugeiconsIcon
+						icon={SearchIcon}
+						strokeWidth={2}
+						className="size-3.5 shrink-0 text-muted-foreground opacity-50"
+					/>
+					<span className="flex-1 text-xs text-muted-foreground">
+						Search files...
+					</span>
+					<KbdGroup>
+						<Kbd>⌘</Kbd>
+						<Kbd>K</Kbd>
+					</KbdGroup>
+				</button>
+			</SidebarHeader>
 			<SidebarContent>
 				<SidebarGroup>
 					<SidebarGroupLabel className="uppercase tracking-wider text-[10px] text-muted-foreground">

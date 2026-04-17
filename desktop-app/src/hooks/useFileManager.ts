@@ -8,6 +8,7 @@ import {
 	rename,
 	writeTextFile,
 } from "@tauri-apps/plugin-fs";
+import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
 import { useCallback, useEffect, useRef } from "react";
 import { EXT_TO_FORMAT } from "../constants";
 import { useAppStore } from "../store";
@@ -208,6 +209,130 @@ export function useFileManager() {
 		return true;
 	}, [setTabs]);
 
+	const loadUrl = useCallback(
+		async (url: string) => {
+			let parsedUrl: URL;
+			try {
+				parsedUrl = new URL(url);
+			} catch {
+				throw new Error("Invalid URL");
+			}
+
+			const urlPath = parsedUrl.pathname;
+			const ext = urlPath.split(".").pop()?.toLowerCase() ?? "";
+			if (ext === "parquet" || ext === "xlsx")
+				throw new Error(
+					`Opening .${ext} files from URLs is not supported yet.`,
+				);
+			const fmt = EXT_TO_FORMAT[ext] ?? "markdown";
+			const fileName =
+				urlPath.split("/").filter(Boolean).pop() ||
+				parsedUrl.hostname ||
+				"download";
+			const showEditor = fmt !== "csv" && fmt !== "xlsx" && fmt !== "parquet";
+			const openedAt = Date.now();
+
+			setTabs((prev) => {
+				const existing = prev.find((t) => t.path === url);
+				if (existing) {
+					setActiveTabId(existing.id);
+					return prev.map((t) =>
+						t.path === url
+							? {
+									...t,
+									content: "",
+									previewContent: "",
+									format: fmt,
+									showEditor,
+									isDirty: false,
+									binaryContent: undefined,
+									isLoading: true,
+									openedAt,
+								}
+							: t,
+					);
+				}
+				const currentId = useAppStore.getState().activeTabId;
+				const currentTab = prev.find((t) => t.id === currentId);
+				if (currentTab && !currentTab.path && !currentTab.content) {
+					return prev.map((t) =>
+						t.id === currentId
+							? {
+									...t,
+									name: fileName,
+									format: fmt,
+									showEditor,
+									content: "",
+									previewContent: "",
+									path: url,
+									isDirty: false,
+									binaryContent: undefined,
+									isLoading: true,
+									openedAt,
+								}
+							: t,
+					);
+				}
+				const newTab = createTab({
+					name: fileName,
+					format: fmt,
+					content: "",
+					previewContent: "",
+					path: url,
+					isDirty: false,
+					binaryContent: undefined,
+					isLoading: true,
+					openedAt,
+				});
+				setActiveTabId(newTab.id);
+				return [...prev, newTab];
+			});
+
+			try {
+				const response = await tauriFetch(url);
+				if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+				const reader = response.body?.getReader();
+				if (!reader) throw new Error("No response body");
+
+				const decoder = new TextDecoder();
+				let accumulated = "";
+
+				while (true) {
+					const { done, value } = await reader.read();
+					if (done) break;
+					accumulated += decoder.decode(value, { stream: true });
+					const snapshot = accumulated;
+					setTabs((prev) =>
+						prev.map((t) =>
+							t.openedAt === openedAt
+								? { ...t, content: snapshot, previewContent: snapshot }
+								: t,
+						),
+					);
+				}
+
+				const elapsed = Date.now() - openedAt;
+				const delay = Math.max(0, 300 - elapsed);
+				setTimeout(() => {
+					setTabs((prev) =>
+						prev.map((t) =>
+							t.openedAt === openedAt ? { ...t, isLoading: false } : t,
+						),
+					);
+				}, delay);
+			} catch (err) {
+				setTabs((prev) =>
+					prev.map((t) =>
+						t.openedAt === openedAt ? { ...t, isLoading: false } : t,
+					),
+				);
+				throw err;
+			}
+		},
+		[setTabs, setActiveTabId],
+	);
+
 	const loadFileRef = useRef(loadFile);
 	loadFileRef.current = loadFile;
 
@@ -237,7 +362,15 @@ export function useFileManager() {
 		[setTabs],
 	);
 
-	return { loadFile, openFile, saveFile, saveAsFile, renameFile, loadFileRef };
+	return {
+		loadFile,
+		openFile,
+		saveFile,
+		saveAsFile,
+		renameFile,
+		loadFileRef,
+		loadUrl,
+	};
 }
 
 export function useRestoreSession(

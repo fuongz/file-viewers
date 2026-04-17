@@ -15,6 +15,11 @@
 		"fs:allow-read-file",
 		"fs:allow-write-text-file",
 		"fs:allow-rename",
-		"fs:scope-home-recursive"
+		"fs:scope-home-recursive",
+		"http:default",
+		{
+			"identifier": "http:allow-fetch",
+			"allow": [{ "url": "https://**" }, { "url": "http://**" }]
+		}
 	]
 }
