@@ -1,6 +1,6 @@
 [package]
 name = "FileViewers"
-version = "0.4.2"
+version = "0.6.0"
 description = "File Viewers"
 authors = ["fuongz <hi@phuongphung.com>"]
 edition = "2021"

@@ -1,6 +1,6 @@
-# File Viewers
+# File Viewers — Desktop App
 
-A cross-platform desktop app for viewing and editing **Markdown**, **JSON**, and **CSV** files side-by-side in a live split-panel interface. Built with Tauri 2 + React 19.
+A cross-platform desktop app for viewing and editing **Markdown**, **MDX**, **JSON**, **CSV**, **Excel**, and **Parquet** files. Built with Tauri 2 + React 19.
 
 ---
 
@@ -8,13 +8,17 @@ A cross-platform desktop app for viewing and editing **Markdown**, **JSON**, and
 
 | Feature | Details |
 |---------|---------|
-| **Split-panel editor** | Monaco editor (left) + live preview (right), resizable via drag handle |
-| **Markdown** | GitHub Flavored Markdown, tables, task lists, syntax-highlighted code blocks |
+| **Multi-tab** | Multiple files open simultaneously; session persists across restarts |
+| **File tree sidebar** | Resizable sidebar listing all open tabs for quick navigation |
+| **Command palette** | `Cmd+K` — search open files, open local files, or load a file by pasting a URL |
+| **Auto-updater** | Checks for new releases on startup; installs and restarts from an in-app toast |
+| **Markdown / MDX** | GFM, tables, task lists, syntax-highlighted code blocks |
 | **JSON** | Collapsible tree viewer with dark/light theme support |
-| **CSV** | Sortable + resizable columns, global search, SQL mode, cell selection, tooltip on hover |
-| **File open** | Native `File > Open…` menu (`⌘O` / system shortcut) or drag-and-drop onto the window |
-| **Theme** | System / Light / Dark — dropdown with icons, syncs to OS appearance |
-| **Empty state** | Welcome screen with quick-action list when no file is loaded |
+| **CSV / Excel** | Sortable + resizable columns, global search, SQL mode, cell selection |
+| **Parquet** | In-browser queries via DuckDB-WASM — no server, no uploads |
+| **Monaco editor** | Live split-panel editor for Markdown and JSON |
+| **File open** | Native `File > Open…` (`Cmd+O`), drag-and-drop, or URL via command palette |
+| **Theme** | System / Light / Dark — persists across sessions |
 
 ---
 
@@ -55,7 +59,7 @@ Produces a platform-native bundle in `src-tauri/target/release/bundle/`:
 | Linux | `.deb` + `.AppImage` |
 | Windows | `.msi` + `.exe` (NSIS) |
 
-### Type check only
+### Type check
 
 ```bash
 bunx tsc --noEmit
@@ -65,39 +69,31 @@ bunx tsc --noEmit
 
 ## Opening Files
 
+### Command palette
+
+`Cmd+K` — type a filename to switch tabs, or paste a remote URL to fetch and open a file directly from the internet.
+
 ### Native menu
 
-`File > Open…` (`⌘O` on macOS) — opens a system file picker filtered to `.md`, `.markdown`, `.json`, `.csv`.
+`File > Open…` (`Cmd+O` on macOS) — opens a system file picker filtered to supported extensions.
 
 ### Drag and drop
 
-Drag any supported file onto the window. A blue overlay appears on hover; drop to load. The correct tab is activated automatically based on the file extension.
+Drag any supported file onto the window. A blue overlay appears on hover; drop to load.
 
 ### Supported extensions
 
-| Extension | Tab activated |
-|-----------|--------------|
-| `.md`, `.markdown` | Markdown |
-| `.json` | JSON |
-| `.csv` | CSV |
+| Extension | Viewer |
+|-----------|--------|
+| `.md`, `.markdown`, `.mdx`, `.txt` | Markdown |
+| `.json` | JSON tree |
+| `.csv` | CSV table + SQL |
+| `.xlsx` | Excel table + SQL |
+| `.parquet` | Parquet table (DuckDB-WASM) |
 
 ---
 
-## Theme
-
-Click the theme button in the top-right corner of the toolbar to open the dropdown:
-
-| Option | Icon | Behaviour |
-|--------|------|-----------|
-| System | Monitor | Follows OS appearance (dark/light) |
-| Light | Sun | Forces light theme |
-| Dark | Moon | Forces dark theme |
-
-The current selection is highlighted. The theme persists for the session.
-
----
-
-## CSV Viewer
+## CSV / Excel Viewer
 
 ### Table interactions
 
@@ -107,17 +103,16 @@ The current selection is highlighted. The theme persists for the session.
 | Drag column edge | Resize column |
 | Type in search box | Filter rows globally (300ms debounce) |
 | Click a cell | Select it (blue highlight) |
-| Hover a cell | Show full value in a tooltip |
 
 ### SQL mode
 
 Toggle SQL mode in the toolbar. Type a `WHERE` condition (the `SELECT * FROM csv WHERE` prefix is locked):
 
 ```
-[SELECT * FROM csv WHERE] [condition input ............] [⌘↵ Run] [SQL]
+[SELECT * FROM csv WHERE] [condition input ............] [Cmd+Enter Run] [SQL]
 ```
 
-- Query runs on `⌘↵` or the **Run** button — not real-time
+- Query runs on `Cmd+Enter` or the **Run** button — not real-time
 - Column projections (`SELECT col1, col2`) are supported
 - Errors appear in a red bar below the toolbar
 
@@ -128,8 +123,8 @@ Toggle SQL mode in the toolbar. Type a `WHERE` condition (the `SELECT * FROM csv
        left                      center              right
 ```
 
-- **Left** — filtered / total rows × columns (when filtered: `42 / 706 rows × 8 columns`)
-- **Center** — selected cell position `row:col (N chars)` — only shown when a cell is selected
+- **Left** — filtered / total rows × columns
+- **Center** — selected cell position `row:col (N chars)` — shown only when a cell is selected
 - **Right** — encoding chip + line-ending chip (LF / CRLF / CR)
 
 ---
@@ -137,25 +132,45 @@ Toggle SQL mode in the toolbar. Type a `WHERE` condition (the `SELECT * FROM csv
 ## Project Structure
 
 ```
-dev-viewers/
-├── src/                        # React frontend
-│   ├── App.tsx                 # Root component, all top-level state
-│   ├── App.css                 # All styles + CSS design tokens
-│   ├── main.tsx                # Entry point; Monaco local-bundle setup
-│   └── components/
-│       ├── EditorPanel.tsx     # Monaco editor wrapper
-│       ├── PreviewPanel.tsx    # Format router + empty state gate
-│       ├── MarkdownPreview.tsx # react-markdown renderer
-│       ├── JsonPreview.tsx     # react-json-view-lite renderer
-│       ├── CsvPreview.tsx      # TanStack Table + SQL mode + Base UI Tooltip
-│       ├── EmptyState.tsx      # Welcome screen (shown when no file loaded)
-│       └── ui/                 # Button, Input, Textarea primitives
+desktop-app/
+├── src/
+│   ├── App.tsx                         # Root component
+│   ├── App.css                         # Global styles + CSS design tokens
+│   ├── main.tsx                        # Entry point; Monaco local-bundle setup
+│   ├── store/
+│   │   └── index.ts                    # Zustand store (tabs, theme, editor actions)
+│   ├── components/
+│   │   ├── CsvPreview.tsx
+│   │   ├── ExcelPreview.tsx
+│   │   ├── ParquetPreview.tsx
+│   │   ├── JsonPreview.tsx
+│   │   ├── MarkdownPreview.tsx
+│   │   ├── EditorPanel.tsx
+│   │   ├── PreviewPanel.tsx
+│   │   ├── Workspace.tsx
+│   │   ├── DragOverlay.tsx
+│   │   ├── table/                      # Shared DataTable, SearchInput, SqlInput, TableSkeleton
+│   │   ├── toolbar/                    # Toolbar, FormatTabs, ThemeMenu
+│   │   ├── ui/                         # Button, Input, Dialog, and other primitives
+│   │   └── workspace/
+│   │       └── FileTree.tsx            # File tree sidebar
+│   ├── hooks/
+│   │   ├── useFileManager.ts
+│   │   ├── useEditorActions.ts
+│   │   ├── useUpdater.ts               # Auto-update polling
+│   │   ├── useDragDrop.ts
+│   │   ├── useKeyboard.ts
+│   │   └── useNativeMenu.ts
+│   ├── utils/
+│   │   └── detectFormat.ts
+│   └── types/
+│       └── index.ts
 ├── src-tauri/
-│   ├── src/lib.rs              # Tauri setup; native OS menu
-│   ├── tauri.conf.json         # App config; window; references capabilities
+│   ├── src/lib.rs                      # Tauri setup; native OS menu; plugins
+│   ├── tauri.conf.json                 # App config; updater endpoint
 │   └── capabilities/
-│       └── default.json        # Tauri permission grants
-├── docs/                       # This documentation
-├── vite.config.ts              # Vite + Tailwind CSS + Tauri dev settings
+│       └── default.json                # Tauri permission grants
+├── docs/                               # This documentation
+├── vite.config.ts
 └── package.json
 ```

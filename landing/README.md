@@ -31,13 +31,6 @@ Requires a Cloudflare account and `wrangler` authenticated:
 bun run deploy     # build + wrangler deploy
 ```
 
-Or deploy manually:
-
-```bash
-bun run build
-bun x wrangler deploy
-```
-
 ## Code Quality
 
 ```bash
@@ -48,7 +41,7 @@ bun run check      # Biome check (lint + format)
 
 ## Routes
 
-| Path        | Description          |
-| ----------- | -------------------- |
-| `/`         | Home / hero page     |
-| `/download` | Platform download    |
+| Path | Description |
+|------|-------------|
+| `/` | Home / hero page |
+| `/download` | Platform download links |

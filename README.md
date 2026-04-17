@@ -8,14 +8,21 @@
 
 </p>
 
-A cross-platform desktop app for viewing and editing **Markdown**, **JSON**, and **CSV** files.
+A cross-platform desktop app for viewing and editing **Markdown**, **MDX**, **JSON**, **CSV**, **Excel**, and **Parquet** files. Built with Tauri 2 + React 19.
 
 ## Features
 
-- Markdown, JSON, and CSV viewer with live preview
-- Advanced CSV viewer with SQL mode
-
-![CSV Viewer](desktop-app/docs/assets/csv-viewer.png)
+- Multi-tab file management with session persistence across restarts
+- Markdown / MDX viewer with GFM, tables, and syntax-highlighted code blocks
+- JSON tree viewer with collapsible nodes and dark/light theme support
+- CSV and Excel viewer — sortable columns, global search, in-browser SQL queries
+- Parquet viewer powered by DuckDB-WASM — query large files entirely in-browser
+- Monaco editor for Markdown and JSON with live preview
+- Command palette (`Cmd+K`) — open local files or load any file by URL
+- File tree sidebar for navigating all open tabs
+- Auto-updater — checks for new releases on startup with an in-app install prompt
+- Drag-and-drop file loading
+- System / Light / Dark theme
 
 ## Prerequisites
 
@@ -27,6 +34,7 @@ A cross-platform desktop app for viewing and editing **Markdown**, **JSON**, and
 ## Development Setup
 
 ```bash
+cd desktop-app
 bun install
 bun run tauri dev
 ```
@@ -45,36 +53,48 @@ bunx tsc --noEmit     # type check only
 | App shell | Tauri 2 |
 | UI | React 19 + TypeScript |
 | Build | Vite 7 + Tailwind CSS 4 |
+| State | Zustand |
 | Editor | Monaco Editor (local bundle, no CDN) |
 | Markdown | react-markdown + remark-gfm + rehype-highlight |
 | JSON | react-json-view-lite |
-| CSV | TanStack Table v8 + PapaParse |
-| CSV SQL | alasql (in-memory SQL on `csv` table) |
-| UI primitives | Base UI (`@base-ui/react`) |
+| CSV / Excel | TanStack Table v8 + PapaParse |
+| Parquet | DuckDB-WASM (in-browser query engine) |
+| SQL mode | alasql (in-memory SQL on `csv` table) |
+| Icons | Hugeicons |
+| UI primitives | shadcn/ui + Radix |
 
 ## Project Structure
 
 ```
-file-viewers/desktop-app/
-├── src/
-│   ├── App.tsx                 # Root component, all top-level state
-│   ├── App.css                 # Styles + CSS design tokens
-│   ├── main.tsx                # Entry point; Monaco local-bundle setup
-│   └── components/
-│       ├── EditorPanel.tsx     # Monaco editor wrapper
-│       ├── PreviewPanel.tsx    # Format router + empty state gate
-│       ├── MarkdownPreview.tsx # react-markdown renderer
-│       ├── JsonPreview.tsx     # react-json-view-lite renderer
-│       ├── CsvPreview.tsx      # TanStack Table + SQL mode + Base UI Tooltip
-│       ├── EmptyState.tsx      # Welcome screen
-│       └── ui/                 # Button, Input, Textarea primitives
-├── src-tauri/
-│   ├── src/lib.rs              # Tauri setup; native OS menu
-│   ├── tauri.conf.json         # App config
-│   └── capabilities/
-│       └── default.json        # Tauri permission grants
-└── docs/                       # Architecture + component reference
+file-viewers/
+├── desktop-app/        # Tauri + React desktop application
+│   ├── src/
+│   │   ├── App.tsx
+│   │   ├── components/
+│   │   │   ├── table/          # Shared DataTable, SearchInput, SqlInput
+│   │   │   ├── ui/             # Button, Input, Dialog, and other primitives
+│   │   │   └── workspace/      # FileTree sidebar
+│   │   ├── hooks/
+│   │   ├── store/              # Zustand store
+│   │   └── utils/
+│   ├── src-tauri/
+│   │   ├── src/lib.rs
+│   │   ├── tauri.conf.json
+│   │   └── capabilities/
+│   └── docs/               # Architecture + component reference
+├── landing/            # TanStack Start landing page (Cloudflare Workers)
+└── scripts/
 ```
+
+## Supported Formats
+
+| Extension | Viewer |
+|-----------|--------|
+| `.md`, `.markdown`, `.mdx`, `.txt` | Markdown |
+| `.json` | JSON tree |
+| `.csv` | CSV table + SQL |
+| `.xlsx` | Excel table + SQL |
+| `.parquet` | Parquet table (DuckDB-WASM) |
 
 ## License
 

@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowDown, Braces, FileText, Table2 } from "lucide-react";
+import { ArrowDown, Braces, Database, FileSpreadsheet, FileText, Table2 } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useEffect, useState } from "react";
 import { VERSION } from "../version";
@@ -10,6 +10,8 @@ const TABS = [
 	{ id: "001", label: "Markdown", icon: FileText },
 	{ id: "002", label: "CSV", icon: Table2 },
 	{ id: "003", label: "JSON", icon: Braces },
+	{ id: "004", label: "Excel", icon: FileSpreadsheet },
+	{ id: "005", label: "Parquet", icon: Database },
 ];
 
 function BannerImage({ src, alt }: { src: string; alt: string }) {

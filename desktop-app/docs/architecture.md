@@ -4,272 +4,157 @@
 
 ```
 App (src/App.tsx)
-├── drag-overlay (conditional)
-├── header.toolbar
-│   ├── Tabs.Root (format selector)
-│   │   └── Tabs.List
-│   │       ├── Tabs.Tab  value="markdown"
-│   │       ├── Tabs.Tab  value="json"
-│   │       └── Tabs.Tab  value="csv"
-│   ├── toolbar-actions (context-sensitive)
-│   │   ├── Button "Format"   (JSON + content only)
-│   │   ├── Button "Minify"   (JSON + content only)
-│   │   └── Button "Clear"    (CSV + content only)
-│   └── theme-menu-wrap
-│       ├── Button.toolbar (theme toggle)
-│       └── div.theme-dropdown (conditional)
-│           └── Button.ghost × 3 (System / Light / Dark)
-└── main.workspace
-    ├── [CSV mode] PreviewPanel (full width)
-    └── [MD/JSON mode] Group (react-resizable-panels)
-        ├── Panel (50%)
-        │   └── EditorPanel
-        │       └── MonacoEditor
-        ├── Separator (drag handle)
-        └── Panel (50%)
-            └── PreviewPanel
-                ├── EmptyState          (when content is empty)
-                ├── MarkdownPreview     (format === "markdown")
-                ├── JsonPreview         (format === "json")
-                └── CsvPreview          (format === "csv")
+├── UpdateToast                         # auto-updater prompt (conditional)
+├── DragOverlay                         # drag-over overlay (conditional)
+├── SidebarProvider
+│   ├── FileTree (sidebar)              # open tabs as file tree
+│   └── main.workspace
+│       ├── Toolbar
+│       │   ├── CommandPalette (Cmd+K)
+│       │   ├── FormatTabs              # format switcher tabs
+│       │   └── ThemeMenu
+│       └── Workspace
+│           ├── [CSV/Excel/Parquet] PreviewPanel (full width)
+│           └── [MD/JSON] ResizablePanelGroup
+│               ├── ResizablePanel → EditorPanel (Monaco)
+│               ├── ResizableHandle
+│               └── ResizablePanel → PreviewPanel
+│                   ├── EmptyState
+│                   ├── MarkdownPreview
+│                   └── JsonPreview
 ```
 
 ---
 
-## State Management (`App.tsx`)
+## State Management (Zustand)
 
-All top-level state lives in `App`. Child components are pure/controlled — they receive data and callbacks via props.
+All top-level app state is centralised in `src/store/index.ts`.
 
-| State | Type | Default | Description |
-|-------|------|---------|-------------|
-| `format` | `Format` | `"markdown"` | Active tab |
-| `content` | `Record<Format, string>` | `{ markdown: "", json: "", csv: "" }` | Per-format editor text; switching tabs preserves each tab's content |
-| `themePref` | `ThemePreference` | `"system"` | User theme selection |
-| `systemDark` | `boolean` | `window.matchMedia(…).matches` | OS dark-mode state (only updated when `themePref === "system"`) |
-| `themeMenuOpen` | `boolean` | `false` | Theme dropdown visibility |
-| `isDragOver` | `boolean` | `false` | Drag-over overlay visibility |
+| Slice | State | Description |
+|-------|-------|-------------|
+| tabs | `tabs`, `activeTabId` | All open file tabs; which is active |
+| tabs | `closeConfirmTabId` | Tab pending unsaved-changes confirm dialog |
+| theme | `themePref`, `isDark`, `systemDark` | Theme preference and resolved dark state |
+| editor | `showEditor` | Whether the Monaco editor panel is visible |
 
-`isDark` is a derived boolean (not state):
-
-```ts
-const isDark = themePref === "dark" || (themePref === "system" && systemDark);
-```
+`activeTab` is a derived selector: `tabs.find(t => t.id === activeTabId)`.
 
 ---
 
 ## File Loading
 
-### Callback chain
+### Entry points
 
-```
-openFile()
-  └── openDialog() → path: string
-      └── loadFile(path)
-            ├── ext  = path.split(".").pop()
-            ├── fmt  = EXT_TO_FORMAT[ext] ?? "markdown"
-            ├── text = await readTextFile(path)
-            ├── setContent(prev => ({ ...prev, [fmt]: text }))
-            └── setFormat(fmt)
-```
+| Entry | API | Path |
+|-------|-----|------|
+| Native menu (`Cmd+O`) | Tauri event `"menu-open-file"` | `useNativeMenu` → `loadFile(path)` |
+| Drag and drop | `getCurrentWebview().onDragDropEvent()` | `useDragDrop` → `loadFile(path)` |
+| Command palette (local) | `@tauri-apps/plugin-dialog` | `CommandPalette` → `loadFile(path)` |
+| Command palette (URL) | `@tauri-apps/plugin-http` fetch | `CommandPalette` → `onLoadUrl(url)` |
 
-Both callbacks are stable `useCallback` hooks:
+All paths ultimately call `loadFile(path: string)` or `onLoadUrl(url: string)` from `useFileManager`.
 
-```ts
-const loadFile = useCallback(async (path: string) => { … }, []);
-const openFile = useCallback(async () => { … }, [loadFile]);
-```
-
-### Two entry points
-
-| Entry point | API | How it calls `loadFile` |
-|-------------|-----|------------------------|
-| Native menu (`⌘O` on macOS) | `@tauri-apps/api/event` → `listen("menu-open-file", …)` | `openFile()` → `loadFile(path)` |
-| Drag and drop | `getCurrentWebview().onDragDropEvent()` | Iterates `event.payload.paths`, picks first recognised extension, calls `loadFile(path)` directly |
-
-Both effects use the `cancelled` flag pattern to avoid race conditions with React StrictMode double-invocation:
-
-```ts
-useEffect(() => {
-  let cancelled = false;
-  let unlisten: (() => void) | null = null;
-  listen("menu-open-file", () => openFile()).then((fn) => {
-    if (cancelled) fn(); else unlisten = fn;
-  });
-  return () => { cancelled = true; unlisten?.(); };
-}, [openFile]);
-```
-
-### Supported extensions
+### Supported extensions → formats
 
 | Extension | Format |
 |-----------|--------|
-| `.md`, `.markdown` | `"markdown"` |
+| `.md`, `.markdown`, `.mdx`, `.txt` | `"markdown"` |
 | `.json` | `"json"` |
 | `.csv` | `"csv"` |
+| `.xlsx` | `"xlsx"` |
+| `.parquet` | `"parquet"` |
 
 ---
 
-## Layout: CSV Full-Width Mode
+## Layout
 
-When `format === "csv"`, the editor panel is hidden and the preview fills the entire workspace:
-
-```tsx
-{format === "csv" ? (
-  <PreviewPanel … />          // 100% width, no editor
-) : (
-  <Group>                     // 50/50 resizable split
-    <Panel><EditorPanel /></Panel>
-    <Separator />
-    <Panel><PreviewPanel /></Panel>
-  </Group>
-)}
 ```
+┌──────────────────────────────────────────────────────────────┐
+│  toolbar (macOS overlay title bar / drag region)             │
+│  [Cmd+K palette]  [MD] [JSON] [CSV] [XLSX] [PARQUET]  [☀▾] │
+├────────────┬─────────────────────────────────────────────────┤
+│ FileTree   │  EditorPanel (Monaco)  │  PreviewPanel          │
+│ sidebar    │  left 50%              │  right 50%             │
+│ (resizable)│  (hidden for tabular)  │                        │
+└────────────┴────────────────────────────────────────────────-┘
+```
+
+- Panels resizable via `react-resizable-panels`
+- For `csv`, `xlsx`, and `parquet` formats the editor panel is hidden; PreviewPanel fills 100%
+
+---
+
+## Auto-Updater
+
+`useUpdater` (src/hooks/useUpdater.ts) polls for updates on startup via `@tauri-apps/plugin-updater`. When a new version is found, `UpdateToast` renders an in-app install prompt with progress state. On confirmation the app downloads, installs, and restarts via `@tauri-apps/plugin-process`.
 
 ---
 
 ## Theme System
 
-### Preference → CSS
+1. User selects System / Light / Dark from the toolbar dropdown.
+2. `isDark` is resolved: `themePref === "dark" || (themePref === "system" && systemDark)`.
+3. A `useEffect` sets `document.documentElement.classList.toggle("dark", isDark)` — Tailwind dark mode uses the `.dark` class model.
+4. When `themePref === "system"` a `MediaQueryList` listener tracks OS appearance changes.
 
-1. User selects System / Light / Dark from the dropdown.
-2. `isDark` is recomputed.
-3. A `useEffect` sets `document.documentElement.setAttribute("data-theme", isDark ? "dark" : "light")`.
-4. CSS variables defined in `:root` (dark, default) are overridden under `[data-theme="light"]`.
-
-When `themePref === "system"`, a second `useEffect` attaches a `MediaQueryList` listener to update `systemDark` when the OS appearance changes. The listener is removed if the user switches to an explicit preference.
-
-### Theme propagation to sub-components
-
-`isDark` is passed down as a prop to components that need it:
-
-| Component | Uses `isDark` for |
-|-----------|------------------|
-| `EditorPanel` | Monaco theme: `"vs-dark"` vs `"vs"` |
-| `JsonPreview` | `react-json-view-lite` styles: `darkStyles` vs `defaultStyles` |
-
-Markdown and CSV previews follow the CSS variables automatically without needing the `isDark` prop.
+`isDark` is passed as a prop to `EditorPanel` (Monaco theme: `vs-dark` / `vs`) and `JsonPreview` (`darkStyles` / `defaultStyles`). All other components follow Tailwind `dark:` variants automatically.
 
 ---
 
-## UI Component System
+## Parquet Preview (DuckDB-WASM)
 
-All button, input, and textarea elements use `src/components/ui/` primitives — never bare HTML elements. Each primitive:
-
-- Wraps `@base-ui/react` (Button, Input) or a native element (Textarea)
-- Defines all styles as Tailwind utility classes — no raw CSS
-- Uses `cva` (class-variance-authority) for variant logic
-- Uses `cn()` for className merging
-
-### Button active state pattern
-
-Active/selected state uses `data-[active]:` Tailwind variant:
-
-```tsx
-<Button variant="outline" active={queryMode === "sql"}>
-  SQL
-</Button>
-```
-
-```tsx
-// In Button.tsx
-<BaseButton
-  data-active={active || undefined}
-  className={cn(buttonVariants({ variant }), className)}
-/>
-```
-
-`data-[active]:` selectors have higher CSS specificity than plain class selectors — the active styles reliably override base styles without `!important`.
+`ParquetPreview` loads the file as a `Uint8Array` via `@tauri-apps/plugin-fs`, registers it as an in-memory DuckDB database, and runs SQL queries using `@duckdb/duckdb-wasm`. All processing happens in-browser — no server and no file uploads.
 
 ---
 
-## CsvPreview Performance Pattern
+## Table Components (`src/components/table/`)
 
-Typing in the search or SQL input should never trigger a TanStack Table recalculation. This is achieved by isolating input state inside sub-components:
+Shared across CSV, Excel, and Parquet previews:
 
-```
-SearchInput  (owns value state)
-  │  onFilter(debouncedValue)           ← only fires after 300ms of no typing
-  ▼
-CsvPreview.globalFilter                 ← table re-renders here
+| Component | Purpose |
+|-----------|---------|
+| `DataTable` | TanStack Table v8 — sortable, resizable columns, row virtualisation |
+| `SearchInput` | Owns debounced filter input; calls `onFilter` after 300ms |
+| `SqlInput` | Owns SQL condition input; calls `onRun` on `Cmd+Enter` or Run button |
+| `TableSkeleton` | Loading placeholder shown while file parses |
 
-SqlInput     (owns condition state)
-  │  onRun(fullQuery)                   ← only fires on ⌘↵ or Run button
-  ▼
-CsvPreview.sqlQuery                     ← table re-renders here
-```
-
-Keystrokes only re-render the sub-component. The parent's `useReactTable` call never runs on every keystroke.
+`SearchInput` and `SqlInput` own their input state internally — keystrokes only re-render those components; `useReactTable` in the parent never runs on every keystroke.
 
 ---
 
 ## Monaco Local Bundle (`main.tsx`)
 
-Monaco is **not** loaded from any CDN. All language workers are bundled by Vite at build time and served locally.
+Monaco is not loaded from any CDN. All workers are bundled by Vite at build time.
 
 ```ts
-import * as monaco from "monaco-editor";
-import EditorWorker from "monaco-editor/esm/vs/editor/editor.worker?worker";
-import JsonWorker from "monaco-editor/esm/vs/language/json/json.worker?worker";
-import loader from "@monaco-editor/loader";
-
 window.MonacoEnvironment = {
-  getWorker(_: unknown, label: string) {
+  getWorker(_, label) {
     if (label === "json") return new JsonWorker();
     return new EditorWorker();
   },
 };
-
 loader.config({ monaco });
 ```
 
-`loader.config({ monaco })` tells `@monaco-editor/react` to use the already-imported local instance instead of fetching from jsDelivr.
-
 ---
 
-## Drag-and-Drop
-
-Uses the Tauri v2 Webview API — **not** the browser `dragover`/`drop` events (which don't fire for OS-level file drops into a Tauri window).
-
-```ts
-getCurrentWebview().onDragDropEvent(async (event) => {
-  const { type } = event.payload;
-  if (type === "enter" || type === "over") {
-    setIsDragOver(true);
-  } else if (type === "drop") {
-    setIsDragOver(false);
-    for (const path of event.payload.paths) {
-      const ext = path.split(".").pop()?.toLowerCase() ?? "";
-      if (EXT_TO_FORMAT[ext]) {
-        await loadFile(path);
-        break;  // only load the first recognised file
-      }
-    }
-  } else {
-    setIsDragOver(false);  // "leave"
-  }
-});
-```
-
-The overlay (`div.drag-overlay`) is rendered conditionally when `isDragOver === true` — a fixed-inset blue-tinted layer with a centred card containing `IconFileDownload` and a label.
-
----
-
-## Tauri Capabilities
-
-Defined in `src-tauri/capabilities/default.json`. Referenced by name in `src-tauri/tauri.conf.json` as `"capabilities": ["default"]`.
+## Tauri Capabilities (`src-tauri/capabilities/default.json`)
 
 | Permission | Required for |
 |------------|-------------|
 | `core:default` | Base IPC, window management |
-| `core:event:allow-listen` | `listen()` (native menu event) |
-| `core:event:allow-unlisten` | Cleanup `unlisten()` functions |
+| `core:event:allow-listen` | `listen()` — native menu events |
+| `core:event:allow-unlisten` | Cleanup `unlisten()` calls |
 | `opener:default` | Opening external links |
-| `dialog:allow-open` | Native file picker (`openDialog`) |
+| `dialog:allow-open` | Native file picker |
 | `fs:allow-read-text-file` | `readTextFile()` |
-| `fs:allow-read-file` | Binary file reads (future use) |
+| `fs:allow-read-file` | Binary reads (Parquet, Excel) |
 | `fs:scope-home-recursive` | Access any file under `$HOME` |
+| `http:default`, `http:allow-fetch` | URL file loading via command palette |
+| `updater:default` | Auto-update checks |
+| `process:allow-restart` | Restart after update install |
 
-> **Note**: `core:default` does NOT include `core:event:allow-listen` in Tauri 2. It must be declared explicitly.
+> `core:default` does NOT include `core:event:allow-listen` in Tauri 2 — it must be declared explicitly.
 
 ---
 
@@ -283,4 +168,4 @@ Produced by `bun run tauri build`. Output lives under `src-tauri/target/release/
 | Linux | `deb/`, `appimage/` | `file-viewers_*.deb`, `file-viewers_*.AppImage` |
 | Windows | `msi/`, `nsis/` | `File Viewers_*.msi`, `File Viewers_*-setup.exe` |
 
-The GitHub Actions release workflow (`release.yml`) builds all three platforms in parallel and attaches the artifacts to the GitHub Release. macOS builds use `--target universal-apple-darwin` (arm64 + x86_64 fat binary).
+The GitHub Actions release workflow builds all three platforms in parallel and attaches the artifacts to the GitHub Release. macOS builds use `--target universal-apple-darwin` (arm64 + x86_64 fat binary).
