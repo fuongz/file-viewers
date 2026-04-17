@@ -34,6 +34,14 @@
 			}
 		}
 	},
+	"plugins": {
+		"updater": {
+			"pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDFBNjU4MDFERDYwRjNBOTcKUldTWE9nL1dIWUJsR3BjVlo0S2hkcGhuRzJhKzIxVlRPUG02OHRDcGZSQXIxaXNXYTQ1UjczTkMK",
+			"endpoints": [
+				"https://github.com/fuongz/file-viewers/releases/latest/download/latest.json"
+			]
+		}
+	},
 	"bundle": {
 		"active": true,
 		"targets": "all",

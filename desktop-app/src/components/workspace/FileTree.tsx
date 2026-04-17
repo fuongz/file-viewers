@@ -86,7 +86,7 @@ export function FileTree(props: React.ComponentProps<typeof Sidebar>) {
 				<button
 					type="button"
 					onClick={() => setCommandOpen(true)}
-					className="flex h-7 w-full items-center gap-1.5 rounded-md border border-input bg-input/20 px-2 text-left transition-colors hover:bg-input/40"
+					className="flex h-7 w-full items-center gap-1.5 rounded-md border border-input bg-input px-2 text-left transition-colors hover:bg-input/40"
 				>
 					<HugeiconsIcon
 						icon={SearchIcon}

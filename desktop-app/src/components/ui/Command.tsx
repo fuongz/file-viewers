@@ -50,10 +50,9 @@ function CommandDialog({
 			</DialogHeader>
 			<DialogContent
 				className={cn(
-					"top-1/3 translate-y-0 overflow-hidden rounded-xl! p-0 bg-popover/70 before:pointer-events-none before:absolute before:inset-0 before:-z-1 before:rounded-[inherit] before:backdrop-blur-2xl before:backdrop-saturate-150",
+					"top-1/3 translate-y-0 overflow-hidden rounded-xl! p-0",
 					className,
 				)}
-				overlayClassName="bg-black/40 supports-backdrop-filter:backdrop-blur-none"
 				showCloseButton={showCloseButton}
 			>
 				{children}

@@ -17,6 +17,8 @@
 		"fs:allow-rename",
 		"fs:scope-home-recursive",
 		"http:default",
+		"updater:default",
+		"process:allow-restart",
 		{
 			"identifier": "http:allow-fetch",
 			"allow": [{ "url": "https://**" }, { "url": "http://**" }]

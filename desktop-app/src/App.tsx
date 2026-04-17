@@ -22,6 +22,7 @@ import { useKeyboard } from "./hooks/useKeyboard";
 import { useNativeMenu } from "./hooks/useNativeMenu";
 import { persistSession } from "./hooks/useSession";
 import { useTheme } from "./hooks/useTheme";
+import { useUpdater } from "./hooks/useUpdater";
 import { selectActiveTab, selectIsDark, useAppStore } from "./store";
 
 function App() {
@@ -61,6 +62,7 @@ function App() {
 
 	useDragDrop(loadFile);
 	useTheme();
+	useUpdater();
 	useRestoreSession(loadFileRef);
 
 	const clearStorage = () => {
