@@ -58,9 +58,12 @@ jobs:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           projectPath: desktop-app
           tagName: ${{ github.event.release.tag_name }}
+          includeUpdaterJson: true
           args: --bundles dmg --target universal-apple-darwin
 
       # Unsigned build — Gatekeeper will warn on first launch but the app works.
@@ -69,9 +72,12 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           projectPath: desktop-app
           tagName: ${{ github.event.release.tag_name }}
+          includeUpdaterJson: true
           args: --bundles dmg --target universal-apple-darwin
 
   release-linux:
@@ -116,9 +122,12 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           WEBKIT_DISABLE_COMPOSITING_MODE: 1
           NO_AT_BRIDGE: 1
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           projectPath: desktop-app
           tagName: ${{ github.event.release.tag_name }}
+          includeUpdaterJson: true
           args: --bundles deb,appimage
 
   release-linux-fedora:
@@ -169,9 +178,12 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           WEBKIT_DISABLE_COMPOSITING_MODE: 1
           NO_AT_BRIDGE: 1
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           projectPath: desktop-app
           tagName: ${{ github.event.release.tag_name }}
+          includeUpdaterJson: true
           args: --bundles rpm
 
   release-windows:
@@ -203,7 +215,10 @@ jobs:
         uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           projectPath: desktop-app
           tagName: ${{ github.event.release.tag_name }}
+          includeUpdaterJson: true
           args: --bundles msi,nsis
