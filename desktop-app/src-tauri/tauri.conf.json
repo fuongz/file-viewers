@@ -1,56 +1,58 @@
 {
-	"$schema": "https://schema.tauri.app/config/2",
-	"productName": "File Viewers",
-	"version": "0.5.1",
-	"identifier": "com.fuongz.file-viewers",
-	"build": {
-		"beforeDevCommand": "bun run dev",
-		"devUrl": "http://localhost:1420",
-		"beforeBuildCommand": "bun run build",
-		"frontendDist": "../dist"
-	},
-	"app": {
-		"macOSPrivateApi": true,
-		"windows": [
-			{
-				"transparent": true,
-				"title": "File Viewers",
-				"titleBarStyle": "Overlay",
-				"hiddenTitle": true,
-				"width": 1200,
-				"height": 760,
-				"minWidth": 640,
-				"minHeight": 400,
-				"devtools": true,
-				"dragDropEnabled": true
-			}
-		],
-		"security": {
-			"csp": null,
-			"capabilities": ["default"],
-			"headers": {
-				"Cross-Origin-Opener-Policy": "same-origin",
-				"Cross-Origin-Embedder-Policy": "credentialless"
-			}
-		}
-	},
-	"plugins": {
-		"updater": {
-			"pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDFBNjU4MDFERDYwRjNBOTcKUldTWE9nL1dIWUJsR3BjVlo0S2hkcGhuRzJhKzIxVlRPUG02OHRDcGZSQXIxaXNXYTQ1UjczTkMK",
-			"endpoints": [
-				"https://github.com/fuongz/file-viewers/releases/latest/download/latest.json"
-			]
-		}
-	},
-	"bundle": {
-		"active": true,
-		"targets": "all",
-		"icon": [
-			"icons/32x32.png",
-			"icons/128x128.png",
-			"icons/128x128@2x.png",
-			"icons/icon.icns",
-			"icons/icon.ico"
-		]
-	}
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "File Viewers",
+  "version": "1.0.0",
+  "identifier": "com.fuongz.file-viewers",
+  "build": {
+    "beforeDevCommand": "bun run dev",
+    "devUrl": "http://localhost:1420",
+    "beforeBuildCommand": "bun run build",
+    "frontendDist": "../dist"
+  },
+  "app": {
+    "macOSPrivateApi": true,
+    "windows": [
+      {
+        "transparent": true,
+        "title": "File Viewers",
+        "titleBarStyle": "Overlay",
+        "hiddenTitle": true,
+        "width": 1200,
+        "height": 760,
+        "minWidth": 640,
+        "minHeight": 400,
+        "devtools": true,
+        "dragDropEnabled": true
+      }
+    ],
+    "security": {
+      "csp": null,
+      "capabilities": [
+        "default"
+      ],
+      "headers": {
+        "Cross-Origin-Opener-Policy": "same-origin",
+        "Cross-Origin-Embedder-Policy": "credentialless"
+      }
+    }
+  },
+  "plugins": {
+    "updater": {
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDFBNjU4MDFERDYwRjNBOTcKUldTWE9nL1dIWUJsR3BjVlo0S2hkcGhuRzJhKzIxVlRPUG02OHRDcGZSQXIxaXNXYTQ1UjczTkMK",
+      "endpoints": [
+        "https://github.com/fuongz/file-viewers/releases/latest/download/latest.json"
+      ]
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.icns",
+      "icons/icon.ico"
+    ]
+  }
 }
