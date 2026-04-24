@@ -51,6 +51,13 @@
 			"icons/128x128@2x.png",
 			"icons/icon.icns",
 			"icons/icon.ico"
+		],
+		"fileAssociations": [
+			{ "ext": ["csv"], "name": "CSV File", "mimeType": "text/csv", "role": "Viewer", "rank": "Alternate" },
+			{ "ext": ["parquet"], "name": "Parquet File", "mimeType": "application/octet-stream", "role": "Viewer", "rank": "Owner" },
+			{ "ext": ["xlsx"], "name": "Excel File", "mimeType": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "role": "Viewer", "rank": "Alternate" },
+			{ "ext": ["md"], "name": "Markdown File", "mimeType": "text/markdown", "role": "Viewer", "rank": "Alternate" },
+			{ "ext": ["json"], "name": "JSON File", "mimeType": "application/json", "role": "Viewer", "rank": "Alternate" }
 		]
 	}
 }

@@ -23,6 +23,7 @@ import { useNativeMenu } from "./hooks/useNativeMenu";
 import { persistSession } from "./hooks/useSession";
 import { useTheme } from "./hooks/useTheme";
 import { useUpdater } from "./hooks/useUpdater";
+import { useOpenWith } from "./hooks/useOpenWith";
 import { selectActiveTab, selectIsDark, useAppStore } from "./store";
 
 function App() {
@@ -64,6 +65,7 @@ function App() {
 	useTheme();
 	useUpdater();
 	useRestoreSession(loadFileRef);
+	useOpenWith(loadFile);
 
 	const clearStorage = () => {
 		localStorage.removeItem(STORAGE_SESSION_KEY);

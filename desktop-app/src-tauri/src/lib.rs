@@ -239,6 +239,22 @@ pub fn run() {
                 app.emit("menu-clear-storage", ()).ok();
             }
         })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app_handle, event| {
+            if let tauri::RunEvent::Opened { urls } = event {
+                use tauri::Emitter;
+                let paths: Vec<String> = urls
+                    .iter()
+                    .filter_map(|url| {
+                        url.to_file_path()
+                            .ok()
+                            .and_then(|p| p.to_str().map(|s| s.to_string()))
+                    })
+                    .collect();
+                if !paths.is_empty() {
+                    app_handle.emit("open-with-files", paths).ok();
+                }
+            }
+        });
 }
