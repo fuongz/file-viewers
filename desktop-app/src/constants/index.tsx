@@ -92,3 +92,11 @@ export const THEME_OPTIONS: ThemePreference[] = ["system", "light", "dark"];
 
 export const STORAGE_SESSION_KEY = "fileviewers.session";
 export const STORAGE_THEME_KEY = "fileviewers.theme";
+
+export const PLATFORM_IS_MAC =
+	typeof navigator !== "undefined" &&
+	/nac\sOS|Mac|iPhone|iPad|iPod/i.test(navigator.userAgent);
+
+export const REVEAL_LABEL = PLATFORM_IS_MAC
+	? "Reveal in Finder"
+	: "Open containing folder";

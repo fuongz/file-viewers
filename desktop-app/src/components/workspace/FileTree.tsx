@@ -1,10 +1,21 @@
 import { SearchIcon, Trash } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
-import { IconLoader2, IconPencil, IconPlus } from "@tabler/icons-react";
+import {
+	IconArrowMerge,
+	IconFolder,
+	IconLayoutRows,
+	IconLoader2,
+	IconPencil,
+	IconPlus,
+} from "@tabler/icons-react";
+import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useRef, useState } from "react";
-import { FORMAT_ICONS } from "@/constants";
+import { toast } from "sonner";
+import { FORMAT_ICONS, REVEAL_LABEL } from "@/constants";
 import { useAppStore } from "../../store";
 import type { FileTab } from "../../types";
+import { CsvMergeDialog } from "../CsvMergeDialog";
+import { CsvSplitDialog } from "../CsvSplitDialog";
 import {
 	ContextMenu,
 	ContextMenuContent,
@@ -37,7 +48,80 @@ export function FileTree(props: React.ComponentProps<typeof Sidebar>) {
 		addTab,
 		renameTab,
 		setCommandOpen,
+		setTabs,
 	} = useAppStore();
+
+	const [splitDialogOpen, setSplitDialogOpen] = useState(false);
+	const [mergeDialogOpen, setMergeDialogOpen] = useState(false);
+	const [csvTabToSplit, setCsvTabToSplit] = useState<FileTab | null>(null);
+
+	const csvTabs = tabs.filter((t) => t.format === "csv");
+
+	const countCsvRows = (content: string): number => {
+		if (!content.trim()) return 0;
+		return content.split("\n").length - 1;
+	};
+
+	const handleSplitCsv = (rowsPerFile: number) => {
+		if (!csvTabToSplit) return;
+		const lines = csvTabToSplit.content.split("\n");
+		const header = lines[0] ?? "";
+		const dataLines = lines.slice(1);
+		const parts: string[] = [];
+
+		for (let i = 0; i < dataLines.length; i += rowsPerFile) {
+			const chunk = dataLines.slice(i, i + rowsPerFile);
+			parts.push([header, ...chunk].join("\n"));
+		}
+
+		const baseName = csvTabToSplit.name.replace(/\.csv$/i, "");
+		const newTabs = parts.map((part, idx) => ({
+			id: crypto.randomUUID(),
+			name: `${baseName}_part_${idx + 1}.csv`,
+			format: "csv" as const,
+			content: part,
+			previewContent: part,
+			showEditor: true,
+		}));
+
+		setTabs((prev) => [...prev, ...newTabs]);
+		setActiveTabId(newTabs[0].id);
+		setSplitDialogOpen(false);
+		setCsvTabToSplit(null);
+		toast.success(`Split into ${parts.length} files`);
+	};
+
+	const handleMergeCsv = (selectedIds: string[], includeHeaders: boolean) => {
+		const selectedTabs = tabs.filter((t) => selectedIds.includes(t.id));
+		const mergedLines: string[] = [];
+
+		selectedTabs.forEach((tab, idx) => {
+			const lines = tab.content.split("\n");
+			if (includeHeaders && idx === 0) {
+				mergedLines.push(lines[0] ?? "");
+				mergedLines.push(...lines.slice(1));
+			} else if (includeHeaders) {
+				mergedLines.push(...lines.slice(1));
+			} else {
+				mergedLines.push(...lines);
+			}
+		});
+
+		const mergedContent = mergedLines.join("\n");
+		const newTab = {
+			id: crypto.randomUUID(),
+			name: `merged_${Date.now()}.csv`,
+			format: "csv" as const,
+			content: mergedContent,
+			previewContent: mergedContent,
+			showEditor: true,
+		};
+
+		setTabs((prev) => [...prev, newTab]);
+		setActiveTabId(newTab.id);
+		setMergeDialogOpen(false);
+		toast.success(`Merged ${selectedTabs.length} files`);
+	};
 
 	const isAnyTabBusy = tabs.some((t) => t.isLoading || t.isProcessing);
 
@@ -199,6 +283,42 @@ export function FileTree(props: React.ComponentProps<typeof Sidebar>) {
 											</ContextMenuTrigger>
 											<ContextMenuContent>
 												<ContextMenuItem
+													disabled={isAnyTabBusy || !tab.path}
+													onClick={() => {
+														if (!tab.path) return;
+														invoke("reveal_in_finder", {
+															path: tab.path,
+														}).catch(console.error);
+													}}
+												>
+													<IconFolder />
+													{REVEAL_LABEL}
+												</ContextMenuItem>
+												<ContextMenuSeparator />
+												{tab.format === "csv" && (
+													<>
+														<ContextMenuItem
+															disabled={isAnyTabBusy}
+															onClick={() => {
+																setActiveTabId(tab.id);
+																setCsvTabToSplit(tab);
+																setSplitDialogOpen(true);
+															}}
+														>
+															<IconLayoutRows />
+															Split CSV
+														</ContextMenuItem>
+														<ContextMenuItem
+															disabled={isAnyTabBusy}
+															onClick={() => setMergeDialogOpen(true)}
+														>
+															<IconArrowMerge />
+															Merge CSV
+														</ContextMenuItem>
+														<ContextMenuSeparator />
+													</>
+												)}
+												<ContextMenuItem
 													disabled={isAnyTabBusy}
 													onClick={() => startRename(tab)}
 												>
@@ -223,6 +343,21 @@ export function FileTree(props: React.ComponentProps<typeof Sidebar>) {
 					</SidebarGroupContent>
 				</SidebarGroup>
 			</SidebarContent>
+			<CsvSplitDialog
+				open={splitDialogOpen}
+				onOpenChange={(open) => {
+					setSplitDialogOpen(open);
+					if (!open) setCsvTabToSplit(null);
+				}}
+				onConfirm={handleSplitCsv}
+				totalRows={countCsvRows(csvTabToSplit?.content ?? "")}
+			/>
+			<CsvMergeDialog
+				open={mergeDialogOpen}
+				onOpenChange={setMergeDialogOpen}
+				onConfirm={handleMergeCsv}
+				csvTabs={csvTabs}
+			/>
 		</Sidebar>
 	);
 }

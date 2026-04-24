@@ -1,5 +1,6 @@
 export * from "../SettingsDialog";
 export * from "./alert-dialog";
+export * from "./badge";
 export * from "./button";
 export * from "./button-group";
 export * from "./CommandPalette";

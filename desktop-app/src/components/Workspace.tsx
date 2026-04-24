@@ -21,6 +21,8 @@ interface WorkspaceProps {
 	onMinifyJson: () => void;
 	onContentChange?: (value: string) => void;
 	onClearCsv?: () => void;
+	onSplitCsv?: () => void;
+	onMergeCsv?: () => void;
 	onProcessingChange?: (loading: boolean) => void;
 }
 
@@ -39,6 +41,8 @@ export function Workspace({
 	onMinifyJson,
 	onContentChange,
 	onClearCsv,
+	onSplitCsv,
+	onMergeCsv,
 	onProcessingChange,
 }: WorkspaceProps) {
 	if (isLoading) {
@@ -59,6 +63,8 @@ export function Workspace({
 				binaryContent={binaryContent}
 				onContentChange={onContentChange}
 				onClearCsv={onClearCsv}
+				onSplitCsv={onSplitCsv}
+				onMergeCsv={onMergeCsv}
 				onProcessingChange={onProcessingChange}
 			/>
 		);
@@ -93,6 +99,8 @@ export function Workspace({
 					binaryContent={binaryContent}
 					onContentChange={onContentChange}
 					onClearCsv={onClearCsv}
+					onSplitCsv={onSplitCsv}
+					onMergeCsv={onMergeCsv}
 					onProcessingChange={onProcessingChange}
 				/>
 			</ResizablePanel>

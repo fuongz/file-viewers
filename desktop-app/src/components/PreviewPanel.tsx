@@ -15,6 +15,8 @@ interface PreviewPanelProps {
 	onOpenFile: () => void;
 	onContentChange?: (content: string) => void;
 	onClearCsv?: () => void;
+	onSplitCsv?: () => void;
+	onMergeCsv?: () => void;
 	binaryContent?: Uint8Array;
 	onProcessingChange?: (loading: boolean) => void;
 }
@@ -26,6 +28,8 @@ export const PreviewPanel = memo(function PreviewPanel({
 	onOpenFile,
 	onContentChange,
 	onClearCsv,
+	onSplitCsv,
+	onMergeCsv,
 	binaryContent,
 	onProcessingChange,
 }: PreviewPanelProps) {
@@ -54,6 +58,8 @@ export const PreviewPanel = memo(function PreviewPanel({
 					content={content}
 					onContentChange={onContentChange}
 					onClearCsv={onClearCsv}
+					onSplitCsv={onSplitCsv}
+					onMergeCsv={onMergeCsv}
 				/>
 			)}
 		</div>

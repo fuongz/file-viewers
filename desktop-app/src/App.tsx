@@ -1,7 +1,9 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import "./App.css";
 import { toast } from "sonner";
 import { CloseTabDialog } from "./components/CloseTabDialog";
+import { CsvMergeDialog } from "./components/CsvMergeDialog";
+import { CsvSplitDialog } from "./components/CsvSplitDialog";
 import { DragOverlay } from "./components/DragOverlay";
 import { Toolbar } from "./components/toolbar/Toolbar";
 import {
@@ -36,6 +38,7 @@ function App() {
 		closeTab,
 		addTab,
 		updateActiveTab,
+		setTabs,
 		initialContentTooLarge,
 		settingsOpen,
 		setSettingsOpen,
@@ -45,6 +48,9 @@ function App() {
 		sidebarCollapsed,
 		isDragOver,
 	} = useAppStore();
+
+	const [splitDialogOpen, setSplitDialogOpen] = useState(false);
+	const [mergeDialogOpen, setMergeDialogOpen] = useState(false);
 
 	const activeTab = useAppStore(selectActiveTab);
 	const isDark = useAppStore(selectIsDark);
@@ -128,6 +134,72 @@ function App() {
 		}
 	}, [tabs, activeTabId, themePref]);
 
+	const csvTabs = tabs.filter((t) => t.format === "csv");
+
+	const countCsvRows = (csvContent: string): number => {
+		if (!csvContent.trim()) return 0;
+		return csvContent.split("\n").length - 1;
+	};
+
+	const handleSplitCsv = (rowsPerFile: number) => {
+		const lines = content.split("\n");
+		const header = lines[0] ?? "";
+		const dataLines = lines.slice(1);
+		const parts: string[] = [];
+
+		for (let i = 0; i < dataLines.length; i += rowsPerFile) {
+			const chunk = dataLines.slice(i, i + rowsPerFile);
+			parts.push([header, ...chunk].join("\n"));
+		}
+
+		const baseName = activeTab.name.replace(/\.csv$/i, "");
+		const newTabs = parts.map((part, idx) => ({
+			id: crypto.randomUUID(),
+			name: `${baseName}_part_${idx + 1}.csv`,
+			format: "csv" as const,
+			content: part,
+			previewContent: part,
+			showEditor: true,
+		}));
+
+		setTabs((prev) => [...prev, ...newTabs]);
+		setActiveTabId(newTabs[0].id);
+		setSplitDialogOpen(false);
+		toast.success(`Split into ${parts.length} files`);
+	};
+
+	const handleMergeCsv = (selectedIds: string[], includeHeaders: boolean) => {
+		const selectedTabs = tabs.filter((t) => selectedIds.includes(t.id));
+		const mergedLines: string[] = [];
+
+		selectedTabs.forEach((tab, idx) => {
+			const lines = tab.content.split("\n");
+			if (includeHeaders && idx === 0) {
+				mergedLines.push(lines[0] ?? "");
+				mergedLines.push(...lines.slice(1));
+			} else if (includeHeaders) {
+				mergedLines.push(...lines.slice(1));
+			} else {
+				mergedLines.push(...lines);
+			}
+		});
+
+		const mergedContent = mergedLines.join("\n");
+		const newTab = {
+			id: crypto.randomUUID(),
+			name: `merged_${Date.now()}.csv`,
+			format: "csv" as const,
+			content: mergedContent,
+			previewContent: mergedContent,
+			showEditor: true,
+		};
+
+		setTabs((prev) => [...prev, newTab]);
+		setActiveTabId(newTab.id);
+		setMergeDialogOpen(false);
+		toast.success(`Merged ${selectedTabs.length} files`);
+	};
+
 	return (
 		<TooltipProvider delay={0}>
 			<div>
@@ -184,6 +256,8 @@ function App() {
 										? () => updateActiveTab({ content: "", previewContent: "" })
 										: undefined
 								}
+								onSplitCsv={() => setSplitDialogOpen(true)}
+								onMergeCsv={() => setMergeDialogOpen(true)}
 							/>
 
 							<SettingsDialog
@@ -191,6 +265,20 @@ function App() {
 								onOpenChange={setSettingsOpen}
 								themePref={themePref}
 								onThemeSelect={setThemePref}
+							/>
+
+							<CsvSplitDialog
+								open={splitDialogOpen}
+								onOpenChange={setSplitDialogOpen}
+								onConfirm={handleSplitCsv}
+								totalRows={countCsvRows(content)}
+							/>
+
+							<CsvMergeDialog
+								open={mergeDialogOpen}
+								onOpenChange={setMergeDialogOpen}
+								onConfirm={handleMergeCsv}
+								csvTabs={csvTabs}
 							/>
 
 							<CommandPalette
@@ -201,42 +289,31 @@ function App() {
 									{
 										id: "new-tab",
 										label: "New Tab",
-										shortcut: "⌘ T",
+										shortcut: "⌘T",
 										action: addTab,
-									},
-									{
-										id: "close-tab",
-										label: "Close Tab",
-										shortcut: "⌘ W",
-										action: () => closeTab(activeTabId),
-									},
-									{
-										id: "save",
-										label: "Save",
-										shortcut: "⌘ S",
-										action: saveFile,
 									},
 									{
 										id: "open",
 										label: "Open File",
-										shortcut: "⌘ O",
+										shortcut: "⌘O",
 										action: openFile,
 									},
 									{
 										id: "toggle-sidebar",
 										label: "Toggle Sidebar",
-										shortcut: "⌘ B",
+										shortcut: "⌘B",
 										action: toggleSidebar,
 									},
 									{
 										id: "settings",
 										label: "Settings",
-										shortcut: "⌘ ,",
+										shortcut: "⌘,",
 										action: () => setSettingsOpen(true),
 									},
 									{
 										id: "toggle-editor",
 										label: "Toggle Editor",
+										shortcut: "⌘E",
 										action: () => updateActiveTab({ showEditor: !showEditor }),
 									},
 									{

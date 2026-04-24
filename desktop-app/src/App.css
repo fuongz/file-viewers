@@ -1093,16 +1093,31 @@
 	user-select: none;
 	-webkit-user-select: none;
 	border-right: 1px solid var(--border) !important;
+	position: sticky;
+	left: 0;
+	z-index: 1;
 }
 
 .csv-table td.csv-row-num {
 	background: var(--bg-preview);
 }
 
-.csv-table tr:hover td.csv-row-num {
+.csv-table tbody tr:hover td.csv-row-num {
 	background:
 		linear-gradient(var(--csv-tr-hover-bg), var(--csv-tr-hover-bg)),
 		var(--bg-preview);
+}
+
+.csv-table thead th.csv-row-num {
+	background: var(--csv-thead-bg);
+}
+
+.csv-row-selected {
+	background: var(--accent) !important;
+}
+
+.csv-table tr:hover .csv-row-selected {
+	background: var(--accent) !important;
 }
 
 .csv-no-results {

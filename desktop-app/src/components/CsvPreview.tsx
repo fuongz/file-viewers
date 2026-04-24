@@ -3,18 +3,35 @@
 import { Popover } from "@base-ui/react";
 import { Trash } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
+import {
+	IconArrowMerge,
+	IconChevronDown,
+	IconLayoutRows,
+} from "@tabler/icons-react";
 import alasql from "alasql";
 import Papa from "papaparse";
 import type React from "react";
 import { useDeferredValue, useEffect, useMemo, useRef, useState } from "react";
 import { useTableState } from "../hooks/useTableState";
 import { DataTable, TableSkeleton } from "./table";
-import { Button, Textarea } from "./ui";
+import {
+	Badge,
+	Button,
+	DropdownMenu,
+	DropdownMenuContent,
+	DropdownMenuItem,
+	DropdownMenuTrigger,
+	Kbd,
+	KbdGroup,
+	Textarea,
+} from "./ui";
 
 interface CsvPreviewProps {
 	content: string;
 	onContentChange?: (content: string) => void;
 	onClearCsv?: () => void;
+	onSplitCsv?: () => void;
+	onMergeCsv?: () => void;
 }
 
 interface EditingCell {
@@ -30,6 +47,8 @@ export function CsvPreview({
 	content,
 	onContentChange,
 	onClearCsv,
+	onSplitCsv,
+	onMergeCsv,
 }: CsvPreviewProps) {
 	const {
 		sorting,
@@ -49,6 +68,7 @@ export function CsvPreview({
 	const [sqlQuery, setSqlQuery] = useState("SELECT * FROM csv");
 	const [sqlError, setSqlError] = useState<string | null>(null);
 	const [editingCell, setEditingCell] = useState<EditingCell | null>(null);
+	const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
 	// null = use parsed rows; set = contains committed edits
 	const [editRows, setEditRows] = useState<string[][] | null>(null);
 	// true while we're processing our own onContentChange call
@@ -171,8 +191,8 @@ export function CsvPreview({
 		);
 	}
 
-	// Skip skeleton while a cell is being edited to avoid flicker on commit
-	if (isStale && !editingCell) return <TableSkeleton />;
+	// Skip skeleton for internal edits (row insert/move/cell clear) or active cell edit
+	if (isStale && !editingCell && !isMyEditRef.current) return <TableSkeleton />;
 
 	if (error) {
 		return (
@@ -216,20 +236,114 @@ export function CsvPreview({
 				setEditingCell({ rowIndex, colIndex, draftValue: value, anchorEl });
 				setSelectedCell({ row: rowIndex + 1, col: colIndex + 1, value });
 			}}
+			onCellChange={(rowIndex, colIndex, value) => {
+				const baseRows = editRows ?? rows;
+				const newRows = baseRows.map((r, ri) =>
+					ri === rowIndex ? r.map((c, ci) => (ci === colIndex ? value : c)) : r,
+				);
+				isMyEditRef.current = true;
+				setEditRows(newRows);
+				if (onContentChange)
+					onContentChange(Papa.unparse([headers, ...newRows]));
+			}}
+			onDeleteRows={(rowIndices) => {
+				const baseRows = editRows ?? rows;
+				const newRows = baseRows.filter((_, ri) => !rowIndices.includes(ri));
+				setEditRows(newRows);
+				setSelectedRows((prev) => {
+					const next = new Set(prev);
+					rowIndices.forEach((i) => {
+						next.delete(i);
+					});
+					return next;
+				});
+			}}
+			onInsertRowAbove={(rowIndex) => {
+				const baseRows = editRows ?? rows;
+				const emptyRow = new Array(headers.length).fill("");
+				const newRows = [
+					...baseRows.slice(0, rowIndex),
+					emptyRow,
+					...baseRows.slice(rowIndex),
+				];
+				isMyEditRef.current = true;
+				setEditRows(newRows);
+				if (onContentChange)
+					onContentChange(Papa.unparse([headers, ...newRows]));
+			}}
+			onInsertRowBelow={(rowIndex) => {
+				const baseRows = editRows ?? rows;
+				const emptyRow = new Array(headers.length).fill("");
+				const newRows = [
+					...baseRows.slice(0, rowIndex + 1),
+					emptyRow,
+					...baseRows.slice(rowIndex + 1),
+				];
+				isMyEditRef.current = true;
+				setEditRows(newRows);
+				if (onContentChange)
+					onContentChange(Papa.unparse([headers, ...newRows]));
+			}}
+			onMoveRowUp={(rowIndex) => {
+				if (rowIndex === 0) return;
+				const baseRows = editRows ?? rows;
+				const newRows = [...baseRows];
+				[newRows[rowIndex - 1], newRows[rowIndex]] = [
+					newRows[rowIndex],
+					newRows[rowIndex - 1],
+				];
+				isMyEditRef.current = true;
+				setEditRows(newRows);
+				if (onContentChange)
+					onContentChange(Papa.unparse([headers, ...newRows]));
+			}}
+			onMoveRowDown={(rowIndex) => {
+				const baseRows = editRows ?? rows;
+				if (rowIndex >= baseRows.length - 1) return;
+				const newRows = [...baseRows];
+				[newRows[rowIndex], newRows[rowIndex + 1]] = [
+					newRows[rowIndex + 1],
+					newRows[rowIndex],
+				];
+				isMyEditRef.current = true;
+				setEditRows(newRows);
+				if (onContentChange)
+					onContentChange(Papa.unparse([headers, ...newRows]));
+			}}
+			selectedRows={selectedRows}
+			onSelectedRowsChange={setSelectedRows}
 			toolbarLeading={
-				onClearCsv ? (
-					<Button type="button" variant="destructive" onClick={onClearCsv}>
-						<HugeiconsIcon icon={Trash} />
-						Clear file
-					</Button>
-				) : undefined
+				<DropdownMenu>
+					<DropdownMenuTrigger
+						render={
+							<Button type="button" variant="outline">
+								Actions <IconChevronDown />
+							</Button>
+						}
+					/>
+					<DropdownMenuContent>
+						{onSplitCsv && (
+							<DropdownMenuItem onClick={onSplitCsv}>
+								<IconLayoutRows size={14} stroke={1.5} />
+								Split CSV
+							</DropdownMenuItem>
+						)}
+						{onMergeCsv && (
+							<DropdownMenuItem onClick={onMergeCsv}>
+								<IconArrowMerge size={14} stroke={1.5} />
+								Merge CSV
+							</DropdownMenuItem>
+						)}
+						{onClearCsv && (
+							<DropdownMenuItem variant="destructive" onClick={onClearCsv}>
+								<HugeiconsIcon icon={Trash} />
+								Clear file
+							</DropdownMenuItem>
+						)}
+					</DropdownMenuContent>
+				</DropdownMenu>
 			}
-			statusRight={
-				<>
-					<span className="csv-statusbar-chip">UTF-8</span>
-					<span className="csv-statusbar-chip">{lineEnding}</span>
-				</>
-			}
+			statusRight={<Badge variant="secondary">{lineEnding}</Badge>}
 			overlay={
 				<Popover.Root
 					open={!!editingCell}
@@ -248,11 +362,11 @@ export function CsvPreview({
 							align="start"
 							sideOffset={2}
 						>
-							<Popover.Popup className="z-50 flex flex-col gap-1.5 rounded-md border border-[var(--csv-thead-bg)] bg-[var(--bg-toolbar)] p-2 shadow-xl min-w-[200px] max-w-[360px]">
+							<Popover.Popup className="z-50 flex flex-col gap-1.5 rounded-xl border bg-background p-2 shadow-xl min-w-[200px] max-w-[500px]">
 								<Textarea
 									autoFocus
 									rows={4}
-									className="w-full text-xs font-mono resize-y min-h-[64px]"
+									className="w-full text-xs font-mono resize-y min-h-[200px]"
 									value={editingCell?.draftValue ?? ""}
 									onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
 										setEditingCell((prev) =>
@@ -272,7 +386,12 @@ export function CsvPreview({
 									}}
 								/>
 								<p className="text-[10px] text-[var(--text-muted)] select-none">
-									↵ save · Shift+↵ newline · Esc cancel
+									<Kbd>enter</Kbd> save -{" "}
+									<KbdGroup>
+										<Kbd>shift</Kbd>
+										<Kbd>enter</Kbd>
+									</KbdGroup>{" "}
+									newline - <Kbd>esc</Kbd> cancel
 								</p>
 							</Popover.Popup>
 						</Popover.Positioner>
