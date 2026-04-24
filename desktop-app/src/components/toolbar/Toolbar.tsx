@@ -3,6 +3,7 @@ import {
 	IconKeyboardFilled,
 	IconLayoutSidebarLeftCollapse,
 	IconLayoutSidebarLeftExpandFilled,
+	IconPlus,
 	IconSettings,
 } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
@@ -25,6 +26,7 @@ interface ToolbarProps {
 	onToggleEditor: () => void;
 	onToggleSidebar: () => void;
 	onOpenSettings: () => void;
+	onAddTab: () => void;
 }
 
 export function Toolbar({
@@ -35,6 +37,7 @@ export function Toolbar({
 	onToggleEditor,
 	onToggleSidebar,
 	onOpenSettings,
+	onAddTab,
 }: ToolbarProps) {
 	return (
 		<header
@@ -68,6 +71,20 @@ export function Toolbar({
 					</KbdGroup>
 				</TooltipContent>
 			</Tooltip>
+			<Tooltip>
+				<TooltipTrigger
+					render={<Button size="icon-sm" onClick={onAddTab} variant="ghost" />}
+				>
+					<IconPlus stroke={1} />
+				</TooltipTrigger>
+				<TooltipContent>
+					New tab
+					<KbdGroup>
+						<Kbd>⌘</Kbd>
+						<Kbd>T</Kbd>
+					</KbdGroup>
+				</TooltipContent>
+			</Tooltip>
 			<div className="flex-1" />
 			<span className="font-semibold text-sm">{tabName}</span>
 			<div className="flex-1" />
@@ -91,14 +108,31 @@ export function Toolbar({
 								<IconKeyboard stroke={1} />
 							)}
 						</TooltipTrigger>
-						<TooltipContent className="flex items-center gap-2">
+						<TooltipContent>
 							{!showEditor ? "Hide editor" : "Show editor"}
+							<KbdGroup>
+								<Kbd>⌘</Kbd>
+								<Kbd>E</Kbd>
+							</KbdGroup>
 						</TooltipContent>
 					</Tooltip>
 				)}
-				<Button size="icon-sm" onClick={onOpenSettings} variant="ghost">
-					<IconSettings />
-				</Button>
+				<Tooltip>
+					<TooltipTrigger
+						render={
+							<Button size="icon-sm" onClick={onOpenSettings} variant="ghost" />
+						}
+					>
+						<IconSettings />
+					</TooltipTrigger>
+					<TooltipContent>
+						Settings
+						<KbdGroup>
+							<Kbd>⌘</Kbd>
+							<Kbd>,</Kbd>
+						</KbdGroup>
+					</TooltipContent>
+				</Tooltip>
 			</div>
 		</header>
 	);

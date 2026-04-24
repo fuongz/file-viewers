@@ -16,7 +16,7 @@ import {
 import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
 import remarkGfm from "remark-gfm";
-import { Button } from "./ui";
+import { Button, Tooltip, TooltipContent, TooltipTrigger } from "./ui";
 
 interface HastNode {
 	type: string;
@@ -93,13 +93,20 @@ export function CodeBlock({
 		<div className="md-code-block">
 			<div className="flex items-center justify-between px-2 py-1 bg-[var(--bg-toolbar)] border-b border-[var(--border)]">
 				<div className="flex items-center gap-1.5">
-					<Button
-						size="icon"
-						onClick={() => setCollapsed((c) => !c)}
-						title={collapsed ? "Expand" : "Collapse"}
-					>
-						{collapsed ? <IconChevronRight /> : <IconChevronDown />}
-					</Button>
+					<Tooltip>
+						<TooltipTrigger
+							render={
+								<Button
+									size="icon-xs"
+									variant="ghost"
+									onClick={() => setCollapsed((c) => !c)}
+								/>
+							}
+						>
+							{collapsed ? <IconChevronRight /> : <IconChevronDown />}
+						</TooltipTrigger>
+						<TooltipContent>{collapsed ? "Expand" : "Collapse"}</TooltipContent>
+					</Tooltip>
 					{lang && (
 						<span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-primary)]">
 							{lang}
@@ -109,9 +116,16 @@ export function CodeBlock({
 						{lineCount} {lineCount === 1 ? "line" : "lines"}
 					</span>
 				</div>
-				<Button size="icon" onClick={handleCopy} title="Copy">
-					{copied ? <IconCheck /> : <IconCopy />}
-				</Button>
+				<Tooltip>
+					<TooltipTrigger
+						render={
+							<Button size="icon-xs" variant="ghost" onClick={handleCopy} />
+						}
+					>
+						{copied ? <IconCheck /> : <IconCopy />}
+					</TooltipTrigger>
+					<TooltipContent>{copied ? "Copied!" : "Copy code"}</TooltipContent>
+				</Tooltip>
 			</div>
 			{!collapsed && <pre>{children}</pre>}
 		</div>

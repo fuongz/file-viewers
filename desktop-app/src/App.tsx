@@ -20,10 +20,10 @@ import { useEditorActions } from "./hooks/useEditorActions";
 import { useFileManager, useRestoreSession } from "./hooks/useFileManager";
 import { useKeyboard } from "./hooks/useKeyboard";
 import { useNativeMenu } from "./hooks/useNativeMenu";
+import { useOpenWith } from "./hooks/useOpenWith";
 import { persistSession } from "./hooks/useSession";
 import { useTheme } from "./hooks/useTheme";
 import { useUpdater } from "./hooks/useUpdater";
-import { useOpenWith } from "./hooks/useOpenWith";
 import { selectActiveTab, selectIsDark, useAppStore } from "./store";
 
 function App() {
@@ -91,6 +91,7 @@ function App() {
 			",": () => setSettingsOpen(true),
 			k: () => setCommandOpen(true),
 			b: toggleSidebar,
+			e: () => updateActiveTab({ showEditor: !showEditor }),
 			...Object.fromEntries(
 				Array.from({ length: 9 }, (_, i) => [
 					String(i + 1),
@@ -145,6 +146,9 @@ function App() {
 						onToggleEditor={() => updateActiveTab({ showEditor: !showEditor })}
 						onToggleSidebar={toggleSidebar}
 						onOpenSettings={() => setSettingsOpen(true)}
+						onAddTab={() => {
+							if (!isAnyTabBusy) addTab();
+						}}
 					/>
 					<div className="flex flex-1 overflow-hidden">
 						<FileTree />
