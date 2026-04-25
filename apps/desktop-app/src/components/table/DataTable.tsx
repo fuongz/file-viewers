@@ -394,6 +394,160 @@ export function DataTable({
 		return () => document.removeEventListener("mouseup", onMouseUp);
 	}, []);
 
+	useEffect(() => {
+		const onKeyDown = (e: KeyboardEvent) => {
+			// Don't intercept when an input/textarea/contenteditable has focus
+			const active = document.activeElement;
+			if (
+				active &&
+				(active.tagName === "INPUT" ||
+					active.tagName === "TEXTAREA" ||
+					(active as HTMLElement).isContentEditable)
+			)
+				return;
+
+			const cell = selectedCellRef.current;
+			const range = dragRangeStateRef.current;
+			const data = displayDataRef.current;
+			const headers = displayHeadersRef.current;
+
+			const getCellStr = (rowIdx: number, colIdx: number): string => {
+				const row = data[rowIdx];
+				if (!row) return "";
+				const val = row[headers[colIdx]];
+				if (val === null || val === undefined) return "";
+				if (typeof val === "object") return JSON.stringify(val);
+				return String(val);
+			};
+
+			const isMod = e.metaKey || e.ctrlKey;
+
+			// Delete / Backspace → empty selected cells
+			if (e.key === "Delete" || e.key === "Backspace") {
+				if (range) {
+					e.preventDefault();
+					const changes: Array<[number, number, string]> = [];
+					for (let r = range.startRow; r <= range.endRow; r++)
+						for (let c = range.startCol; c <= range.endCol; c++)
+							changes.push([r, c, ""]);
+					onCellBatchChangeRef.current?.(changes);
+				} else if (cell) {
+					e.preventDefault();
+					onCellChangeRef.current?.(cell.row - 1, cell.col - 1, "");
+				}
+				return;
+			}
+
+			// Enter → open inline editor (single cell only)
+			if (e.key === "Enter" && !isMod) {
+				if (cell && !range) {
+					e.preventDefault();
+					const el = tableContainerRef.current?.querySelector(
+						`[data-ctx-row="${cell.row - 1}"][data-ctx-col="${cell.col - 1}"][data-ctx-type="cell"]`,
+					);
+					if (el && onCellDoubleClickRef.current) {
+						onCellDoubleClickRef.current(
+							cell.row - 1,
+							cell.col - 1,
+							cell.value,
+							el,
+						);
+					}
+				}
+				return;
+			}
+
+			if (!isMod) return;
+
+			// Cmd/Ctrl+C → copy
+			if (e.key === "c") {
+				e.preventDefault();
+				if (range) {
+					const lines: string[] = [];
+					for (let r = range.startRow; r <= range.endRow; r++) {
+						const cols: string[] = [];
+						for (let c = range.startCol; c <= range.endCol; c++)
+							cols.push(getCellStr(r, c));
+						lines.push(cols.join("\t"));
+					}
+					navigator.clipboard.writeText(lines.join("\n"));
+				} else if (cell) {
+					navigator.clipboard.writeText(cell.value);
+				}
+				return;
+			}
+
+			// Cmd/Ctrl+X → cut (copy then empty)
+			if (e.key === "x") {
+				e.preventDefault();
+				if (range) {
+					const lines: string[] = [];
+					const changes: Array<[number, number, string]> = [];
+					for (let r = range.startRow; r <= range.endRow; r++) {
+						const cols: string[] = [];
+						for (let c = range.startCol; c <= range.endCol; c++) {
+							cols.push(getCellStr(r, c));
+							changes.push([r, c, ""]);
+						}
+						lines.push(cols.join("\t"));
+					}
+					navigator.clipboard.writeText(lines.join("\n"));
+					onCellBatchChangeRef.current?.(changes);
+				} else if (cell) {
+					navigator.clipboard.writeText(cell.value);
+					onCellChangeRef.current?.(cell.row - 1, cell.col - 1, "");
+				}
+				return;
+			}
+
+			// Cmd/Ctrl+V → paste
+			if (e.key === "v") {
+				e.preventDefault();
+				navigator.clipboard.readText().then((text) => {
+					const pasteRows = text
+						.replace(/\r\n/g, "\n")
+						.split("\n")
+						.map((r) => r.split("\t"));
+					let startRow: number;
+					let startCol: number;
+					if (range) {
+						startRow = range.startRow;
+						startCol = range.startCol;
+					} else if (cell) {
+						startRow = cell.row - 1;
+						startCol = cell.col - 1;
+					} else {
+						return;
+					}
+					const currentData = displayDataRef.current;
+					const currentHeaders = displayHeadersRef.current;
+					const changes: Array<[number, number, string]> = [];
+					for (let ri = 0; ri < pasteRows.length; ri++) {
+						for (let ci = 0; ci < pasteRows[ri].length; ci++) {
+							const rowIdx = startRow + ri;
+							const colIdx = startCol + ci;
+							if (rowIdx < currentData.length && colIdx < currentHeaders.length)
+								changes.push([rowIdx, colIdx, pasteRows[ri][ci]]);
+						}
+					}
+					if (changes.length === 1) {
+						onCellChangeRef.current?.(
+							changes[0][0],
+							changes[0][1],
+							changes[0][2],
+						);
+					} else if (changes.length > 1) {
+						onCellBatchChangeRef.current?.(changes);
+					}
+				});
+				return;
+			}
+		};
+
+		document.addEventListener("keydown", onKeyDown);
+		return () => document.removeEventListener("keydown", onKeyDown);
+	}, []);
+
 	const columns = useMemo(
 		() =>
 			displayHeaders.map((h, i) =>
@@ -481,6 +635,22 @@ export function DataTable({
 	setDragRangeRef.current = setDragRange;
 	const colCountRef = useRef(displayHeaders.length);
 	colCountRef.current = displayHeaders.length;
+
+	// Keyboard handler refs
+	const selectedCellRef = useRef(selectedCell);
+	selectedCellRef.current = selectedCell;
+	const dragRangeStateRef = useRef(dragRange);
+	dragRangeStateRef.current = dragRange;
+	const displayDataRef = useRef(displayData);
+	displayDataRef.current = displayData;
+	const displayHeadersRef = useRef(displayHeaders);
+	displayHeadersRef.current = displayHeaders;
+	const onCellChangeRef = useRef(onCellChange);
+	onCellChangeRef.current = onCellChange;
+	const onCellBatchChangeRef = useRef(onCellBatchChange);
+	onCellBatchChangeRef.current = onCellBatchChange;
+	const onCellDoubleClickRef = useRef(onCellDoubleClick);
+	onCellDoubleClickRef.current = onCellDoubleClick;
 
 	const setRowDragRange = useCallback((startRow: number, endRow: number) => {
 		setDragRangeRef.current({
