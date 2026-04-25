@@ -26,10 +26,10 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: "./desktop-app/src-tauri -> target"
+          workspaces: "./apps/desktop-app/src-tauri -> target"
 
       - name: Install frontend dependencies
-        working-directory: desktop-app
+        working-directory: apps/desktop-app
         run: bun install
 
       # Detect whether Apple signing secrets are configured.
@@ -61,7 +61,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
-          projectPath: desktop-app
+          projectPath: apps/desktop-app
           tagName: ${{ github.event.release.tag_name }}
           includeUpdaterJson: true
           args: --bundles dmg --target universal-apple-darwin
@@ -75,7 +75,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
-          projectPath: desktop-app
+          projectPath: apps/desktop-app
           tagName: ${{ github.event.release.tag_name }}
           includeUpdaterJson: true
           args: --bundles dmg --target universal-apple-darwin
@@ -110,10 +110,10 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: "./desktop-app/src-tauri -> target"
+          workspaces: "./apps/desktop-app/src-tauri -> target"
 
       - name: Install frontend dependencies
-        working-directory: desktop-app
+        working-directory: apps/desktop-app
         run: bun install
 
       - name: Build and publish .deb + .AppImage
@@ -125,7 +125,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
-          projectPath: desktop-app
+          projectPath: apps/desktop-app
           tagName: ${{ github.event.release.tag_name }}
           includeUpdaterJson: true
           args: --bundles deb,appimage
@@ -166,10 +166,10 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: "./desktop-app/src-tauri -> target"
+          workspaces: "./apps/desktop-app/src-tauri -> target"
 
       - name: Install frontend dependencies
-        working-directory: desktop-app
+        working-directory: apps/desktop-app
         run: bun install
 
       - name: Build and publish .rpm
@@ -181,7 +181,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
-          projectPath: desktop-app
+          projectPath: apps/desktop-app
           tagName: ${{ github.event.release.tag_name }}
           includeUpdaterJson: true
           args: --bundles rpm
@@ -205,10 +205,10 @@ jobs:
       - name: Rust cache
         uses: swatinem/rust-cache@v2
         with:
-          workspaces: "./desktop-app/src-tauri -> target"
+          workspaces: "./apps/desktop-app/src-tauri -> target"
 
       - name: Install frontend dependencies
-        working-directory: desktop-app
+        working-directory: apps/desktop-app
         run: bun install
 
       - name: Build and publish .msi + .exe
@@ -218,7 +218,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
-          projectPath: desktop-app
+          projectPath: apps/desktop-app
           tagName: ${{ github.event.release.tag_name }}
           includeUpdaterJson: true
           args: --bundles msi,nsis

@@ -40,14 +40,9 @@ bump() {
 
 # ── preflight ──────────────────────────────────────────────────────────────
 
-require git jq sed gh
+require git jq sed
 
 cd "$ROOT"
-
-# Must have gh write access to releases
-gh auth status &>/dev/null || die "not authenticated - run: gh auth login"
-repo_push=$(gh api repos/fuongz/file-viewers --jq '.permissions.push' 2>/dev/null || echo "false")
-[[ "$repo_push" == "true" ]] || die "gh token lacks push access — re-auth with: gh auth refresh -s repo"
 
 # Must be on main and clean
 current_branch=$(git rev-parse --abbrev-ref HEAD)
@@ -132,13 +127,7 @@ echo ""
 read -r -p "Push now? [y/N] " confirm
 if [[ "$(echo "$confirm" | tr '[:upper:]' '[:lower:]')" == "y" ]]; then
   git push origin main "$next_tag"
-  echo "=> creating GitHub Release ${next_tag}..."
-  gh release create "$next_tag" \
-    --title "$next_tag" \
-    --generate-notes \
-    --draft
-  echo "[x] Draft release created - review notes then publish to trigger CI build."
-  echo "  https://github.com/fuongz/file-viewers/releases"
+  echo "[x] Pushed. Tag ${next_tag} is live."
 else
   echo "Skipped push. Run the command above when ready."
 fi
