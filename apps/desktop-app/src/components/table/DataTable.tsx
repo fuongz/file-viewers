@@ -42,6 +42,7 @@ import {
 	useRef,
 	useState,
 } from "react";
+import { flushSync } from "react-dom";
 import { cn } from "@/lib/utils";
 import {
 	Button,
@@ -80,7 +81,13 @@ interface VirtualRowProps {
 	selectedCellRow: number; // 1-based row of selectedCell, 0 = none
 	selectedCellCol: number; // 1-based col of selectedCell, 0 = none
 	queryMode: QueryMode;
-	onCellSelect: Dispatch<SetStateAction<SelectedCell | null>>;
+	onCellClick: (
+		rowIndex: number,
+		colIndex: number,
+		displayValue: string,
+		metaKey: boolean,
+		shiftKey: boolean,
+	) => void;
 	onCellDoubleClick?: (
 		rowIndex: number,
 		colIndex: number,
@@ -97,6 +104,7 @@ interface VirtualRowProps {
 	} | null;
 	isFirstRowInRange?: boolean;
 	isLastRowInRange?: boolean;
+	cmdCells?: Set<string>;
 }
 
 function VirtualRowComponent({
@@ -107,13 +115,14 @@ function VirtualRowComponent({
 	selectedCellRow,
 	selectedCellCol,
 	queryMode,
-	onCellSelect,
+	onCellClick,
 	onCellDoubleClick,
 	renderCellValue,
 	onRowClick,
 	dragRange,
 	isFirstRowInRange,
 	isLastRowInRange,
+	cmdCells,
 }: VirtualRowProps) {
 	const isRowInRange =
 		dragRange != null &&
@@ -162,6 +171,7 @@ function VirtualRowComponent({
 							: String(rawValue);
 				const isSelected =
 					selectedCellRow === row.index + 1 && selectedCellCol === colIdx + 1;
+				const isCmdSelected = cmdCells?.has(`${row.index}:${colIdx}`) ?? false;
 				const isCellInRange =
 					isRowInRange &&
 					colIdx >= dragRange!.startCol &&
@@ -193,19 +203,23 @@ function VirtualRowComponent({
 						className={cn(
 							isCellInRange
 								? "bg-primary/15 cursor-default"
-								: isSelected && !dragRange
+								: isCmdSelected
 									? "cursor-default ring-2 ring-inset ring-primary bg-primary/10"
-									: isRowSelected
-										? "bg-primary/15"
-										: "",
+									: isSelected && !dragRange
+										? "cursor-default ring-2 ring-inset ring-primary bg-primary/10"
+										: isRowSelected
+											? "bg-primary/15"
+											: "",
 							"select-none truncate flex items-center px-2 py-1 text-xs/relaxed border-r border-border",
 						)}
-						onClick={() =>
-							onCellSelect({
-								row: row.index + 1,
-								col: colIdx + 1,
-								value: displayValue,
-							})
+						onClick={(e) =>
+							onCellClick(
+								row.index,
+								colIdx,
+								displayValue,
+								e.metaKey || e.ctrlKey,
+								e.shiftKey,
+							)
 						}
 						onDoubleClick={
 							onCellDoubleClick
@@ -262,6 +276,17 @@ function rowPropsEqual(prev: VirtualRowProps, next: VirtualRowProps): boolean {
 			rowIdx <= next.dragRange.endRow;
 		if (prevInRange || nextInRange) return false;
 	}
+	if (prev.cmdCells !== next.cmdCells) {
+		const rowIdx = prev.row.index;
+		const prefix = `${rowIdx}:`;
+		const prevHas = [...(prev.cmdCells ?? [])].some((k) =>
+			k.startsWith(prefix),
+		);
+		const nextHas = [...(next.cmdCells ?? [])].some((k) =>
+			k.startsWith(prefix),
+		);
+		if (prevHas || nextHas) return false;
+	}
 	return true;
 }
 
@@ -313,6 +338,9 @@ export interface DataTableProps {
 	onMoveRowUp?: (rowIndex: number) => void;
 	onMoveRowDown?: (rowIndex: number) => void;
 
+	onUndo?: () => void;
+	onRedo?: () => void;
+
 	renderCellValue?: (value: unknown) => ReactNode;
 
 	toolbarLeading?: ReactNode;
@@ -354,6 +382,8 @@ export function DataTable({
 	onInsertRowBelow,
 	onMoveRowUp,
 	onMoveRowDown,
+	onUndo,
+	onRedo,
 	renderCellValue,
 	toolbarLeading,
 	statusRight,
@@ -362,6 +392,9 @@ export function DataTable({
 }: DataTableProps) {
 	const tableContainerRef = useRef<HTMLDivElement>(null);
 	const [ctxMenu, setCtxMenu] = useState<CtxMenuState | null>(null);
+	const [cmdCells, setCmdCells] = useState<Set<string>>(new Set());
+	const cmdCellsRef = useRef(cmdCells);
+	cmdCellsRef.current = cmdCells;
 
 	const [dragRange, setDragRange] = useState<{
 		startRow: number;
@@ -408,6 +441,7 @@ export function DataTable({
 
 			const cell = selectedCellRef.current;
 			const range = dragRangeStateRef.current;
+			const cmd = cmdCellsRef.current;
 			const data = displayDataRef.current;
 			const headers = displayHeadersRef.current;
 
@@ -420,11 +454,23 @@ export function DataTable({
 				return String(val);
 			};
 
+			// Collect cmd-selected cells sorted by row then col
+			const cmdEntries = (): Array<[number, number]> =>
+				[...cmd]
+					.map((k) => k.split(":").map(Number) as [number, number])
+					.sort((a, b) => a[0] - b[0] || a[1] - b[1]);
+
 			const isMod = e.metaKey || e.ctrlKey;
 
 			// Delete / Backspace → empty selected cells
 			if (e.key === "Delete" || e.key === "Backspace") {
-				if (range) {
+				if (cmd.size > 0) {
+					e.preventDefault();
+					const changes = cmdEntries().map(
+						([r, c]) => [r, c, ""] as [number, number, string],
+					);
+					onCellBatchChangeRef.current?.(changes);
+				} else if (range) {
 					e.preventDefault();
 					const changes: Array<[number, number, string]> = [];
 					for (let r = range.startRow; r <= range.endRow; r++)
@@ -440,7 +486,7 @@ export function DataTable({
 
 			// Enter → open inline editor (single cell only)
 			if (e.key === "Enter" && !isMod) {
-				if (cell && !range) {
+				if (cell && !range && cmd.size === 0) {
 					e.preventDefault();
 					const el = tableContainerRef.current?.querySelector(
 						`[data-ctx-row="${cell.row - 1}"][data-ctx-col="${cell.col - 1}"][data-ctx-type="cell"]`,
@@ -459,10 +505,30 @@ export function DataTable({
 
 			if (!isMod) return;
 
+			// Cmd/Ctrl+Z → undo
+			if (e.key === "z" && !e.shiftKey) {
+				e.preventDefault();
+				onUndoRef.current?.();
+				return;
+			}
+
+			// Cmd/Ctrl+Shift+Z or Cmd/Ctrl+Y → redo (Shift+Z produces "Z" on macOS)
+			if ((e.key.toLowerCase() === "z" && e.shiftKey) || e.key === "y") {
+				e.preventDefault();
+				onRedoRef.current?.();
+				return;
+			}
+
 			// Cmd/Ctrl+C → copy
 			if (e.key === "c") {
 				e.preventDefault();
-				if (range) {
+				if (cmd.size > 0) {
+					navigator.clipboard.writeText(
+						cmdEntries()
+							.map(([r, c]) => getCellStr(r, c))
+							.join("\t"),
+					);
+				} else if (range) {
 					const lines: string[] = [];
 					for (let r = range.startRow; r <= range.endRow; r++) {
 						const cols: string[] = [];
@@ -480,7 +546,14 @@ export function DataTable({
 			// Cmd/Ctrl+X → cut (copy then empty)
 			if (e.key === "x") {
 				e.preventDefault();
-				if (range) {
+				if (cmd.size > 0) {
+					const entries = cmdEntries();
+					navigator.clipboard.writeText(
+						entries.map(([r, c]) => getCellStr(r, c)).join("\t"),
+					);
+					onCellBatchChangeRef.current?.(entries.map(([r, c]) => [r, c, ""]));
+					setCmdCellsRef.current(new Set());
+				} else if (range) {
 					const lines: string[] = [];
 					const changes: Array<[number, number, string]> = [];
 					for (let r = range.startRow; r <= range.endRow; r++) {
@@ -651,6 +724,70 @@ export function DataTable({
 	onCellBatchChangeRef.current = onCellBatchChange;
 	const onCellDoubleClickRef = useRef(onCellDoubleClick);
 	onCellDoubleClickRef.current = onCellDoubleClick;
+	const onUndoRef = useRef(onUndo);
+	onUndoRef.current = onUndo;
+	const onRedoRef = useRef(onRedo);
+	onRedoRef.current = onRedo;
+	const setCmdCellsRef = useRef(setCmdCells);
+	setCmdCellsRef.current = setCmdCells;
+
+	const cellAnchorRef = useRef<{ row: number; col: number } | null>(null);
+
+	const handleCellClick = useCallback(
+		(
+			rowIndex: number,
+			colIndex: number,
+			displayValue: string,
+			metaKey: boolean,
+			shiftKey: boolean,
+		) => {
+			if (metaKey) {
+				// Cmd/Ctrl+click: toggle individual cell into non-contiguous selection
+				const key = `${rowIndex}:${colIndex}`;
+				const prev = cmdCellsRef.current;
+				const next = new Set(prev);
+				// On first cmd-click, carry the current single-cell selection over
+				const currentCell = selectedCellRef.current;
+				if (currentCell && prev.size === 0) {
+					next.add(`${currentCell.row - 1}:${currentCell.col - 1}`);
+				}
+				if (next.has(key)) next.delete(key);
+				else next.add(key);
+				setCmdCells(next);
+				onCellSelectRef.current(null);
+				setDragRangeRef.current(null);
+				cellAnchorRef.current = { row: rowIndex, col: colIndex };
+				if (selectedRowsRef.current?.size) {
+					onSelectedRowsChangeRef.current?.(new Set());
+					lastRowAnchorRef.current = null;
+				}
+			} else if (shiftKey && cellAnchorRef.current) {
+				const { row: ar, col: ac } = cellAnchorRef.current;
+				setDragRangeRef.current({
+					startRow: Math.min(ar, rowIndex),
+					startCol: Math.min(ac, colIndex),
+					endRow: Math.max(ar, rowIndex),
+					endCol: Math.max(ac, colIndex),
+				});
+				onCellSelectRef.current(null);
+				setCmdCells(new Set());
+			} else {
+				onCellSelectRef.current({
+					row: rowIndex + 1,
+					col: colIndex + 1,
+					value: displayValue,
+				});
+				setDragRangeRef.current(null);
+				setCmdCells(new Set());
+				cellAnchorRef.current = { row: rowIndex, col: colIndex };
+				if (selectedRowsRef.current?.size) {
+					onSelectedRowsChangeRef.current?.(new Set());
+					lastRowAnchorRef.current = null;
+				}
+			}
+		},
+		[],
+	);
 
 	const setRowDragRange = useCallback((startRow: number, endRow: number) => {
 		setDragRangeRef.current({
@@ -717,16 +854,16 @@ export function DataTable({
 				isDraggingRowRef.current = true;
 				didDragRowRef.current = false;
 				onCellSelectRef.current(null);
+				setCmdCellsRef.current(new Set());
 				setRowDragRange(rowIdx, rowIdx);
 				if (tableContainerRef.current)
 					tableContainerRef.current.style.userSelect = "none";
 			} else if (el.dataset.ctxType === "cell") {
-				// Data cell — deselect any selected rows, then start cell-drag
-				if (selectedRowsRef.current?.size) {
-					onSelectedRowsChangeRef.current?.(new Set());
-					lastRowAnchorRef.current = null;
-				}
+				// Shift/Cmd+click: let onClick handle; don't start a drag
+				if (e.shiftKey || e.metaKey || e.ctrlKey) return;
+				// Data cell — start drag; clear cmd-selection
 				onCellSelectRef.current(null);
+				setCmdCellsRef.current(new Set());
 				dragCellAnchorRef.current = {
 					row: Number(el.dataset.ctxRow),
 					col: Number(el.dataset.ctxCol),
@@ -778,7 +915,8 @@ export function DataTable({
 		[setRowDragRange],
 	);
 
-	// Capture which cell/row was right-clicked before ContextMenuTrigger opens the menu
+	// Capture which cell/row was right-clicked, select it if not already selected,
+	// then flush state synchronously so ContextMenuContent renders before the popup positions.
 	const handleContextMenu = useCallback(
 		(e: React.MouseEvent<HTMLTableSectionElement>) => {
 			const ctxEl = (e.target as Element).closest(
@@ -792,14 +930,51 @@ export function DataTable({
 			const type = ctxEl.dataset.ctxType;
 			const rowIndex = Number(ctxEl.dataset.ctxRow);
 			if (type === "cell") {
-				setCtxMenu({
-					type: "cell",
-					rowIndex,
-					colIndex: Number(ctxEl.dataset.ctxCol),
-					value: ctxEl.dataset.ctxVal ?? "",
-				});
+				const colIndex = Number(ctxEl.dataset.ctxCol);
+				const value = ctxEl.dataset.ctxVal ?? "";
+				const range = dragRangeStateRef.current;
+				const cell = selectedCellRef.current;
+				const cmd = cmdCellsRef.current;
+				const cellAlreadySelected =
+					cmd.has(`${rowIndex}:${colIndex}`) ||
+					(range
+						? rowIndex >= range.startRow &&
+							rowIndex <= range.endRow &&
+							colIndex >= range.startCol &&
+							colIndex <= range.endCol
+						: cell?.row === rowIndex + 1 && cell?.col === colIndex + 1);
+				if (!cellAlreadySelected) {
+					onCellSelectRef.current({
+						row: rowIndex + 1,
+						col: colIndex + 1,
+						value,
+					});
+					setDragRangeRef.current(null);
+					setCmdCellsRef.current(new Set());
+					cellAnchorRef.current = { row: rowIndex, col: colIndex };
+					if (selectedRowsRef.current?.size) {
+						onSelectedRowsChangeRef.current?.(new Set());
+						lastRowAnchorRef.current = null;
+					}
+				}
+				flushSync(() =>
+					setCtxMenu({ type: "cell", rowIndex, colIndex, value }),
+				);
 			} else {
-				setCtxMenu({ type: "row", rowIndex });
+				const alreadySelected = selectedRowsRef.current?.has(rowIndex) ?? false;
+				if (!alreadySelected) {
+					onSelectedRowsChangeRef.current?.(new Set([rowIndex]));
+					lastRowAnchorRef.current = rowIndex;
+					setDragRangeRef.current({
+						startRow: rowIndex,
+						endRow: rowIndex,
+						startCol: 0,
+						endCol: colCountRef.current - 1,
+					});
+					onCellSelectRef.current(null);
+					setCmdCellsRef.current(new Set());
+				}
+				flushSync(() => setCtxMenu({ type: "row", rowIndex }));
 			}
 		},
 		[],
@@ -827,6 +1002,17 @@ export function DataTable({
 				sum,
 			};
 		}
+		if (cmdCells.size > 0) {
+			let sum = 0;
+			for (const key of cmdCells) {
+				const [r, c] = key.split(":").map(Number);
+				const row = displayData[r];
+				if (!row) continue;
+				const v = Number(row[displayHeaders[c]]);
+				if (Number.isFinite(v)) sum += v;
+			}
+			return { pos: `${cmdCells.size} cells`, cells: cmdCells.size, sum };
+		}
 		if (selectedCell && !dragRange) {
 			const v = Number(selectedCell.value);
 			return {
@@ -838,6 +1024,7 @@ export function DataTable({
 		return null;
 	}, [
 		selectedRows,
+		cmdCells,
 		selectedCell,
 		dragRange,
 		displayData,
@@ -1067,11 +1254,12 @@ export function DataTable({
 										selectedCellRow={selectedCell?.row ?? 0}
 										selectedCellCol={selectedCell?.col ?? 0}
 										queryMode={queryMode}
-										onCellSelect={onCellSelect}
+										onCellClick={handleCellClick}
 										onCellDoubleClick={onCellDoubleClick}
 										renderCellValue={renderCellValue}
 										onRowClick={handleRowClick}
 										dragRange={dragRange}
+										cmdCells={cmdCells}
 										isFirstRowInRange={
 											dragRange != null && row.index === dragRange.startRow
 										}
