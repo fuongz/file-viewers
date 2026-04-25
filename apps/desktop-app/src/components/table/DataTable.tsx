@@ -46,6 +46,11 @@ import { cn } from "@/lib/utils";
 import {
 	Button,
 	ButtonGroup,
+	ContextMenu,
+	ContextMenuContent,
+	ContextMenuItem,
+	ContextMenuSeparator,
+	ContextMenuTrigger,
 	DropdownMenu,
 	DropdownMenuContent,
 	DropdownMenuItem,
@@ -57,53 +62,13 @@ import { SqlInput } from "./SqlInput";
 import type { QueryMode, SelectedCell } from "./types";
 
 // ── Module-level constants ─────────────────────────────────────────────────────
-
 const ROW_NUM_W = 40;
 const columnHelper = createColumnHelper<Record<string, unknown>>();
 
 // ── Floating context menu ──────────────────────────────────────────────────────
-
 type CtxMenuState =
-	| { type: "row"; rowIndex: number; x: number; y: number }
-	| {
-			type: "cell";
-			rowIndex: number;
-			colIndex: number;
-			value: string;
-			x: number;
-			y: number;
-	  };
-
-function FlatMenuItem({
-	icon: Icon,
-	children,
-	onClick,
-	variant,
-}: {
-	icon?: React.FC<{ size?: number; className?: string }>;
-	children: ReactNode;
-	onClick: () => void;
-	variant?: "destructive";
-}) {
-	return (
-		<button
-			type="button"
-			onClick={onClick}
-			className={`group/ctx-item relative flex min-h-7 w-full cursor-default items-center gap-2 rounded-md px-2 py-1 text-xs/relaxed outline-hidden select-none hover:bg-foreground/10 focus:bg-foreground/10 ${
-				variant === "destructive"
-					? "text-destructive hover:bg-destructive/10 focus:bg-destructive/10"
-					: ""
-			}`}
-		>
-			{Icon && <Icon size={13} />}
-			{children}
-		</button>
-	);
-}
-
-function CtxSep() {
-	return <div className="-mx-1 my-1 h-px bg-border/50" />;
-}
+	| { type: "row"; rowIndex: number }
+	| { type: "cell"; rowIndex: number; colIndex: number; value: string };
 
 // ── VirtualRow ─────────────────────────────────────────────────────────────────
 
@@ -396,7 +361,6 @@ export function DataTable({
 	overlay,
 }: DataTableProps) {
 	const tableContainerRef = useRef<HTMLDivElement>(null);
-	const ctxMenuRef = useRef<HTMLDivElement>(null);
 	const [ctxMenu, setCtxMenu] = useState<CtxMenuState | null>(null);
 
 	const [dragRange, setDragRange] = useState<{
@@ -429,24 +393,6 @@ export function DataTable({
 		document.addEventListener("mouseup", onMouseUp);
 		return () => document.removeEventListener("mouseup", onMouseUp);
 	}, []);
-
-	useEffect(() => {
-		if (!ctxMenu) return;
-		// Close when mousedown outside the menu (contains check lets item clicks through)
-		const closeOnOutside = (e: MouseEvent) => {
-			if (!ctxMenuRef.current?.contains(e.target as Node)) setCtxMenu(null);
-		};
-		// Close on any new right-click (capture = fires before tbody opens new menu)
-		const closeOnCtx = () => setCtxMenu(null);
-		document.addEventListener("mousedown", closeOnOutside);
-		document.addEventListener("contextmenu", closeOnCtx, { capture: true });
-		return () => {
-			document.removeEventListener("mousedown", closeOnOutside);
-			document.removeEventListener("contextmenu", closeOnCtx, {
-				capture: true,
-			});
-		};
-	}, [ctxMenu]);
 
 	const columns = useMemo(
 		() =>
@@ -662,13 +608,17 @@ export function DataTable({
 		[setRowDragRange],
 	);
 
-	// Single context menu handler via event delegation on tbody
+	// Capture which cell/row was right-clicked before ContextMenuTrigger opens the menu
 	const handleContextMenu = useCallback(
 		(e: React.MouseEvent<HTMLTableSectionElement>) => {
-			e.preventDefault();
-			const el = e.target as Element;
-			const ctxEl = el.closest("[data-ctx-type]") as HTMLElement | null;
-			if (!ctxEl) return;
+			const ctxEl = (e.target as Element).closest(
+				"[data-ctx-type]",
+			) as HTMLElement | null;
+			if (!ctxEl) {
+				e.preventDefault();
+				e.stopPropagation();
+				return;
+			}
 			const type = ctxEl.dataset.ctxType;
 			const rowIndex = Number(ctxEl.dataset.ctxRow);
 			if (type === "cell") {
@@ -677,11 +627,9 @@ export function DataTable({
 					rowIndex,
 					colIndex: Number(ctxEl.dataset.ctxCol),
 					value: ctxEl.dataset.ctxVal ?? "",
-					x: e.clientX,
-					y: e.clientY,
 				});
 			} else {
-				setCtxMenu({ type: "row", rowIndex, x: e.clientX, y: e.clientY });
+				setCtxMenu({ type: "row", rowIndex });
 			}
 		},
 		[],
@@ -771,199 +719,295 @@ export function DataTable({
 			)}
 
 			{/* ── Table (virtualized) ── */}
-			<div
-				ref={tableContainerRef}
-				className="flex-1 overflow-auto overscroll-none border border-border rounded-sm m-2"
-			>
-				<table
-					className="whitespace-nowrap border-collapse text-xs text-foreground"
-					style={{
-						...(columnSizeVars as React.CSSProperties),
-						display: "grid",
-						width: table.getCenterTotalSize() + ROW_NUM_W,
-					}}
+			<ContextMenu>
+				<ContextMenuTrigger
+					render={
+						<div
+							ref={tableContainerRef}
+							className="flex-1 overflow-auto overscroll-none border border-border rounded-sm m-2"
+						/>
+					}
 				>
-					<thead
-						style={{ display: "grid", position: "sticky", top: 0, zIndex: 2 }}
+					<table
+						className="whitespace-nowrap border-collapse text-xs text-foreground"
+						style={{
+							...(columnSizeVars as React.CSSProperties),
+							display: "grid",
+							width: table.getCenterTotalSize() + ROW_NUM_W,
+						}}
 					>
-						{/* Column index row */}
-						<tr className="flex w-full bg-card border-b">
-							<th
-								className="sticky left-0 z-10 bg-muted border-r"
-								style={{ width: ROW_NUM_W }}
-							/>
-							{table.getFlatHeaders().map((header, idx) => (
+						<thead
+							style={{ display: "grid", position: "sticky", top: 0, zIndex: 2 }}
+						>
+							{/* Column index row */}
+							<tr className="flex w-full bg-card border-b">
 								<th
-									key={header.id}
-									className={cn(
-										"group relative flex text-[10px] select-none border-r border-border/40",
-										(dragRange != null &&
-											idx >= dragRange.startCol &&
-											idx <= dragRange.endCol) ||
-											(dragRange == null && selectedCell?.col === idx + 1)
-											? "bg-primary/15 text-primary"
-											: "text-muted-foreground/50 hover:bg-muted/60",
-									)}
-									style={{
-										width: `calc(var(--header-${header.id}-size) * 1px)`,
-									}}
-								>
-									<DropdownMenu>
-										<DropdownMenuTrigger className="flex flex-1 justify-center items-center py-0.5 px-1 focus:outline-none cursor-pointer relative">
-											<span>{idx + 1}</span>
-											{header.column.getIsSorted() ? (
-												header.column.getIsSorted() === "asc" ? (
-													<IconSortAscending
-														size={9}
-														className="absolute right-0.5"
-													/>
-												) : (
-													<IconSortDescending
-														size={9}
-														className="absolute right-0.5"
-													/>
-												)
-											) : (
-												<IconChevronDown
-													size={9}
-													className="absolute right-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
-												/>
-											)}
-										</DropdownMenuTrigger>
-										<DropdownMenuContent
-											side="bottom"
-											align="start"
-											className="min-w-42"
-										>
-											<DropdownMenuItem
-												onClick={() =>
-													navigator.clipboard.writeText(
-														String(header.column.columnDef.header),
-													)
-												}
-											>
-												<IconCopy size={13} />
-												Copy column name
-											</DropdownMenuItem>
-											<DropdownMenuSeparator />
-											<DropdownMenuItem
-												onClick={() => header.column.toggleSorting(false)}
-											>
-												<IconSortAscending
-													size={13}
-													className="mr-1 text-foreground"
-												/>
-												Sort A <IconArrowRight className="size-3" /> Z
-											</DropdownMenuItem>
-											<DropdownMenuItem
-												onClick={() => header.column.toggleSorting(true)}
-											>
-												<IconSortDescending
-													size={13}
-													className="mr-1 text-foreground"
-												/>
-												Sort Z <IconArrowRight className="size-3" /> A
-											</DropdownMenuItem>
-										</DropdownMenuContent>
-									</DropdownMenu>
-									{/** biome-ignore lint/a11y/noStaticElementInteractions: no need */}
-									<div
-										onMouseDown={header.getResizeHandler()}
-										onTouchStart={header.getResizeHandler()}
-										className={`csv-col-resizer${header.column.getIsResizing() ? " isResizing" : ""}`}
-									/>
-								</th>
-							))}
-						</tr>
-						{table.getHeaderGroups().map((hg) => (
-							<tr key={hg.id} className="flex w-full bg-card border-b">
-								<th
-									className="text-xs font-mono text-muted-foreground bg-muted sticky left-0 z-10 flex justify-center items-center border-r select-none"
+									className="sticky left-0 z-10 bg-muted border-r"
 									style={{ width: ROW_NUM_W }}
-								>
-									1
-								</th>
-								{hg.headers.map((header) => (
+								/>
+								{table.getFlatHeaders().map((header, idx) => (
 									<th
 										key={header.id}
-										style={{
-											display: "flex",
-											width: `calc(var(--header-${header.id}-size) * 1px)`,
-											position: "relative",
-											alignItems: "center",
-											padding: 0,
-										}}
 										className={cn(
-											"select-none border-r border-border",
-											selectedCell?.col === header.index + 1
-												? "bg-primary/5"
-												: "",
+											"group relative flex text-[10px] select-none border-r border-border/40",
+											(dragRange != null &&
+												idx >= dragRange.startCol &&
+												idx <= dragRange.endCol) ||
+												(dragRange == null && selectedCell?.col === idx + 1)
+												? "bg-primary/15 text-primary"
+												: "text-muted-foreground/50 hover:bg-muted/60",
 										)}
+										style={{
+											width: `calc(var(--header-${header.id}-size) * 1px)`,
+										}}
 									>
-										<div className="th-content flex justify-between flex-1 min-w-0 px-[14px] py-[8px]">
-											<span className="th-label">
-												{flexRender(
-													header.column.columnDef.header,
-													header.getContext(),
-												)}
-											</span>
-											{header.column.getIsSorted() && (
-												<span className="sort-indicator">
-													{header.column.getIsSorted() === "asc" ? (
-														<IconSortAscending className="size-4" />
+										<DropdownMenu>
+											<DropdownMenuTrigger className="flex flex-1 justify-center items-center py-0.5 px-1 focus:outline-none cursor-pointer relative">
+												<span>{idx + 1}</span>
+												{header.column.getIsSorted() ? (
+													header.column.getIsSorted() === "asc" ? (
+														<IconSortAscending
+															size={9}
+															className="absolute right-0.5"
+														/>
 													) : (
-														<IconSortDescending className="size-4" />
-													)}
-												</span>
-											)}
-										</div>
+														<IconSortDescending
+															size={9}
+															className="absolute right-0.5"
+														/>
+													)
+												) : (
+													<IconChevronDown
+														size={9}
+														className="absolute right-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
+													/>
+												)}
+											</DropdownMenuTrigger>
+											<DropdownMenuContent
+												side="bottom"
+												align="start"
+												className="min-w-42"
+											>
+												<DropdownMenuItem
+													onClick={() =>
+														navigator.clipboard.writeText(
+															String(header.column.columnDef.header),
+														)
+													}
+												>
+													<IconCopy size={13} />
+													Copy column name
+												</DropdownMenuItem>
+												<DropdownMenuSeparator />
+												<DropdownMenuItem
+													onClick={() => header.column.toggleSorting(false)}
+												>
+													<IconSortAscending
+														size={13}
+														className="mr-1 text-foreground"
+													/>
+													Sort A <IconArrowRight className="size-3" /> Z
+												</DropdownMenuItem>
+												<DropdownMenuItem
+													onClick={() => header.column.toggleSorting(true)}
+												>
+													<IconSortDescending
+														size={13}
+														className="mr-1 text-foreground"
+													/>
+													Sort Z <IconArrowRight className="size-3" /> A
+												</DropdownMenuItem>
+											</DropdownMenuContent>
+										</DropdownMenu>
+										{/** biome-ignore lint/a11y/noStaticElementInteractions: no need */}
+										<div
+											onMouseDown={header.getResizeHandler()}
+											onTouchStart={header.getResizeHandler()}
+											className={`csv-col-resizer${header.column.getIsResizing() ? " isResizing" : ""}`}
+										/>
 									</th>
 								))}
 							</tr>
+							{table.getHeaderGroups().map((hg) => (
+								<tr key={hg.id} className="flex w-full bg-card border-b">
+									<th
+										className="text-xs font-mono text-muted-foreground bg-muted sticky left-0 z-10 flex justify-center items-center border-r select-none"
+										style={{ width: ROW_NUM_W }}
+									>
+										1
+									</th>
+									{hg.headers.map((header) => (
+										<th
+											key={header.id}
+											style={{
+												display: "flex",
+												width: `calc(var(--header-${header.id}-size) * 1px)`,
+												position: "relative",
+												alignItems: "center",
+												padding: 0,
+											}}
+											className={cn(
+												"select-none border-r border-border",
+												selectedCell?.col === header.index + 1
+													? "bg-primary/5"
+													: "",
+											)}
+										>
+											<div className="th-content flex justify-between flex-1 min-w-0 px-[14px] py-[8px]">
+												<span className="th-label">
+													{flexRender(
+														header.column.columnDef.header,
+														header.getContext(),
+													)}
+												</span>
+												{header.column.getIsSorted() && (
+													<span className="sort-indicator">
+														{header.column.getIsSorted() === "asc" ? (
+															<IconSortAscending className="size-4" />
+														) : (
+															<IconSortDescending className="size-4" />
+														)}
+													</span>
+												)}
+											</div>
+										</th>
+									))}
+								</tr>
+							))}
+						</thead>
+						<tbody
+							style={{
+								display: "grid",
+								height: `${rowVirtualizer.getTotalSize()}px`,
+								position: "relative",
+							}}
+							onContextMenu={handleContextMenu}
+							onMouseDown={handleTbodyMouseDown}
+							onMouseMove={handleTbodyMouseMove}
+						>
+							{rowVirtualizer.getVirtualItems().map((virtualRow) => {
+								const row = tableRows[virtualRow.index];
+								return (
+									<VirtualRow
+										key={row.id}
+										row={row}
+										virtualRow={virtualRow}
+										measureElement={measureElement}
+										isRowSelected={selectedRows?.has(row.index) ?? false}
+										selectedCellRow={selectedCell?.row ?? 0}
+										selectedCellCol={selectedCell?.col ?? 0}
+										queryMode={queryMode}
+										onCellSelect={onCellSelect}
+										onCellDoubleClick={onCellDoubleClick}
+										renderCellValue={renderCellValue}
+										onRowClick={handleRowClick}
+										dragRange={dragRange}
+										isFirstRowInRange={
+											dragRange != null && row.index === dragRange.startRow
+										}
+										isLastRowInRange={
+											dragRange != null && row.index === dragRange.endRow
+										}
+									/>
+								);
+							})}
+						</tbody>
+					</table>
+					{filteredRowCount === 0 && !sqlLoading && (
+						<div className="csv-no-results">No matching rows</div>
+					)}
+				</ContextMenuTrigger>
+				<ContextMenuContent>
+					{ctxMenu &&
+						(ctxMenu.type === "cell" ? (
+							<>
+								<ContextMenuItem
+									onClick={() => {
+										if (dragRange) {
+											const changes: Array<[number, number, string]> = [];
+											for (
+												let r = dragRange.startRow;
+												r <= dragRange.endRow;
+												r++
+											)
+												for (
+													let c = dragRange.startCol;
+													c <= dragRange.endCol;
+													c++
+												)
+													changes.push([r, c, ""]);
+											onCellBatchChange?.(changes);
+										} else {
+											onCellChange?.(ctxMenu.rowIndex, ctxMenu.colIndex, "");
+										}
+									}}
+								>
+									<IconEraser size={13} />
+									{dragRange
+										? `Empty range (${(dragRange.endRow - dragRange.startRow + 1) * (dragRange.endCol - dragRange.startCol + 1)} cells)`
+										: "Empty data"}
+								</ContextMenuItem>
+								<ContextMenuItem
+									onClick={() => navigator.clipboard.writeText(ctxMenu.value)}
+								>
+									<IconCopy size={13} />
+									Copy cell
+								</ContextMenuItem>
+							</>
+						) : (
+							<>
+								<ContextMenuItem
+									onClick={() => onInsertRowAbove?.(ctxMenu.rowIndex)}
+								>
+									<IconPlus size={13} />
+									Insert row above
+								</ContextMenuItem>
+								<ContextMenuItem
+									onClick={() => onInsertRowBelow?.(ctxMenu.rowIndex)}
+								>
+									<IconPlus size={13} />
+									Insert row below
+								</ContextMenuItem>
+								<ContextMenuSeparator />
+								<ContextMenuItem
+									onClick={() => onMoveRowUp?.(ctxMenu.rowIndex)}
+								>
+									<IconArrowUp size={13} />
+									Move row up
+								</ContextMenuItem>
+								<ContextMenuItem
+									onClick={() => onMoveRowDown?.(ctxMenu.rowIndex)}
+								>
+									<IconArrowDown size={13} />
+									Move row down
+								</ContextMenuItem>
+								<ContextMenuSeparator />
+								{(() => {
+									const isMulti =
+										(selectedRows?.has(ctxMenu.rowIndex) ?? false) &&
+										(selectedRows?.size ?? 0) > 1;
+									return (
+										<ContextMenuItem
+											variant="destructive"
+											onClick={() =>
+												onDeleteRows?.(
+													isMulti
+														? Array.from(selectedRows!)
+														: [ctxMenu.rowIndex],
+												)
+											}
+										>
+											<IconTrash size={13} />
+											{isMulti
+												? `Delete ${selectedRows!.size} rows`
+												: "Delete row"}
+										</ContextMenuItem>
+									);
+								})()}
+							</>
 						))}
-					</thead>
-					<tbody
-						style={{
-							display: "grid",
-							height: `${rowVirtualizer.getTotalSize()}px`,
-							position: "relative",
-						}}
-						onContextMenu={handleContextMenu}
-						onMouseDown={handleTbodyMouseDown}
-						onMouseMove={handleTbodyMouseMove}
-					>
-						{rowVirtualizer.getVirtualItems().map((virtualRow) => {
-							const row = tableRows[virtualRow.index];
-							return (
-								<VirtualRow
-									key={row.id}
-									row={row}
-									virtualRow={virtualRow}
-									measureElement={measureElement}
-									isRowSelected={selectedRows?.has(row.index) ?? false}
-									selectedCellRow={selectedCell?.row ?? 0}
-									selectedCellCol={selectedCell?.col ?? 0}
-									queryMode={queryMode}
-									onCellSelect={onCellSelect}
-									onCellDoubleClick={onCellDoubleClick}
-									renderCellValue={renderCellValue}
-									onRowClick={handleRowClick}
-									dragRange={dragRange}
-									isFirstRowInRange={
-										dragRange != null && row.index === dragRange.startRow
-									}
-									isLastRowInRange={
-										dragRange != null && row.index === dragRange.endRow
-									}
-								/>
-							);
-						})}
-					</tbody>
-				</table>
-				{filteredRowCount === 0 && !sqlLoading && (
-					<div className="csv-no-results">No matching rows</div>
-				)}
-			</div>
+				</ContextMenuContent>
+			</ContextMenu>
 
 			{/* ── Status bar ── */}
 			<div className="w-full flex justify-between border-t px-2 text-xs py-1 items-center text-muted-foreground gap-4">
@@ -994,117 +1038,6 @@ export function DataTable({
 			</div>
 			{bottomSlot}
 			{overlay}
-
-			{/* ── Single floating context menu ── */}
-			{ctxMenu && (
-				<div
-					ref={ctxMenuRef}
-					role="menu"
-					className="fixed z-50 min-w-36 rounded-lg border bg-popover/80 p-1 shadow-md ring-1 ring-foreground/10 backdrop-blur-xl"
-					style={{ left: ctxMenu.x, top: ctxMenu.y }}
-				>
-					{ctxMenu.type === "cell" ? (
-						<>
-							<FlatMenuItem
-								icon={IconEraser}
-								onClick={() => {
-									if (dragRange) {
-										const changes: Array<[number, number, string]> = [];
-										for (let r = dragRange.startRow; r <= dragRange.endRow; r++)
-											for (
-												let c = dragRange.startCol;
-												c <= dragRange.endCol;
-												c++
-											)
-												changes.push([r, c, ""]);
-										onCellBatchChange?.(changes);
-									} else {
-										onCellChange?.(ctxMenu.rowIndex, ctxMenu.colIndex, "");
-									}
-									setCtxMenu(null);
-								}}
-							>
-								{dragRange
-									? `Empty range (${(dragRange.endRow - dragRange.startRow + 1) * (dragRange.endCol - dragRange.startCol + 1)} cells)`
-									: "Empty data"}
-							</FlatMenuItem>
-							<FlatMenuItem
-								icon={IconCopy}
-								onClick={() => {
-									navigator.clipboard.writeText(ctxMenu.value);
-									setCtxMenu(null);
-								}}
-							>
-								Copy cell
-							</FlatMenuItem>
-						</>
-					) : (
-						<>
-							<FlatMenuItem
-								icon={IconPlus}
-								onClick={() => {
-									onInsertRowAbove?.(ctxMenu.rowIndex);
-									setCtxMenu(null);
-								}}
-							>
-								Insert row above
-							</FlatMenuItem>
-							<FlatMenuItem
-								icon={IconPlus}
-								onClick={() => {
-									onInsertRowBelow?.(ctxMenu.rowIndex);
-									setCtxMenu(null);
-								}}
-							>
-								Insert row below
-							</FlatMenuItem>
-							<CtxSep />
-							<FlatMenuItem
-								icon={IconArrowUp}
-								onClick={() => {
-									onMoveRowUp?.(ctxMenu.rowIndex);
-									setCtxMenu(null);
-								}}
-							>
-								Move row up
-							</FlatMenuItem>
-							<FlatMenuItem
-								icon={IconArrowDown}
-								onClick={() => {
-									onMoveRowDown?.(ctxMenu.rowIndex);
-									setCtxMenu(null);
-								}}
-							>
-								Move row down
-							</FlatMenuItem>
-							<CtxSep />
-							{(() => {
-								const isMulti =
-									(selectedRows?.has(ctxMenu.rowIndex) ?? false) &&
-									(selectedRows?.size ?? 0) > 1;
-								return (
-									<FlatMenuItem
-										icon={IconTrash}
-										variant="destructive"
-										onClick={() => {
-											onDeleteRows?.(
-												isMulti
-													? Array.from(selectedRows!)
-													: [ctxMenu.rowIndex],
-											);
-											setCtxMenu(null);
-										}}
-									>
-										{isMulti
-											? `Delete ${selectedRows!.size} rows`
-											: "Delete row"}
-									</FlatMenuItem>
-								);
-							})()}
-						</>
-					)}
-				</div>
-			)}
 		</div>
 	);
 }
