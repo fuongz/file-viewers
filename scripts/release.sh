@@ -1,20 +1,20 @@
 #!/usr/bin/env bash
-# scripts/release.sh — bump version, tag, and push
+# scripts/release.sh - bump version, tag, and push
 #
 # Usage:
-#   ./scripts/release.sh           # auto-increment patch  (1.2.3 → 1.2.4)
+#   ./scripts/release.sh           # auto-increment patch  (1.2.3 => 1.2.4)
 #   ./scripts/release.sh patch     # same as above
-#   ./scripts/release.sh minor     # bump minor            (1.2.3 → 1.3.0)
-#   ./scripts/release.sh major     # bump major            (1.2.3 → 2.0.0)
+#   ./scripts/release.sh minor     # bump minor            (1.2.3 => 1.3.0)
+#   ./scripts/release.sh major     # bump major            (1.2.3 => 2.0.0)
 #   ./scripts/release.sh 1.5.0     # use exact version
 
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-TAURI_CONF="$ROOT/desktop-app/src-tauri/tauri.conf.json"
-CARGO_TOML="$ROOT/desktop-app/src-tauri/Cargo.toml"
-PKG_JSON="$ROOT/desktop-app/package.json"
-VERSION_TS="$ROOT/landing/src/version.ts"
+TAURI_CONF="$ROOT/apps/desktop-app/src-tauri/tauri.conf.json"
+CARGO_TOML="$ROOT/apps/desktop-app/src-tauri/Cargo.toml"
+PKG_JSON="$ROOT/apps/desktop-app/package.json"
+VERSION_TS="$ROOT/apps/landing/src/version.ts"
 
 # ── helpers ────────────────────────────────────────────────────────────────
 
@@ -22,7 +22,7 @@ die() { echo "error: $*" >&2; exit 1; }
 
 require() {
   for cmd in "$@"; do
-    command -v "$cmd" &>/dev/null || die "'$cmd' not found — please install it"
+    command -v "$cmd" &>/dev/null || die "'$cmd' not found - please install it"
   done
 }
 
@@ -45,7 +45,7 @@ require git jq sed gh
 cd "$ROOT"
 
 # Must have gh write access to releases
-gh auth status &>/dev/null || die "not authenticated — run: gh auth login"
+gh auth status &>/dev/null || die "not authenticated - run: gh auth login"
 repo_push=$(gh api repos/fuongz/file-viewers --jq '.permissions.push' 2>/dev/null || echo "false")
 [[ "$repo_push" == "true" ]] || die "gh token lacks push access — re-auth with: gh auth refresh -s repo"
 
@@ -58,7 +58,7 @@ if ! git diff --quiet || ! git diff --cached --quiet; then
 fi
 
 # Sync tags from remote
-echo "→ fetching tags from origin…"
+echo "=> fetching tags from origin..."
 git fetch --tags --quiet
 
 # ── determine current and next version ────────────────────────────────────
@@ -98,30 +98,30 @@ echo ""
 
 # ── update version files ───────────────────────────────────────────────────
 
-echo "→ updating desktop-app/package.json…"
+echo "=> updating apps/desktop-app/package.json..."
 tmp=$(mktemp)
 jq --arg v "$next_version" '.version = $v' "$PKG_JSON" > "$tmp" && mv "$tmp" "$PKG_JSON"
 
-echo "→ updating desktop-app/src-tauri/tauri.conf.json…"
+echo "=> updating apps/desktop-app/src-tauri/tauri.conf.json..."
 tmp=$(mktemp)
 jq --arg v "$next_version" '.version = $v' "$TAURI_CONF" > "$tmp" && mv "$tmp" "$TAURI_CONF"
 
-echo "→ updating desktop-app/src-tauri/Cargo.toml…"
+echo "=> updating apps/desktop-app/src-tauri/Cargo.toml..."
 # Replace the first `version = "..."` line in [package] section only
 perl -i -0pe "s/^version = \"[^\"]*\"/version = \"${next_version}\"/" "$CARGO_TOML"
 
-echo "→ updating landing/src/version.ts…"
+echo "=> updating apps/landing/src/version.ts..."
 release_date=$(date +%Y-%m-%d)
 sed -i '' 's/export const VERSION = ".*"/export const VERSION = "'"$next_version"'"/' "$VERSION_TS"
 sed -i '' 's/export const RELEASE_DATE = ".*"/export const RELEASE_DATE = "'"$release_date"'"/' "$VERSION_TS"
 
 # ── commit, tag, push ──────────────────────────────────────────────────────
 
-echo "→ committing version bump…"
+echo "=> committing version bump..."
 git add "$PKG_JSON" "$TAURI_CONF" "$CARGO_TOML" "$VERSION_TS"
 git commit -m "chore: release ${next_tag}"
 
-echo "→ tagging ${next_tag}…"
+echo "=> tagging ${next_tag}..."
 git tag "$next_tag"
 
 echo ""
@@ -132,12 +132,12 @@ echo ""
 read -r -p "Push now? [y/N] " confirm
 if [[ "$(echo "$confirm" | tr '[:upper:]' '[:lower:]')" == "y" ]]; then
   git push origin main "$next_tag"
-  echo "→ creating GitHub Release ${next_tag}…"
+  echo "=> creating GitHub Release ${next_tag}..."
   gh release create "$next_tag" \
     --title "$next_tag" \
     --generate-notes \
     --draft
-  echo "✓ Draft release created — review notes then publish to trigger CI build."
+  echo "[x] Draft release created - review notes then publish to trigger CI build."
   echo "  https://github.com/fuongz/file-viewers/releases"
 else
   echo "Skipped push. Run the command above when ready."

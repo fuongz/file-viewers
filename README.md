@@ -15,7 +15,7 @@ A cross-platform desktop app for viewing and editing **Markdown**, **MDX**, **JS
 - Multi-tab file management with session persistence across restarts
 - Markdown / MDX viewer with GFM, tables, and syntax-highlighted code blocks
 - JSON tree viewer with collapsible nodes and dark/light theme support
-- CSV and Excel viewer — sortable columns, global search, in-browser SQL queries
+- CSV and Excel viewer — sortable columns, global search, in-browser SQL queries; cell editing with copy/cut/paste/delete, undo/redo history, multi-cell selection (click-drag and Cmd+click), column context menu (sort, select, delete), and row split/merge
 - Parquet viewer powered by DuckDB-WASM — query large files entirely in-browser
 - Monaco editor for Markdown and JSON with live preview
 - Command palette (`Cmd+K`) — open local files or load any file by URL
@@ -34,7 +34,7 @@ A cross-platform desktop app for viewing and editing **Markdown**, **MDX**, **JS
 ## Development Setup
 
 ```bash
-cd desktop-app
+cd apps/desktop-app
 bun install
 bun run tauri dev
 ```
@@ -67,22 +67,24 @@ bunx tsc --noEmit     # type check only
 
 ```
 file-viewers/
-├── desktop-app/        # Tauri + React desktop application
-│   ├── src/
-│   │   ├── App.tsx
-│   │   ├── components/
-│   │   │   ├── table/          # Shared DataTable, SearchInput, SqlInput
-│   │   │   ├── ui/             # Button, Input, Dialog, and other primitives
-│   │   │   └── workspace/      # FileTree sidebar
-│   │   ├── hooks/
-│   │   ├── store/              # Zustand store
-│   │   └── utils/
-│   ├── src-tauri/
-│   │   ├── src/lib.rs
-│   │   ├── tauri.conf.json
-│   │   └── capabilities/
-│   └── docs/               # Architecture + component reference
-├── landing/            # TanStack Start landing page (Cloudflare Workers)
+├── apps/
+│   ├── desktop-app/        # Tauri + React desktop application
+│   │   ├── src/
+│   │   │   ├── App.tsx
+│   │   │   ├── components/
+│   │   │   │   ├── table/      # DataTable, Header, Toolbar, ContextMenu, StatusBar, VirtualRow, SearchInput, SqlInput
+│   │   │   │   ├── toolbar/    # Toolbar, ToolbarActions, FormatTabs
+│   │   │   │   ├── ui/         # Button, Input, Dialog, and other primitives
+│   │   │   │   └── workspace/  # FileTree sidebar
+│   │   │   ├── hooks/
+│   │   │   ├── store/          # Zustand store
+│   │   │   └── utils/
+│   │   ├── src-tauri/
+│   │   │   ├── src/lib.rs
+│   │   │   ├── tauri.conf.json
+│   │   │   └── capabilities/
+│   │   └── docs/           # Architecture + component reference
+│   └── landing/            # TanStack Start landing page (Cloudflare Workers)
 └── scripts/
 ```
 
@@ -102,5 +104,5 @@ MIT — see [LICENSE](LICENSE)
 
 ## Docs
 
-- [`desktop-app/docs/architecture.md`](desktop-app/docs/architecture.md) — component hierarchy, state, file loading, theme system, Tauri capabilities
-- [`desktop-app/docs/components.md`](desktop-app/docs/components.md) — props reference for every component
+- [`apps/desktop-app/docs/architecture.md`](apps/desktop-app/docs/architecture.md) — component hierarchy, state, file loading, theme system, Tauri capabilities
+- [`apps/desktop-app/docs/components.md`](apps/desktop-app/docs/components.md) — props reference for every component
