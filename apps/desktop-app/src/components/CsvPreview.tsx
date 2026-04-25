@@ -70,10 +70,16 @@ export function CsvPreview({
 	const [sqlError, setSqlError] = useState<string | null>(null);
 	const [editingCell, setEditingCell] = useState<EditingCell | null>(null);
 	const [selectedRows, setSelectedRows] = useState<Set<number>>(new Set());
-	// null = use parsed rows; set = contains committed edits
-	const history = useEditHistory<string[][] | null>(null);
-	// rows as-of the last external file load — used as the undo target when history.present returns null
-	const preEditRowsRef = useRef<string[][]>([]);
+	// null = use parsed rows/headers; set = contains committed edits
+	const history = useEditHistory<{
+		rows: string[][];
+		headers: string[];
+	} | null>(null);
+	// snapshot as-of the last external file load — used as the undo target when history.present returns null
+	const preEditRef = useRef<{ rows: string[][]; headers: string[] }>({
+		rows: [],
+		headers: [],
+	});
 	// true while we're processing our own onContentChange call
 	const isMyEditRef = useRef(false);
 	// used to distinguish Escape (cancel) from click-outside (commit)
@@ -126,7 +132,7 @@ export function CsvPreview({
 			isMyEditRef.current = false;
 			return;
 		}
-		preEditRowsRef.current = rows;
+		preEditRef.current = { rows, headers };
 		history.reset(null);
 	}, [rows]);
 
@@ -136,13 +142,13 @@ export function CsvPreview({
 		return "LF";
 	}, [deferredContent]);
 
-	const data = useMemo(
-		() =>
-			(history.present ?? rows).map((row) =>
-				Object.fromEntries(headers.map((h, i) => [h, row[i] ?? ""])),
-			),
-		[history.present, rows, headers],
-	);
+	const data = useMemo(() => {
+		const activeRows = history.present?.rows ?? rows;
+		const activeHeaders = history.present?.headers ?? headers;
+		return activeRows.map((row) =>
+			Object.fromEntries(activeHeaders.map((h, i) => [h, row[i] ?? ""])),
+		);
+	}, [history.present, rows, headers]);
 
 	const sqlResult = useMemo(() => {
 		if (queryMode !== "sql") return null;
@@ -180,14 +186,14 @@ export function CsvPreview({
 		const cell = editingCellRef.current;
 		if (!cell) return;
 		editingCellRef.current = null;
-		const baseRows = history.present ?? rows;
+		const baseRows = history.present?.rows ?? rows;
 		const newRows = baseRows.map((r, ri) =>
 			ri === cell.rowIndex
 				? r.map((c, ci) => (ci === cell.colIndex ? cell.draftValue : c))
 				: r,
 		);
 		isMyEditRef.current = true;
-		history.push(newRows);
+		history.push({ rows: newRows, headers });
 		if (onContentChange) onContentChange(Papa.unparse([headers, ...newRows]));
 		setEditingCell(null);
 	}
@@ -195,9 +201,10 @@ export function CsvPreview({
 	function handleUndo() {
 		if (!history.canUndo) return;
 		const prev = history.undo();
-		const base = prev ?? preEditRowsRef.current;
+		const base = prev?.rows ?? preEditRef.current.rows;
+		const hdrs = prev?.headers ?? preEditRef.current.headers;
 		isMyEditRef.current = true;
-		onContentChange?.(Papa.unparse([headers, ...base]));
+		onContentChange?.(Papa.unparse([hdrs, ...base]));
 	}
 
 	function handleRedo() {
@@ -205,7 +212,7 @@ export function CsvPreview({
 		const next = history.redo();
 		if (!next) return;
 		isMyEditRef.current = true;
-		onContentChange?.(Papa.unparse([headers, ...next]));
+		onContentChange?.(Papa.unparse([next.headers, ...next.rows]));
 	}
 
 	if (!deferredContent.trim()) {
@@ -262,17 +269,17 @@ export function CsvPreview({
 				setSelectedCell({ row: rowIndex + 1, col: colIndex + 1, value });
 			}}
 			onCellChange={(rowIndex, colIndex, value) => {
-				const baseRows = history.present ?? rows;
+				const baseRows = history.present?.rows ?? rows;
 				const newRows = baseRows.map((r, ri) =>
 					ri === rowIndex ? r.map((c, ci) => (ci === colIndex ? value : c)) : r,
 				);
 				isMyEditRef.current = true;
-				history.push(newRows);
+				history.push({ rows: newRows, headers });
 				if (onContentChange)
 					onContentChange(Papa.unparse([headers, ...newRows]));
 			}}
 			onCellBatchChange={(changes) => {
-				const baseRows = history.present ?? rows;
+				const baseRows = history.present?.rows ?? rows;
 				const newRows = baseRows.map((r, ri) => {
 					const rowChanges = changes.filter(([rowIdx]) => rowIdx === ri);
 					if (!rowChanges.length) return r;
@@ -282,15 +289,15 @@ export function CsvPreview({
 					});
 				});
 				isMyEditRef.current = true;
-				history.push(newRows);
+				history.push({ rows: newRows, headers });
 				if (onContentChange)
 					onContentChange(Papa.unparse([headers, ...newRows]));
 			}}
 			onDeleteRows={(rowIndices) => {
-				const baseRows = history.present ?? rows;
+				const baseRows = history.present?.rows ?? rows;
 				const newRows = baseRows.filter((_, ri) => !rowIndices.includes(ri));
 				isMyEditRef.current = true;
-				history.push(newRows);
+				history.push({ rows: newRows, headers });
 				setSelectedRows((prev) => {
 					const next = new Set(prev);
 					for (const i of rowIndices) next.delete(i);
@@ -300,7 +307,7 @@ export function CsvPreview({
 					onContentChange(Papa.unparse([headers, ...newRows]));
 			}}
 			onInsertRowAbove={(rowIndex) => {
-				const baseRows = history.present ?? rows;
+				const baseRows = history.present?.rows ?? rows;
 				const emptyRow = new Array(headers.length).fill("");
 				const newRows = [
 					...baseRows.slice(0, rowIndex),
@@ -308,12 +315,12 @@ export function CsvPreview({
 					...baseRows.slice(rowIndex),
 				];
 				isMyEditRef.current = true;
-				history.push(newRows);
+				history.push({ rows: newRows, headers });
 				if (onContentChange)
 					onContentChange(Papa.unparse([headers, ...newRows]));
 			}}
 			onInsertRowBelow={(rowIndex) => {
-				const baseRows = history.present ?? rows;
+				const baseRows = history.present?.rows ?? rows;
 				const emptyRow = new Array(headers.length).fill("");
 				const newRows = [
 					...baseRows.slice(0, rowIndex + 1),
@@ -321,25 +328,25 @@ export function CsvPreview({
 					...baseRows.slice(rowIndex + 1),
 				];
 				isMyEditRef.current = true;
-				history.push(newRows);
+				history.push({ rows: newRows, headers });
 				if (onContentChange)
 					onContentChange(Papa.unparse([headers, ...newRows]));
 			}}
 			onMoveRowUp={(rowIndex) => {
 				if (rowIndex === 0) return;
-				const baseRows = history.present ?? rows;
+				const baseRows = history.present?.rows ?? rows;
 				const newRows = [...baseRows];
 				[newRows[rowIndex - 1], newRows[rowIndex]] = [
 					newRows[rowIndex],
 					newRows[rowIndex - 1],
 				];
 				isMyEditRef.current = true;
-				history.push(newRows);
+				history.push({ rows: newRows, headers });
 				if (onContentChange)
 					onContentChange(Papa.unparse([headers, ...newRows]));
 			}}
 			onMoveRowDown={(rowIndex) => {
-				const baseRows = history.present ?? rows;
+				const baseRows = history.present?.rows ?? rows;
 				if (rowIndex >= baseRows.length - 1) return;
 				const newRows = [...baseRows];
 				[newRows[rowIndex], newRows[rowIndex + 1]] = [
@@ -347,9 +354,18 @@ export function CsvPreview({
 					newRows[rowIndex],
 				];
 				isMyEditRef.current = true;
-				history.push(newRows);
+				history.push({ rows: newRows, headers });
 				if (onContentChange)
 					onContentChange(Papa.unparse([headers, ...newRows]));
+			}}
+			onDeleteColumn={(colIdx) => {
+				const newHeaders = headers.filter((_, i) => i !== colIdx);
+				const baseRows = history.present?.rows ?? rows;
+				const newRows = baseRows.map((r) => r.filter((_, i) => i !== colIdx));
+				isMyEditRef.current = true;
+				history.push({ rows: newRows, headers: newHeaders });
+				if (onContentChange)
+					onContentChange(Papa.unparse([newHeaders, ...newRows]));
 			}}
 			onUndo={handleUndo}
 			onRedo={handleRedo}

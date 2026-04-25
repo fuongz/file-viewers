@@ -72,6 +72,7 @@ export interface DataTableProps {
 	onSelectedRowsChange?: (rows: Set<number>) => void;
 
 	onDeleteRows?: (rowIndices: number[]) => void;
+	onDeleteColumn?: (colIdx: number) => void;
 	onInsertRowAbove?: (rowIndex: number) => void;
 	onInsertRowBelow?: (rowIndex: number) => void;
 	onMoveRowUp?: (rowIndex: number) => void;
@@ -117,6 +118,7 @@ export function DataTable({
 	selectedRows,
 	onSelectedRowsChange,
 	onDeleteRows,
+	onDeleteColumn,
 	onInsertRowAbove,
 	onInsertRowBelow,
 	onMoveRowUp,
@@ -508,6 +510,65 @@ export function DataTable({
 		[],
 	);
 
+	const tableRef = useRef(table);
+	tableRef.current = table;
+
+	const handleColumnContextMenu = useCallback((colIdx: number) => {
+		flushSync(() => setCtxMenu({ type: "column", colIdx }));
+	}, []);
+
+	const handleSortColumn = useCallback((colIdx: number, desc: boolean) => {
+		tableRef.current.getFlatHeaders()[colIdx]?.column.toggleSorting(desc);
+	}, []);
+
+	const handleColSelect = useCallback((colIdx: number) => {
+		setDragRangeRef.current({
+			startRow: 0,
+			endRow: displayDataRef.current.length - 1,
+			startCol: colIdx,
+			endCol: colIdx,
+		});
+		onCellSelectRef.current(null);
+		setCmdCellsRef.current(new Set());
+		if (selectedRowsRef.current?.size) {
+			onSelectedRowsChangeRef.current?.(new Set());
+			lastRowAnchorRef.current = null;
+		}
+	}, []);
+
+	const handleRowChevronClick = useCallback(
+		(rowIndex: number, clientX: number, clientY: number) => {
+			const alreadySelected = selectedRowsRef.current?.has(rowIndex) ?? false;
+			if (!alreadySelected) {
+				onSelectedRowsChangeRef.current?.(new Set([rowIndex]));
+				lastRowAnchorRef.current = rowIndex;
+				setDragRangeRef.current({
+					startRow: rowIndex,
+					endRow: rowIndex,
+					startCol: 0,
+					endCol: colCountRef.current - 1,
+				});
+				onCellSelectRef.current(null);
+				setCmdCellsRef.current(new Set());
+			}
+			setCtxMenu({ type: "row", rowIndex });
+			const el = tableContainerRef.current?.querySelector(
+				`[data-ctx-type="row"][data-ctx-row="${rowIndex}"]`,
+			);
+			setTimeout(() => {
+				el?.dispatchEvent(
+					new MouseEvent("contextmenu", {
+						bubbles: true,
+						cancelable: true,
+						clientX,
+						clientY,
+					}),
+				);
+			}, 0);
+		},
+		[],
+	);
+
 	const setRowDragRange = useCallback((startRow: number, endRow: number) => {
 		setDragRangeRef.current({
 			startRow,
@@ -746,7 +807,7 @@ export function DataTable({
 	]);
 
 	return (
-		<div className="csv-preview max-w-full">
+		<div className="flex flex-col h-full overview-hidden max-w-full">
 			{/* ── Toolbar ── */}
 			<DataTableToolbar
 				queryMode={queryMode}
@@ -792,6 +853,9 @@ export function DataTable({
 							table={table}
 							dragRange={dragRange}
 							selectedCell={selectedCell}
+							onColSelect={handleColSelect}
+							onDeleteColumn={onDeleteColumn}
+							onColumnContextMenu={handleColumnContextMenu}
 						/>
 						<tbody
 							style={{
@@ -819,6 +883,7 @@ export function DataTable({
 										onCellDoubleClick={onCellDoubleClick}
 										renderCellValue={renderCellValue}
 										onRowClick={handleRowClick}
+										onRowChevronClick={handleRowChevronClick}
 										dragRange={dragRange}
 										cmdCells={cmdCells}
 										isFirstRowInRange={
@@ -840,6 +905,9 @@ export function DataTable({
 					<DataTableContextMenuContent
 						ctxMenu={ctxMenu}
 						dragRange={dragRange}
+						cmdCells={cmdCells}
+						displayData={displayData}
+						displayHeaders={displayHeaders}
 						selectedRows={selectedRows}
 						onCellChange={onCellChange}
 						onCellBatchChange={onCellBatchChange}
@@ -848,6 +916,8 @@ export function DataTable({
 						onMoveRowUp={onMoveRowUp}
 						onMoveRowDown={onMoveRowDown}
 						onDeleteRows={onDeleteRows}
+						onSortColumn={handleSortColumn}
+						onDeleteColumn={onDeleteColumn}
 					/>
 				</ContextMenuContent>
 			</ContextMenu>

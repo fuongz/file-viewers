@@ -1,3 +1,4 @@
+import { IconChevronDown } from "@tabler/icons-react";
 import type { Row } from "@tanstack/react-table";
 import type { VirtualItem } from "@tanstack/react-virtual";
 import { memo, type ReactNode } from "react";
@@ -29,6 +30,11 @@ export interface VirtualRowProps {
 	) => void;
 	renderCellValue?: (value: unknown) => ReactNode;
 	onRowClick: (rowIndex: number, metaKey: boolean, shiftKey: boolean) => void;
+	onRowChevronClick?: (
+		rowIndex: number,
+		clientX: number,
+		clientY: number,
+	) => void;
 	dragRange?: DragRange | null;
 	isFirstRowInRange?: boolean;
 	isLastRowInRange?: boolean;
@@ -47,6 +53,7 @@ function VirtualRowComponent({
 	onCellDoubleClick,
 	renderCellValue,
 	onRowClick,
+	onRowChevronClick,
 	dragRange,
 	isFirstRowInRange,
 	isLastRowInRange,
@@ -63,7 +70,7 @@ function VirtualRowComponent({
 			style={{
 				transform: `translateY(${virtualRow.start}px)`,
 			}}
-			className="flex absolute w-full border-b border-border"
+			className="group flex absolute w-full border-b border-border"
 		>
 			{/* Row number */}
 			<td
@@ -75,7 +82,7 @@ function VirtualRowComponent({
 						: isRowInRange || (!dragRange && selectedCellRow === row.index + 1)
 							? "bg-primary/20 text-primary"
 							: "bg-muted text-muted-foreground",
-					"text-xs border-r select-none font-medium sticky left-0 z-10 flex cursor-pointer justify-center items-center font-mono",
+					"relative text-xs border-r select-none font-medium sticky left-0 z-10 flex cursor-pointer justify-center items-center font-mono",
 				)}
 				style={{
 					width: ROW_NUM_W,
@@ -86,6 +93,16 @@ function VirtualRowComponent({
 				}}
 			>
 				<span>{row.index + 2}</span>
+				<button
+					type="button"
+					className="absolute right-0.5 opacity-0 group-hover:opacity-50 hover:!opacity-100 p-0.5 rounded transition-opacity cursor-pointer"
+					onClick={(e) => {
+						e.stopPropagation();
+						onRowChevronClick?.(row.index, e.clientX, e.clientY);
+					}}
+				>
+					<IconChevronDown size={10} />
+				</button>
 			</td>
 
 			{/* Data cells */}

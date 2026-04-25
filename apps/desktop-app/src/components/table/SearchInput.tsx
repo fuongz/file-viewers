@@ -1,7 +1,7 @@
 import { IconSearch } from "@tabler/icons-react";
 import type React from "react";
 import { useEffect, useRef, useState } from "react";
-import { Input } from "../ui";
+import { InputGroup, InputGroupAddon, InputGroupInput } from "../ui";
 
 interface SearchInputProps {
 	onFilter: (value: string) => void;
@@ -30,17 +30,18 @@ export function SearchInput({ onFilter }: SearchInputProps) {
 	}, []);
 
 	return (
-		<div className="csv-search-wrapper w-full flex-1">
-			<IconSearch size={11} className="csv-search-icon" />
-			<Input
+		<InputGroup>
+			<InputGroupAddon>
+				<IconSearch />
+			</InputGroupAddon>
+			<InputGroupInput
 				ref={inputRef}
-				className="flex-1 w-full font-mono text-xs pl-7"
 				placeholder="Find"
 				value={value}
 				onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
 					setValue(e.target.value)
 				}
 			/>
-		</div>
+		</InputGroup>
 	);
 }

@@ -248,7 +248,11 @@ function App() {
 								onContentChange={
 									format === "csv"
 										? (val) =>
-												updateActiveTab({ content: val, previewContent: val })
+												updateActiveTab({
+													content: val,
+													previewContent: val,
+													isDirty: true,
+												})
 										: undefined
 								}
 								onClearCsv={

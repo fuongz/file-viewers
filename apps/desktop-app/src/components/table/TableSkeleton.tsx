@@ -20,9 +20,9 @@ const SKELETON_ROWS = 12;
 
 export function TableSkeleton() {
 	return (
-		<div className="csv-preview">
-			<div className="csv-toolbar">
-				<div className="csv-search-wrapper">
+		<div>
+			<div>
+				<div>
 					<div className="size-3 rounded animate-pulse bg-[var(--border)]" />
 					<div className="h-3 w-36 rounded animate-pulse bg-[var(--border)] ml-2" />
 				</div>
