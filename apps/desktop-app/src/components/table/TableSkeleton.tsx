@@ -31,7 +31,7 @@ export function TableSkeleton() {
 				<table className="csv-table w-full">
 					<thead>
 						<tr>
-							<th className="csv-row-num">
+							<th>
 								<div className="h-3 w-3 rounded animate-pulse bg-[var(--border)]" />
 							</th>
 							{Array.from({ length: SKELETON_COLS }).map((_, i) => (

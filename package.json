@@ -1,0 +1,22 @@
+{
+	"name": "fileviewer",
+	"type": "module",
+	"private": true,
+	"scripts": {
+		"dev": "bun run --filter @apps/desktop app:dev",
+		"landing:dev": "bun run --filter @apps/landing dev",
+		"typecheck": "bun run --filter '*' typecheck",
+		"lint": "bun run --filter '*' lint",
+		"lint:fix": "bun run --filter '*' lint:fix"
+	},
+	"devDependencies": {
+		"@types/bun": "^1.3.12",
+		"@biomejs/biome": "^2.4.12"
+	},
+	"peerDependencies": {
+		"typescript": "^6.0.3"
+	},
+	"workspaces": [
+		"apps/*"
+	]
+}

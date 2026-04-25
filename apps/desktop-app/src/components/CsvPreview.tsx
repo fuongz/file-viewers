@@ -82,7 +82,7 @@ export function CsvPreview({
 	const deferredContent = useDeferredValue(content);
 	const isStale = content !== deferredContent;
 
-	const { headers, rows, error } = useMemo(() => {
+	const { headers, rows, error, delimiter } = useMemo(() => {
 		if (!deferredContent.trim()) return { headers: [], rows: [], error: null };
 		const raw = deferredContent.trim().replace(/^\uFEFF/, "");
 		const result = Papa.parse<string[]>(raw, { skipEmptyLines: true });
@@ -109,7 +109,12 @@ export function CsvPreview({
 		const trimmedRows = dataRows.map((row) =>
 			row.slice(0, dedupedHeaders.length),
 		);
-		return { headers: dedupedHeaders, rows: trimmedRows, error: null };
+		return {
+			headers: dedupedHeaders,
+			rows: trimmedRows,
+			error: null,
+			delimiter: result.meta.delimiter ?? ",",
+		};
 	}, [deferredContent]);
 
 	// When rows change due to external file load, reset editRows
@@ -246,17 +251,33 @@ export function CsvPreview({
 				if (onContentChange)
 					onContentChange(Papa.unparse([headers, ...newRows]));
 			}}
+			onCellBatchChange={(changes) => {
+				const baseRows = editRows ?? rows;
+				const newRows = baseRows.map((r, ri) => {
+					const rowChanges = changes.filter(([rowIdx]) => rowIdx === ri);
+					if (!rowChanges.length) return r;
+					return r.map((c, ci) => {
+						const hit = rowChanges.find(([, colIdx]) => colIdx === ci);
+						return hit ? hit[2] : c;
+					});
+				});
+				isMyEditRef.current = true;
+				setEditRows(newRows);
+				if (onContentChange)
+					onContentChange(Papa.unparse([headers, ...newRows]));
+			}}
 			onDeleteRows={(rowIndices) => {
 				const baseRows = editRows ?? rows;
 				const newRows = baseRows.filter((_, ri) => !rowIndices.includes(ri));
+				isMyEditRef.current = true;
 				setEditRows(newRows);
 				setSelectedRows((prev) => {
 					const next = new Set(prev);
-					rowIndices.forEach((i) => {
-						next.delete(i);
-					});
+					for (const i of rowIndices) next.delete(i);
 					return next;
 				});
+				if (onContentChange)
+					onContentChange(Papa.unparse([headers, ...newRows]));
 			}}
 			onInsertRowAbove={(rowIndex) => {
 				const baseRows = editRows ?? rows;
@@ -343,7 +364,13 @@ export function CsvPreview({
 					</DropdownMenuContent>
 				</DropdownMenu>
 			}
-			statusRight={<Badge variant="secondary">{lineEnding}</Badge>}
+			statusRight={
+				<span className="flex items-center gap-3">
+					<span>UTF-8</span>
+					<Badge variant="secondary">{lineEnding}</Badge>
+					<span>Delimiter=[{delimiter}], Quote=["]</span>
+				</span>
+			}
 			overlay={
 				<Popover.Root
 					open={!!editingCell}

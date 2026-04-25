@@ -21,9 +21,11 @@ const BUNDLES: duckdb.DuckDBBundles = {
 
 const SQL_IDLE_MS = 120_000;
 
-function rowsFromResult(
-	result: import("apache-arrow").Table,
-): Record<string, unknown>[] {
+interface ArrowTable {
+	toArray(): Array<{ toJSON(): Record<string, unknown> }>;
+}
+
+function rowsFromResult(result: ArrowTable): Record<string, unknown>[] {
 	return result
 		.toArray()
 		.map((r) =>

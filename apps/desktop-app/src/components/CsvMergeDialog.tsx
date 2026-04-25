@@ -1,3 +1,4 @@
+import { IconArrowDown, IconArrowUp } from "@tabler/icons-react";
 import { useState } from "react";
 import type { FileTab } from "../types";
 import { Button } from "./ui/button";
@@ -101,7 +102,7 @@ export function CsvMergeDialog({
 												onClick={() => move(tab.id, -1)}
 												title="Move up"
 											>
-												↑
+												<IconArrowUp />
 											</Button>
 											<Button
 												size="icon-xs"
@@ -109,7 +110,7 @@ export function CsvMergeDialog({
 												onClick={() => move(tab.id, 1)}
 												title="Move down"
 											>
-												↓
+												<IconArrowDown />
 											</Button>
 										</div>
 									)}
