@@ -1,39 +1,16 @@
-/** biome-ignore-all lint/suspicious/noArrayIndexKey: no need */
-
-import {
-	IconArrowDown,
-	IconArrowRight,
-	IconArrowUp,
-	IconChevronDown,
-	IconCopy,
-	IconDatabase,
-	IconEraser,
-	IconFilter,
-	IconPlus,
-	IconSortAscending,
-	IconSortDescending,
-	IconTrash,
-} from "@tabler/icons-react";
 import {
 	type ColumnFiltersState,
 	type ColumnSizingState,
 	createColumnHelper,
-	flexRender,
 	getCoreRowModel,
 	getFilteredRowModel,
 	getSortedRowModel,
-	type Row,
 	type SortingState,
 	useReactTable,
 } from "@tanstack/react-table";
-import {
-	useVirtualizer,
-	type VirtualItem,
-	type Virtualizer,
-} from "@tanstack/react-virtual";
+import { useVirtualizer, type Virtualizer } from "@tanstack/react-virtual";
 import {
 	type Dispatch,
-	memo,
 	type ReactNode,
 	type SetStateAction,
 	useCallback,
@@ -43,256 +20,18 @@ import {
 	useState,
 } from "react";
 import { flushSync } from "react-dom";
-import { cn } from "@/lib/utils";
+import { ContextMenu, ContextMenuContent, ContextMenuTrigger } from "../ui";
 import {
-	Button,
-	ButtonGroup,
-	ContextMenu,
-	ContextMenuContent,
-	ContextMenuItem,
-	ContextMenuSeparator,
-	ContextMenuTrigger,
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuSeparator,
-	DropdownMenuTrigger,
-} from "../ui";
-import { SearchInput } from "./SearchInput";
-import { SqlInput } from "./SqlInput";
-import type { QueryMode, SelectedCell } from "./types";
+	type CtxMenuState,
+	DataTableContextMenuContent,
+} from "./DataTableContextMenu";
+import { DataTableHeader } from "./DataTableHeader";
+import { DataTableStatusBar } from "./DataTableStatusBar";
+import { DataTableToolbar } from "./DataTableToolbar";
+import type { DragRange, QueryMode, SelectedCell } from "./types";
+import { ROW_NUM_W, VirtualRow } from "./VirtualRow";
 
-// ── Module-level constants ─────────────────────────────────────────────────────
-const ROW_NUM_W = 40;
 const columnHelper = createColumnHelper<Record<string, unknown>>();
-
-// ── Floating context menu ──────────────────────────────────────────────────────
-type CtxMenuState =
-	| { type: "row"; rowIndex: number }
-	| { type: "cell"; rowIndex: number; colIndex: number; value: string };
-
-// ── VirtualRow ─────────────────────────────────────────────────────────────────
-
-interface VirtualRowProps {
-	row: Row<Record<string, unknown>>;
-	virtualRow: VirtualItem;
-	measureElement: (node: Element | null) => void;
-	isRowSelected: boolean;
-	selectedCellRow: number; // 1-based row of selectedCell, 0 = none
-	selectedCellCol: number; // 1-based col of selectedCell, 0 = none
-	queryMode: QueryMode;
-	onCellClick: (
-		rowIndex: number,
-		colIndex: number,
-		displayValue: string,
-		metaKey: boolean,
-		shiftKey: boolean,
-	) => void;
-	onCellDoubleClick?: (
-		rowIndex: number,
-		colIndex: number,
-		value: string,
-		anchorEl: Element,
-	) => void;
-	renderCellValue?: (value: unknown) => ReactNode;
-	onRowClick: (rowIndex: number, metaKey: boolean, shiftKey: boolean) => void;
-	dragRange?: {
-		startRow: number;
-		startCol: number;
-		endRow: number;
-		endCol: number;
-	} | null;
-	isFirstRowInRange?: boolean;
-	isLastRowInRange?: boolean;
-	cmdCells?: Set<string>;
-}
-
-function VirtualRowComponent({
-	row,
-	virtualRow,
-	measureElement,
-	isRowSelected,
-	selectedCellRow,
-	selectedCellCol,
-	queryMode,
-	onCellClick,
-	onCellDoubleClick,
-	renderCellValue,
-	onRowClick,
-	dragRange,
-	isFirstRowInRange,
-	isLastRowInRange,
-	cmdCells,
-}: VirtualRowProps) {
-	const isRowInRange =
-		dragRange != null &&
-		row.index >= dragRange.startRow &&
-		row.index <= dragRange.endRow;
-	return (
-		<tr
-			data-index={virtualRow.index}
-			ref={(node) => measureElement(node)}
-			style={{
-				transform: `translateY(${virtualRow.start}px)`,
-			}}
-			className="flex absolute w-full border-b border-border"
-		>
-			{/* Row number */}
-			<td
-				data-ctx-type="row"
-				data-ctx-row={row.index}
-				className={cn(
-					isRowSelected
-						? "bg-primary/25 text-primary font-semibold"
-						: isRowInRange || (!dragRange && selectedCellRow === row.index + 1)
-							? "bg-primary/20 text-primary"
-							: "bg-muted text-muted-foreground",
-					"text-xs border-r select-none font-medium sticky left-0 z-10 flex cursor-pointer justify-center items-center font-mono",
-				)}
-				style={{
-					width: ROW_NUM_W,
-				}}
-				onClick={(e) => {
-					e.stopPropagation();
-					onRowClick(row.index, e.metaKey || e.ctrlKey, e.shiftKey);
-				}}
-			>
-				<span>{row.index + 2}</span>
-			</td>
-
-			{/* Data cells */}
-			{row.getVisibleCells().map((cell, colIdx) => {
-				const rawValue = cell.getValue();
-				const displayValue =
-					rawValue === null || rawValue === undefined
-						? "null"
-						: typeof rawValue === "object"
-							? JSON.stringify(rawValue)
-							: String(rawValue);
-				const isSelected =
-					selectedCellRow === row.index + 1 && selectedCellCol === colIdx + 1;
-				const isCmdSelected = cmdCells?.has(`${row.index}:${colIdx}`) ?? false;
-				const isCellInRange =
-					isRowInRange &&
-					colIdx >= dragRange!.startCol &&
-					colIdx <= dragRange!.endCol;
-				const isTopEdge = isCellInRange && isFirstRowInRange;
-				const isBottomEdge = isCellInRange && isLastRowInRange;
-				const isLeftEdge = isCellInRange && colIdx === dragRange!.startCol;
-				const isRightEdge = isCellInRange && colIdx === dragRange!.endCol;
-				const edgeShadowParts: string[] = [];
-				if (isTopEdge) edgeShadowParts.push("inset 0 2px 0 0 var(--primary)");
-				if (isBottomEdge)
-					edgeShadowParts.push("inset 0 -2px 0 0 var(--primary)");
-				if (isLeftEdge) edgeShadowParts.push("inset 2px 0 0 0 var(--primary)");
-				if (isRightEdge)
-					edgeShadowParts.push("inset -2px 0 0 0 var(--primary)");
-				return (
-					<td
-						key={cell.id}
-						data-ctx-type="cell"
-						data-ctx-row={row.index}
-						data-ctx-col={colIdx}
-						data-ctx-val={displayValue}
-						style={{
-							width: `calc(var(--col-${cell.column.id}-size) * 1px)`,
-							boxShadow: edgeShadowParts.length
-								? edgeShadowParts.join(", ")
-								: undefined,
-						}}
-						className={cn(
-							isCellInRange
-								? "bg-primary/15 cursor-default"
-								: isCmdSelected
-									? "cursor-default ring-2 ring-inset ring-primary bg-primary/10"
-									: isSelected && !dragRange
-										? "cursor-default ring-2 ring-inset ring-primary bg-primary/10"
-										: isRowSelected
-											? "bg-primary/15"
-											: "",
-							"select-none truncate flex items-center px-2 py-1 text-xs/relaxed border-r border-border",
-						)}
-						onClick={(e) =>
-							onCellClick(
-								row.index,
-								colIdx,
-								displayValue,
-								e.metaKey || e.ctrlKey,
-								e.shiftKey,
-							)
-						}
-						onDoubleClick={
-							onCellDoubleClick
-								? (e) => {
-										if (queryMode === "sql") return;
-										onCellDoubleClick(
-											row.index,
-											colIdx,
-											displayValue,
-											e.currentTarget,
-										);
-									}
-								: undefined
-						}
-					>
-						{renderCellValue ? (
-							renderCellValue(rawValue)
-						) : rawValue === null || rawValue === undefined ? (
-							<span className="text-[var(--text-muted)]">null</span>
-						) : typeof rawValue === "object" ? (
-							JSON.stringify(rawValue)
-						) : (
-							String(rawValue)
-						)}
-					</td>
-				);
-			})}
-		</tr>
-	);
-}
-
-function rowPropsEqual(prev: VirtualRowProps, next: VirtualRowProps): boolean {
-	if (prev.row !== next.row) return false;
-	if (prev.virtualRow.start !== next.virtualRow.start) return false;
-	if (prev.isRowSelected !== next.isRowSelected) return false;
-	if (prev.queryMode !== next.queryMode) return false;
-	if (prev.isFirstRowInRange !== next.isFirstRowInRange) return false;
-	if (prev.isLastRowInRange !== next.isLastRowInRange) return false;
-	// Only re-render for selection changes that affect this specific row
-	const rowNum = prev.row.index + 1;
-	const prevOnRow = prev.selectedCellRow === rowNum;
-	const nextOnRow = next.selectedCellRow === rowNum;
-	if (prevOnRow !== nextOnRow) return false;
-	if (prevOnRow && prev.selectedCellCol !== next.selectedCellCol) return false;
-	if (prev.dragRange !== next.dragRange) {
-		const rowIdx = prev.row.index;
-		const prevInRange =
-			prev.dragRange != null &&
-			rowIdx >= prev.dragRange.startRow &&
-			rowIdx <= prev.dragRange.endRow;
-		const nextInRange =
-			next.dragRange != null &&
-			rowIdx >= next.dragRange.startRow &&
-			rowIdx <= next.dragRange.endRow;
-		if (prevInRange || nextInRange) return false;
-	}
-	if (prev.cmdCells !== next.cmdCells) {
-		const rowIdx = prev.row.index;
-		const prefix = `${rowIdx}:`;
-		const prevHas = [...(prev.cmdCells ?? [])].some((k) =>
-			k.startsWith(prefix),
-		);
-		const nextHas = [...(next.cmdCells ?? [])].some((k) =>
-			k.startsWith(prefix),
-		);
-		if (prevHas || nextHas) return false;
-	}
-	return true;
-}
-
-const VirtualRow = memo(VirtualRowComponent, rowPropsEqual);
-
-// ── DataTable ──────────────────────────────────────────────────────────────────
 
 export interface DataTableProps {
 	displayData: Record<string, unknown>[];
@@ -396,12 +135,7 @@ export function DataTable({
 	const cmdCellsRef = useRef(cmdCells);
 	cmdCellsRef.current = cmdCells;
 
-	const [dragRange, setDragRange] = useState<{
-		startRow: number;
-		startCol: number;
-		endRow: number;
-		endCol: number;
-	} | null>(null);
+	const [dragRange, setDragRange] = useState<DragRange | null>(null);
 	const isDraggingCellRef = useRef(false);
 	const dragCellAnchorRef = useRef<{ row: number; col: number } | null>(null);
 	const isDraggingRowRef = useRef(false);
@@ -429,7 +163,6 @@ export function DataTable({
 
 	useEffect(() => {
 		const onKeyDown = (e: KeyboardEvent) => {
-			// Don't intercept when an input/textarea/contenteditable has focus
 			const active = document.activeElement;
 			if (
 				active &&
@@ -454,7 +187,6 @@ export function DataTable({
 				return String(val);
 			};
 
-			// Collect cmd-selected cells sorted by row then col
 			const cmdEntries = (): Array<[number, number]> =>
 				[...cmd]
 					.map((k) => k.split(":").map(Number) as [number, number])
@@ -462,7 +194,6 @@ export function DataTable({
 
 			const isMod = e.metaKey || e.ctrlKey;
 
-			// Delete / Backspace → empty selected cells
 			if (e.key === "Delete" || e.key === "Backspace") {
 				if (cmd.size > 0) {
 					e.preventDefault();
@@ -484,7 +215,6 @@ export function DataTable({
 				return;
 			}
 
-			// Enter → open inline editor (single cell only)
 			if (e.key === "Enter" && !isMod) {
 				if (cell && !range && cmd.size === 0) {
 					e.preventDefault();
@@ -505,21 +235,18 @@ export function DataTable({
 
 			if (!isMod) return;
 
-			// Cmd/Ctrl+Z → undo
 			if (e.key === "z" && !e.shiftKey) {
 				e.preventDefault();
 				onUndoRef.current?.();
 				return;
 			}
 
-			// Cmd/Ctrl+Shift+Z or Cmd/Ctrl+Y → redo (Shift+Z produces "Z" on macOS)
 			if ((e.key.toLowerCase() === "z" && e.shiftKey) || e.key === "y") {
 				e.preventDefault();
 				onRedoRef.current?.();
 				return;
 			}
 
-			// Cmd/Ctrl+C → copy
 			if (e.key === "c") {
 				e.preventDefault();
 				if (cmd.size > 0) {
@@ -543,7 +270,6 @@ export function DataTable({
 				return;
 			}
 
-			// Cmd/Ctrl+X → cut (copy then empty)
 			if (e.key === "x") {
 				e.preventDefault();
 				if (cmd.size > 0) {
@@ -573,7 +299,6 @@ export function DataTable({
 				return;
 			}
 
-			// Cmd/Ctrl+V → paste
 			if (e.key === "v") {
 				e.preventDefault();
 				navigator.clipboard.readText().then((text) => {
@@ -662,7 +387,6 @@ export function DataTable({
 		getFilteredRowModel: getFilteredRowModel(),
 	});
 
-	// Only recompute CSS vars when column sizing or headers change
 	const columnSizeVars = useMemo(() => {
 		const vars: Record<string, number> = {};
 		for (const header of table.getFlatHeaders()) {
@@ -691,7 +415,6 @@ export function DataTable({
 	});
 	virtualizerRef.current = rowVirtualizer;
 
-	// Stable measureElement so it doesn't break VirtualRow memo
 	const measureElement = useCallback((node: Element | null) => {
 		virtualizerRef.current?.measureElement(node);
 	}, []);
@@ -703,13 +426,11 @@ export function DataTable({
 	onSelectedRowsChangeRef.current = onSelectedRowsChange;
 	const onCellSelectRef = useRef(onCellSelect);
 	onCellSelectRef.current = onCellSelect;
-	// State setter is stable — ref lets us call it from zero-dep callbacks
 	const setDragRangeRef = useRef(setDragRange);
 	setDragRangeRef.current = setDragRange;
 	const colCountRef = useRef(displayHeaders.length);
 	colCountRef.current = displayHeaders.length;
 
-	// Keyboard handler refs
 	const selectedCellRef = useRef(selectedCell);
 	selectedCellRef.current = selectedCell;
 	const dragRangeStateRef = useRef(dragRange);
@@ -742,11 +463,9 @@ export function DataTable({
 			shiftKey: boolean,
 		) => {
 			if (metaKey) {
-				// Cmd/Ctrl+click: toggle individual cell into non-contiguous selection
 				const key = `${rowIndex}:${colIndex}`;
 				const prev = cmdCellsRef.current;
 				const next = new Set(prev);
-				// On first cmd-click, carry the current single-cell selection over
 				const currentCell = selectedCellRef.current;
 				if (currentCell && prev.size === 0) {
 					next.add(`${currentCell.row - 1}:${currentCell.col - 1}`);
@@ -800,7 +519,6 @@ export function DataTable({
 
 	const handleRowClick = useCallback(
 		(rowIndex: number, metaKey: boolean, shiftKey: boolean) => {
-			// If mouseup after a drag, the click event still fires — ignore it
 			if (didDragRowRef.current) {
 				didDragRowRef.current = false;
 				return;
@@ -818,7 +536,6 @@ export function DataTable({
 				change(next);
 				setRowDragRange(start, end);
 			} else if (metaKey) {
-				// Toggle — can produce non-contiguous set; use isRowSelected visual fallback
 				const next = new Set(current ?? []);
 				if (next.has(rowIndex)) next.delete(rowIndex);
 				else next.add(rowIndex);
@@ -859,9 +576,7 @@ export function DataTable({
 				if (tableContainerRef.current)
 					tableContainerRef.current.style.userSelect = "none";
 			} else if (el.dataset.ctxType === "cell") {
-				// Shift/Cmd+click: let onClick handle; don't start a drag
 				if (e.shiftKey || e.metaKey || e.ctrlKey) return;
-				// Data cell — start drag; clear cmd-selection
 				onCellSelectRef.current(null);
 				setCmdCellsRef.current(new Set());
 				dragCellAnchorRef.current = {
@@ -915,8 +630,6 @@ export function DataTable({
 		[setRowDragRange],
 	);
 
-	// Capture which cell/row was right-clicked, select it if not already selected,
-	// then flush state synchronously so ContextMenuContent renders before the popup positions.
 	const handleContextMenu = useCallback(
 		(e: React.MouseEvent<HTMLTableSectionElement>) => {
 			const ctxEl = (e.target as Element).closest(
@@ -1035,37 +748,19 @@ export function DataTable({
 	return (
 		<div className="csv-preview max-w-full">
 			{/* ── Toolbar ── */}
-			<div className="flex gap-2 px-2 py-1 border-b w-full items-center wrap-flex">
-				{toolbarLeading}
-				{!hideSqlToggle && !hideFilterToggle && (
-					<ButtonGroup>
-						<Button
-							variant={queryMode === "search" ? "default" : "outline"}
-							onClick={onFilterMode}
-						>
-							<IconFilter />
-							Filter
-						</Button>
-						<Button
-							variant={queryMode === "sql" ? "default" : "outline"}
-							onClick={onSqlMode}
-							disabled={sqlConnecting}
-						>
-							<IconDatabase />
-							{sqlConnecting ? "Connecting..." : "SQL"}
-						</Button>
-					</ButtonGroup>
-				)}
-				{(queryMode === "search" && !hideFilterToggle) || hideSqlToggle ? (
-					<SearchInput onFilter={(v) => onGlobalFilterChange?.(v)} />
-				) : (
-					<SqlInput
-						onRun={onSqlRun ?? (() => {})}
-						disabled={sqlLoading}
-						tableName={sqlTableName}
-					/>
-				)}
-			</div>
+			<DataTableToolbar
+				queryMode={queryMode}
+				onFilterMode={onFilterMode}
+				onSqlMode={onSqlMode}
+				hideSqlToggle={hideSqlToggle}
+				hideFilterToggle={hideFilterToggle}
+				sqlConnecting={sqlConnecting}
+				sqlLoading={sqlLoading}
+				onSqlRun={onSqlRun}
+				sqlTableName={sqlTableName}
+				onGlobalFilterChange={onGlobalFilterChange}
+				toolbarLeading={toolbarLeading}
+			/>
 
 			{/* ── SQL error bar ── */}
 			{queryMode === "sql" && sqlError && (
@@ -1093,145 +788,11 @@ export function DataTable({
 							width: table.getCenterTotalSize() + ROW_NUM_W,
 						}}
 					>
-						<thead
-							style={{ display: "grid", position: "sticky", top: 0, zIndex: 2 }}
-						>
-							{/* Column index row */}
-							<tr className="flex w-full bg-card border-b">
-								<th
-									className="sticky left-0 z-10 bg-muted border-r"
-									style={{ width: ROW_NUM_W }}
-								/>
-								{table.getFlatHeaders().map((header, idx) => (
-									<th
-										key={header.id}
-										className={cn(
-											"group relative flex text-[10px] select-none border-r border-border/40",
-											(dragRange != null &&
-												idx >= dragRange.startCol &&
-												idx <= dragRange.endCol) ||
-												(dragRange == null && selectedCell?.col === idx + 1)
-												? "bg-primary/15 text-primary"
-												: "text-muted-foreground/50 hover:bg-muted/60",
-										)}
-										style={{
-											width: `calc(var(--header-${header.id}-size) * 1px)`,
-										}}
-									>
-										<DropdownMenu>
-											<DropdownMenuTrigger className="flex flex-1 justify-center items-center py-0.5 px-1 focus:outline-none cursor-pointer relative">
-												<span>{idx + 1}</span>
-												{header.column.getIsSorted() ? (
-													header.column.getIsSorted() === "asc" ? (
-														<IconSortAscending
-															size={9}
-															className="absolute right-0.5"
-														/>
-													) : (
-														<IconSortDescending
-															size={9}
-															className="absolute right-0.5"
-														/>
-													)
-												) : (
-													<IconChevronDown
-														size={9}
-														className="absolute right-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
-													/>
-												)}
-											</DropdownMenuTrigger>
-											<DropdownMenuContent
-												side="bottom"
-												align="start"
-												className="min-w-42"
-											>
-												<DropdownMenuItem
-													onClick={() =>
-														navigator.clipboard.writeText(
-															String(header.column.columnDef.header),
-														)
-													}
-												>
-													<IconCopy size={13} />
-													Copy column name
-												</DropdownMenuItem>
-												<DropdownMenuSeparator />
-												<DropdownMenuItem
-													onClick={() => header.column.toggleSorting(false)}
-												>
-													<IconSortAscending
-														size={13}
-														className="mr-1 text-foreground"
-													/>
-													Sort A <IconArrowRight className="size-3" /> Z
-												</DropdownMenuItem>
-												<DropdownMenuItem
-													onClick={() => header.column.toggleSorting(true)}
-												>
-													<IconSortDescending
-														size={13}
-														className="mr-1 text-foreground"
-													/>
-													Sort Z <IconArrowRight className="size-3" /> A
-												</DropdownMenuItem>
-											</DropdownMenuContent>
-										</DropdownMenu>
-										{/** biome-ignore lint/a11y/noStaticElementInteractions: no need */}
-										<div
-											onMouseDown={header.getResizeHandler()}
-											onTouchStart={header.getResizeHandler()}
-											className={`csv-col-resizer${header.column.getIsResizing() ? " isResizing" : ""}`}
-										/>
-									</th>
-								))}
-							</tr>
-							{table.getHeaderGroups().map((hg) => (
-								<tr key={hg.id} className="flex w-full bg-card border-b">
-									<th
-										className="text-xs font-mono text-muted-foreground bg-muted sticky left-0 z-10 flex justify-center items-center border-r select-none"
-										style={{ width: ROW_NUM_W }}
-									>
-										1
-									</th>
-									{hg.headers.map((header) => (
-										<th
-											key={header.id}
-											style={{
-												display: "flex",
-												width: `calc(var(--header-${header.id}-size) * 1px)`,
-												position: "relative",
-												alignItems: "center",
-												padding: 0,
-											}}
-											className={cn(
-												"select-none border-r border-border",
-												selectedCell?.col === header.index + 1
-													? "bg-primary/5"
-													: "",
-											)}
-										>
-											<div className="th-content flex justify-between flex-1 min-w-0 px-[14px] py-[8px]">
-												<span className="th-label">
-													{flexRender(
-														header.column.columnDef.header,
-														header.getContext(),
-													)}
-												</span>
-												{header.column.getIsSorted() && (
-													<span className="sort-indicator">
-														{header.column.getIsSorted() === "asc" ? (
-															<IconSortAscending className="size-4" />
-														) : (
-															<IconSortDescending className="size-4" />
-														)}
-													</span>
-												)}
-											</div>
-										</th>
-									))}
-								</tr>
-							))}
-						</thead>
+						<DataTableHeader
+							table={table}
+							dragRange={dragRange}
+							selectedCell={selectedCell}
+						/>
 						<tbody
 							style={{
 								display: "grid",
@@ -1276,124 +837,30 @@ export function DataTable({
 					)}
 				</ContextMenuTrigger>
 				<ContextMenuContent>
-					{ctxMenu &&
-						(ctxMenu.type === "cell" ? (
-							<>
-								<ContextMenuItem
-									onClick={() => {
-										if (dragRange) {
-											const changes: Array<[number, number, string]> = [];
-											for (
-												let r = dragRange.startRow;
-												r <= dragRange.endRow;
-												r++
-											)
-												for (
-													let c = dragRange.startCol;
-													c <= dragRange.endCol;
-													c++
-												)
-													changes.push([r, c, ""]);
-											onCellBatchChange?.(changes);
-										} else {
-											onCellChange?.(ctxMenu.rowIndex, ctxMenu.colIndex, "");
-										}
-									}}
-								>
-									<IconEraser size={13} />
-									{dragRange
-										? `Empty range (${(dragRange.endRow - dragRange.startRow + 1) * (dragRange.endCol - dragRange.startCol + 1)} cells)`
-										: "Empty data"}
-								</ContextMenuItem>
-								<ContextMenuItem
-									onClick={() => navigator.clipboard.writeText(ctxMenu.value)}
-								>
-									<IconCopy size={13} />
-									Copy cell
-								</ContextMenuItem>
-							</>
-						) : (
-							<>
-								<ContextMenuItem
-									onClick={() => onInsertRowAbove?.(ctxMenu.rowIndex)}
-								>
-									<IconPlus size={13} />
-									Insert row above
-								</ContextMenuItem>
-								<ContextMenuItem
-									onClick={() => onInsertRowBelow?.(ctxMenu.rowIndex)}
-								>
-									<IconPlus size={13} />
-									Insert row below
-								</ContextMenuItem>
-								<ContextMenuSeparator />
-								<ContextMenuItem
-									onClick={() => onMoveRowUp?.(ctxMenu.rowIndex)}
-								>
-									<IconArrowUp size={13} />
-									Move row up
-								</ContextMenuItem>
-								<ContextMenuItem
-									onClick={() => onMoveRowDown?.(ctxMenu.rowIndex)}
-								>
-									<IconArrowDown size={13} />
-									Move row down
-								</ContextMenuItem>
-								<ContextMenuSeparator />
-								{(() => {
-									const isMulti =
-										(selectedRows?.has(ctxMenu.rowIndex) ?? false) &&
-										(selectedRows?.size ?? 0) > 1;
-									return (
-										<ContextMenuItem
-											variant="destructive"
-											onClick={() =>
-												onDeleteRows?.(
-													isMulti
-														? Array.from(selectedRows!)
-														: [ctxMenu.rowIndex],
-												)
-											}
-										>
-											<IconTrash size={13} />
-											{isMulti
-												? `Delete ${selectedRows!.size} rows`
-												: "Delete row"}
-										</ContextMenuItem>
-									);
-								})()}
-							</>
-						))}
+					<DataTableContextMenuContent
+						ctxMenu={ctxMenu}
+						dragRange={dragRange}
+						selectedRows={selectedRows}
+						onCellChange={onCellChange}
+						onCellBatchChange={onCellBatchChange}
+						onInsertRowAbove={onInsertRowAbove}
+						onInsertRowBelow={onInsertRowBelow}
+						onMoveRowUp={onMoveRowUp}
+						onMoveRowDown={onMoveRowDown}
+						onDeleteRows={onDeleteRows}
+					/>
 				</ContextMenuContent>
 			</ContextMenu>
 
 			{/* ── Status bar ── */}
-			<div className="w-full flex justify-between border-t px-2 text-xs py-1 items-center text-muted-foreground gap-4">
-				<div className="flex items-center gap-4 min-w-0 overflow-hidden">
-					<span className="shrink-0">
-						{sqlLoading
-							? "Running…"
-							: filteredRowCount === totalRows
-								? `${totalRows} rows × ${colCount} columns`
-								: `${filteredRowCount} / ${totalRows} rows × ${colCount} columns`}
-					</span>
-					{selectionStats && (
-						<>
-							<span className="shrink-0">
-								{selectionStats.pos} ({selectionStats.cells} cells)
-							</span>
-							<span className="shrink-0">
-								Sum:{" "}
-								{new Intl.NumberFormat("en-US", {
-									maximumFractionDigits: 10,
-									useGrouping: false,
-								}).format(selectionStats.sum)}
-							</span>
-						</>
-					)}
-				</div>
-				<span className="shrink-0">{statusRight}</span>
-			</div>
+			<DataTableStatusBar
+				sqlLoading={sqlLoading}
+				filteredRowCount={filteredRowCount}
+				totalRows={totalRows}
+				colCount={colCount}
+				selectionStats={selectionStats}
+				statusRight={statusRight}
+			/>
 			{bottomSlot}
 			{overlay}
 		</div>

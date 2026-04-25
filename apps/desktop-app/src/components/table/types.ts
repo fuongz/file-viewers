@@ -5,3 +5,10 @@ export interface SelectedCell {
 	col: number; // 1-based
 	value: string;
 }
+
+export interface DragRange {
+	startRow: number;
+	startCol: number;
+	endRow: number;
+	endCol: number;
+}
