@@ -69,7 +69,7 @@ function App() {
 
 	useDragDrop(loadFile);
 	useTheme();
-	useUpdater();
+	const { checkNow } = useUpdater();
 	useRestoreSession(loadFileRef);
 	useOpenWith(loadFile);
 
@@ -84,6 +84,7 @@ function App() {
 		saveFile,
 		() => setSettingsOpen(true),
 		clearStorage,
+		checkNow,
 		isDragOver,
 	);
 
@@ -217,7 +218,6 @@ function App() {
 						tabName={activeTab.name}
 						onToggleEditor={() => updateActiveTab({ showEditor: !showEditor })}
 						onToggleSidebar={toggleSidebar}
-						onOpenSettings={() => setSettingsOpen(true)}
 						onAddTab={() => {
 							if (!isAnyTabBusy) addTab();
 						}}
@@ -226,9 +226,7 @@ function App() {
 						<FileTree />
 						<SidebarInset className="app relative top-10 h-[calc(100svh-40px)]!">
 							<CloseTabDialog />
-
 							{isDragOver && <DragOverlay />}
-
 							<Workspace
 								showEditor={showEditor}
 								content={content}
@@ -330,7 +328,7 @@ function App() {
 								]}
 							/>
 
-							<Toaster position="top-center" richColors />
+							<Toaster position="top-center" />
 						</SidebarInset>
 					</div>
 				</SidebarProvider>

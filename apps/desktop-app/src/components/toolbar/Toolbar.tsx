@@ -4,7 +4,6 @@ import {
 	IconLayoutSidebarLeftCollapse,
 	IconLayoutSidebarLeftExpandFilled,
 	IconPlus,
-	IconSettings,
 } from "@tabler/icons-react";
 import { cn } from "@/lib/utils";
 import type { Format } from "../../types";
@@ -25,7 +24,6 @@ interface ToolbarProps {
 	tabName: string;
 	onToggleEditor: () => void;
 	onToggleSidebar: () => void;
-	onOpenSettings: () => void;
 	onAddTab: () => void;
 }
 
@@ -36,7 +34,6 @@ export function Toolbar({
 	tabName,
 	onToggleEditor,
 	onToggleSidebar,
-	onOpenSettings,
 	onAddTab,
 }: ToolbarProps) {
 	return (
@@ -51,7 +48,7 @@ export function Toolbar({
 						<Toggle
 							aria-label="Toggle sidebar"
 							variant="default"
-							size="icon"
+							size="icon-md"
 							onPressedChange={onToggleSidebar}
 							pressed={!sidebarCollapsed}
 						/>
@@ -73,7 +70,7 @@ export function Toolbar({
 			</Tooltip>
 			<Tooltip>
 				<TooltipTrigger
-					render={<Button size="icon-sm" onClick={onAddTab} variant="ghost" />}
+					render={<Button size="icon-lg" onClick={onAddTab} variant="ghost" />}
 				>
 					<IconPlus stroke={1} />
 				</TooltipTrigger>
@@ -96,7 +93,7 @@ export function Toolbar({
 								<Toggle
 									aria-label="Toggle sidebar"
 									variant="default"
-									size="icon"
+									size="icon-md"
 									onPressedChange={onToggleEditor}
 									pressed={showEditor}
 								/>
@@ -117,22 +114,6 @@ export function Toolbar({
 						</TooltipContent>
 					</Tooltip>
 				)}
-				<Tooltip>
-					<TooltipTrigger
-						render={
-							<Button size="icon-sm" onClick={onOpenSettings} variant="ghost" />
-						}
-					>
-						<IconSettings />
-					</TooltipTrigger>
-					<TooltipContent>
-						Settings
-						<KbdGroup>
-							<Kbd>⌘</Kbd>
-							<Kbd>,</Kbd>
-						</KbdGroup>
-					</TooltipContent>
-				</Tooltip>
 			</div>
 		</header>
 	);

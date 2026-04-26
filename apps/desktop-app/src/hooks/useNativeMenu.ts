@@ -1,4 +1,5 @@
 import { listen } from "@tauri-apps/api/event";
+import { relaunch } from "@tauri-apps/plugin-process";
 import { useEffect, useRef } from "react";
 import { useAppStore } from "../store";
 
@@ -7,6 +8,7 @@ export function useNativeMenu(
 	saveFile: () => Promise<void>,
 	openSettings: () => void,
 	clearStorage: () => void,
+	checkForUpdates: () => void,
 	disabled?: boolean,
 ) {
 	const addTab = useAppStore((s) => s.addTab);
@@ -108,6 +110,40 @@ export function useNativeMenu(
 		let unlisten: (() => void) | null = null;
 		listen("menu-clear-storage", () => {
 			clearStorageRef.current();
+		}).then((fn) => {
+			if (cancelled) fn();
+			else unlisten = fn;
+		});
+		return () => {
+			cancelled = true;
+			unlisten?.();
+		};
+	}, [disabled]);
+
+	const checkForUpdatesRef = useRef(checkForUpdates);
+	checkForUpdatesRef.current = checkForUpdates;
+	useEffect(() => {
+		if (disabled) return;
+		let cancelled = false;
+		let unlisten: (() => void) | null = null;
+		listen("menu-check-updates", () => {
+			checkForUpdatesRef.current();
+		}).then((fn) => {
+			if (cancelled) fn();
+			else unlisten = fn;
+		});
+		return () => {
+			cancelled = true;
+			unlisten?.();
+		};
+	}, [disabled]);
+
+	useEffect(() => {
+		if (disabled) return;
+		let cancelled = false;
+		let unlisten: (() => void) | null = null;
+		listen("menu-restart", () => {
+			relaunch();
 		}).then((fn) => {
 			if (cancelled) fn();
 			else unlisten = fn;

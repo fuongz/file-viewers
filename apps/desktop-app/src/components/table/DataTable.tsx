@@ -300,7 +300,6 @@ export function DataTable({
 	const {
 		handleCellClick,
 		handleColSelect: handleColSelectFromHook,
-		handleRowChevronClick,
 		handleRowClick,
 		handleTbodyMouseDown,
 		handleTbodyMouseMove,
@@ -315,7 +314,6 @@ export function DataTable({
 		displayDataRef,
 		colCountRef,
 		tableContainerRef,
-		setCtxMenu,
 		lastRowAnchorRef,
 		didDragRowRef,
 		dragRowAnchorRef,
@@ -544,7 +542,6 @@ export function DataTable({
 										onCellDoubleClick={onCellDoubleClick}
 										renderCellValue={renderCellValue}
 										onRowClick={handleRowClick}
-										onRowChevronClick={handleRowChevronClick}
 									/>
 								);
 							})}

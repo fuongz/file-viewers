@@ -7,6 +7,8 @@ import {
 	IconLoader2,
 	IconPencil,
 	IconPlus,
+	IconSettings,
+	IconX,
 } from "@tabler/icons-react";
 import { invoke } from "@tauri-apps/api/core";
 import { useEffect, useRef, useState } from "react";
@@ -17,6 +19,7 @@ import type { FileTab } from "../../types";
 import { CsvMergeDialog } from "../CsvMergeDialog";
 import { CsvSplitDialog } from "../CsvSplitDialog";
 import {
+	Button,
 	ContextMenu,
 	ContextMenuContent,
 	ContextMenuItem,
@@ -25,6 +28,7 @@ import {
 	Input,
 	Sidebar,
 	SidebarContent,
+	SidebarFooter,
 	SidebarGroup,
 	SidebarGroupAction,
 	SidebarGroupContent,
@@ -48,6 +52,7 @@ export function FileTree(props: React.ComponentProps<typeof Sidebar>) {
 		addTab,
 		renameTab,
 		setCommandOpen,
+		setSettingsOpen,
 		setTabs,
 	} = useAppStore();
 
@@ -258,6 +263,7 @@ export function FileTree(props: React.ComponentProps<typeof Sidebar>) {
 																		startRename(tab);
 																	}}
 																	isActive={tab.id === activeTabId}
+																	className="group/item"
 																/>
 															}
 														>
@@ -272,8 +278,33 @@ export function FileTree(props: React.ComponentProps<typeof Sidebar>) {
 																{tab.name}
 															</span>
 															{tab.isDirty && (
-																<span className="shrink-0 size-2 rounded-full bg-amber-700 dark:bg-amber-500" />
+																<span className="shrink-0 size-2 rounded-full bg-amber-700 dark:bg-amber-500 group-hover/item:hidden" />
 															)}
+															<Tooltip>
+																<TooltipTrigger
+																	render={
+																		<Button
+																			type="button"
+																			variant="ghost"
+																			size="icon-sm"
+																			className="shrink-0 opacity-0 group-hover/item:opacity-100"
+																			onClick={(e) => {
+																				e.stopPropagation();
+																				closeTab(tab.id);
+																			}}
+																		/>
+																	}
+																>
+																	<IconX />
+																</TooltipTrigger>
+																<TooltipContent side="right">
+																	Close tab
+																	<KbdGroup>
+																		<Kbd>⌘</Kbd>
+																		<Kbd>W</Kbd>
+																	</KbdGroup>
+																</TooltipContent>
+															</Tooltip>
 														</TooltipTrigger>
 														<TooltipContent side="right">
 															{tab.name}
@@ -343,6 +374,29 @@ export function FileTree(props: React.ComponentProps<typeof Sidebar>) {
 					</SidebarGroupContent>
 				</SidebarGroup>
 			</SidebarContent>
+			<SidebarFooter>
+				<SidebarMenu>
+					<SidebarMenuItem>
+						<Tooltip>
+							<TooltipTrigger
+								render={
+									<SidebarMenuButton onClick={() => setSettingsOpen(true)} />
+								}
+							>
+								<IconSettings className="text-muted-foreground" />
+								<span>Settings</span>
+							</TooltipTrigger>
+							<TooltipContent side="right">
+								Settings
+								<KbdGroup>
+									<Kbd>⌘</Kbd>
+									<Kbd>,</Kbd>
+								</KbdGroup>
+							</TooltipContent>
+						</Tooltip>
+					</SidebarMenuItem>
+				</SidebarMenu>
+			</SidebarFooter>
 			<CsvSplitDialog
 				open={splitDialogOpen}
 				onOpenChange={(open) => {

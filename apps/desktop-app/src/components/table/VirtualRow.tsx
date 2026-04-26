@@ -1,4 +1,3 @@
-import { IconChevronDown } from "@tabler/icons-react";
 import type { Row } from "@tanstack/react-table";
 import type { VirtualItem } from "@tanstack/react-virtual";
 import { memo, type ReactNode, useMemo } from "react";
@@ -30,11 +29,6 @@ export interface VirtualRowProps {
 	) => void;
 	renderCellValue?: (value: unknown) => ReactNode;
 	onRowClick: (rowIndex: number, metaKey: boolean, shiftKey: boolean) => void;
-	onRowChevronClick?: (
-		rowIndex: number,
-		clientX: number,
-		clientY: number,
-	) => void;
 }
 
 function VirtualRowComponent({
@@ -48,7 +42,6 @@ function VirtualRowComponent({
 	onCellDoubleClick,
 	renderCellValue,
 	onRowClick,
-	onRowChevronClick,
 }: VirtualRowProps) {
 	const { range } = selection;
 
@@ -89,16 +82,6 @@ function VirtualRowComponent({
 				}}
 			>
 				<span>{row.index + 2}</span>
-				<button
-					type="button"
-					className="absolute right-0.5 opacity-0 group-hover:opacity-50 hover:!opacity-100 p-0.5 rounded transition-opacity cursor-pointer"
-					onClick={(e) => {
-						e.stopPropagation();
-						onRowChevronClick?.(row.index, e.clientX, e.clientY);
-					}}
-				>
-					<IconChevronDown size={10} />
-				</button>
 			</td>
 
 			{row.getVisibleCells().map((cell, colIdx) => {

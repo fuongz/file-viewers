@@ -5,6 +5,7 @@ export * from "./button";
 export * from "./button-group";
 export * from "./CommandPalette";
 export * from "./ConfirmDialog";
+export * from "./card";
 export * from "./collapsible";
 export * from "./context-menu";
 export * from "./dialog";

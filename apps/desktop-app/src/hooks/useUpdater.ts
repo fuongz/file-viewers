@@ -4,8 +4,6 @@ import { createElement, useEffect } from "react";
 import { toast } from "sonner";
 import { UpdateToast } from "@/components/ui/UpdateToast";
 
-let checked = false;
-
 function showUpdateToast(
 	version: string,
 	body?: string,
@@ -23,26 +21,40 @@ function showUpdateToast(
 	);
 }
 
+async function checkForUpdates(showNoUpdateToast = false) {
+	try {
+		const update = await check();
+		if (!update) {
+			if (showNoUpdateToast) toast.info("You're up to date!");
+			return;
+		}
+		showUpdateToast(
+			`v${update.version}`,
+			update.body ?? undefined,
+			async () => {
+				await update.downloadAndInstall();
+				await relaunch();
+			},
+		);
+	} catch {
+		if (showNoUpdateToast)
+			toast.error(
+				import.meta.env.DEV
+					? "You are in dev mode!"
+					: "Could not check for updates.",
+			);
+	}
+}
+
+let checked = false;
+
 export function useUpdater() {
 	useEffect(() => {
 		if (checked) return;
 		checked = true;
-		const run = async () => {
-			try {
-				const update = await check();
-				if (!update) return;
-				showUpdateToast(
-					`v${update.version}`,
-					update.body ?? undefined,
-					async () => {
-						await update.downloadAndInstall();
-						await relaunch();
-					},
-				);
-			} catch {}
-		};
-
-		const timer = setTimeout(run, 3000);
+		const timer = setTimeout(() => checkForUpdates(false), 3000);
 		return () => clearTimeout(timer);
 	}, []);
+
+	return { checkNow: () => checkForUpdates(true) };
 }

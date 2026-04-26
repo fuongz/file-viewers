@@ -143,6 +143,7 @@ pub fn run() {
 
                 // ── File Viewers (app menu) ───────────────────────────
                 let about = PredefinedMenuItem::about(app, None, None)?;
+                let check_updates = MenuItem::with_id(app, "check-updates", "Check for Updates\u{2026}", true, None::<&str>)?;
                 let sep1 = PredefinedMenuItem::separator(app)?;
                 let services = PredefinedMenuItem::services(app, None)?;
                 let sep2 = PredefinedMenuItem::separator(app)?;
@@ -150,6 +151,9 @@ pub fn run() {
                 let hide_other = PredefinedMenuItem::hide_others(app, None)?;
                 let show_all = PredefinedMenuItem::show_all(app, None)?;
                 let sep3 = PredefinedMenuItem::separator(app)?;
+                let reload_webview = MenuItem::with_id(app, "reload-webview", "Reload Webview", true, None::<&str>)?;
+                let restart = MenuItem::with_id(app, "restart", "Restart", true, None::<&str>)?;
+                let sep_quit = PredefinedMenuItem::separator(app)?;
                 let quit = PredefinedMenuItem::quit(app, None)?;
                 let app_menu = Submenu::with_items(
                     app,
@@ -157,6 +161,7 @@ pub fn run() {
                     true,
                     &[
                         &about,
+                        &check_updates,
                         &sep1,
                         &services,
                         &sep2,
@@ -164,6 +169,9 @@ pub fn run() {
                         &hide_other,
                         &show_all,
                         &sep3,
+                        &reload_webview,
+                        &restart,
+                        &sep_quit,
                         &quit,
                     ],
                 )?;
@@ -226,8 +234,14 @@ pub fn run() {
                     true,
                     None::<&str>,
                 )?;
-                let help_menu =
-                    Submenu::with_items(app, "Help", true, &[&toggle_devtools, &clear_storage])?;
+                let troubleshooting_menu =
+                    Submenu::with_items(app, "Troubleshooting", true, &[&clear_storage])?;
+                let help_menu = Submenu::with_items(
+                    app,
+                    "Help",
+                    true,
+                    &[&toggle_devtools, &troubleshooting_menu],
+                )?;
                 let menu = Menu::with_items(
                     app,
                     &[
@@ -267,6 +281,18 @@ pub fn run() {
             }
             if event.id() == "clear-storage" {
                 app.emit("menu-clear-storage", ()).ok();
+            }
+            if event.id() == "check-updates" {
+                app.emit("menu-check-updates", ()).ok();
+            }
+            if event.id() == "reload-webview" {
+                use tauri::Manager;
+                if let Some(win) = app.get_webview_window("main") {
+                    win.eval("window.location.reload()").ok();
+                }
+            }
+            if event.id() == "restart" {
+                app.emit("menu-restart", ()).ok();
             }
         })
         .invoke_handler(tauri::generate_handler![reveal_in_finder])

@@ -22,7 +22,6 @@ type CtxMenuState =
 	| { type: "column"; colIdx: number };
 
 interface UseCellInteractionsParams extends CellInteractionRefs {
-	setCtxMenu: React.Dispatch<React.SetStateAction<CtxMenuState | null>>;
 	lastRowAnchorRef: RefObject<number | null>;
 	didDragRowRef: RefObject<boolean>;
 	dragRowAnchorRef: RefObject<number | null>;
@@ -42,7 +41,6 @@ export function useCellInteractions({
 	displayDataRef,
 	colCountRef,
 	tableContainerRef,
-	setCtxMenu,
 	lastRowAnchorRef,
 	didDragRowRef,
 	dragRowAnchorRef,
@@ -120,39 +118,6 @@ export function useCellInteractions({
 			lastRowAnchorRef.current = null;
 		}
 	}, []);
-
-	const handleRowChevronClick = useCallback(
-		(rowIndex: number, clientX: number, clientY: number) => {
-			const alreadySelected = selectedRowsRef.current?.has(rowIndex) ?? false;
-			if (!alreadySelected) {
-				onSelectedRowsChangeRef.current?.(new Set([rowIndex]));
-				lastRowAnchorRef.current = rowIndex;
-				setDragRangeRef.current({
-					startRow: rowIndex,
-					endRow: rowIndex,
-					startCol: 0,
-					endCol: colCountRef.current - 1,
-				});
-				onCellSelectRef.current(null);
-				setCmdCellsRef.current(new Set());
-			}
-			setCtxMenu({ type: "row", rowIndex });
-			const el = tableContainerRef.current?.querySelector(
-				`[data-ctx-type="row"][data-ctx-row="${rowIndex}"]`,
-			);
-			setTimeout(() => {
-				el?.dispatchEvent(
-					new MouseEvent("contextmenu", {
-						bubbles: true,
-						cancelable: true,
-						clientX,
-						clientY,
-					}),
-				);
-			}, 0);
-		},
-		[],
-	);
 
 	const setRowDragRange = useCallback((startRow: number, endRow: number) => {
 		setDragRangeRef.current({
@@ -280,7 +245,6 @@ export function useCellInteractions({
 		cellAnchorRef,
 		handleCellClick,
 		handleColSelect,
-		handleRowChevronClick,
 		handleRowClick,
 		handleTbodyMouseDown,
 		handleTbodyMouseMove,
