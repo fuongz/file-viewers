@@ -16,11 +16,6 @@ interface CellInteractionRefs {
 	tableContainerRef: RefObject<HTMLDivElement | null>;
 }
 
-type CtxMenuState =
-	| { type: "row"; rowIndex: number }
-	| { type: "cell"; rowIndex: number; colIndex: number; value: string }
-	| { type: "column"; colIdx: number };
-
 interface UseCellInteractionsParams extends CellInteractionRefs {
 	lastRowAnchorRef: RefObject<number | null>;
 	didDragRowRef: RefObject<boolean>;
