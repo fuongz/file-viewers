@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(rtk git *)"
+      "Bash(rtk git *)",
+      "Bash(rtk bunx *)",
+      "Bash(rtk cat *)"
     ]
   }
 }
