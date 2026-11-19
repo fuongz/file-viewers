@@ -2,6 +2,10 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { STORAGE_THEME_KEY } from "../constants";
 import { createTab, readStoredSession } from "../hooks/useSession";
+import {
+	defaultTypography,
+	type TypographyPreferences,
+} from "../lib/typography";
 import type { FileTab, ThemePreference } from "../types";
 
 function readStoredTheme(): ThemePreference {
@@ -38,15 +42,15 @@ export interface AppState {
 	systemDark: boolean;
 	setThemePref: (pref: ThemePreference) => void;
 	setSystemDark: (val: boolean) => void;
+	typography: TypographyPreferences;
+	setTypography: (patch: Partial<TypographyPreferences>) => void;
 
 	// UI
 	settingsOpen: boolean;
 	commandOpen: boolean;
-	sidebarCollapsed: boolean;
 	isDragOver: boolean;
 	setSettingsOpen: (val: boolean) => void;
 	setCommandOpen: (val: boolean) => void;
-	toggleSidebar: () => void;
 	setIsDragOver: (val: boolean) => void;
 }
 
@@ -105,6 +109,14 @@ export const useAppStore = create<AppState>()(
 
 			reorderTabs: (from, to) =>
 				set((s) => {
+					if (
+						from < 0 ||
+						from >= s.tabs.length ||
+						to < 0 ||
+						to >= s.tabs.length ||
+						from === to
+					)
+						return s;
 					const newTabs = [...s.tabs];
 					const [removed] = newTabs.splice(from, 1);
 					newTabs.splice(to, 0, removed);
@@ -121,16 +133,16 @@ export const useAppStore = create<AppState>()(
 			systemDark: window.matchMedia("(prefers-color-scheme: dark)").matches,
 			setThemePref: (pref) => set({ themePref: pref }),
 			setSystemDark: (val) => set({ systemDark: val }),
+			typography: defaultTypography,
+			setTypography: (patch) =>
+				set((s) => ({ typography: { ...s.typography, ...patch } })),
 
 			// --- UI ---
 			settingsOpen: false,
 			commandOpen: false,
-			sidebarCollapsed: false,
 			isDragOver: false,
 			setSettingsOpen: (val) => set({ settingsOpen: val }),
 			setCommandOpen: (val) => set({ commandOpen: val }),
-			toggleSidebar: () =>
-				set((s) => ({ sidebarCollapsed: !s.sidebarCollapsed })),
 			setIsDragOver: (val) => set({ isDragOver: val }),
 		}),
 		{
@@ -140,7 +152,7 @@ export const useAppStore = create<AppState>()(
 			// QuotaExceededError when large files are open.
 			partialize: (s) => ({
 				themePref: s.themePref,
-				sidebarCollapsed: s.sidebarCollapsed,
+				typography: s.typography,
 			}),
 		},
 	),

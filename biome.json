@@ -22,10 +22,13 @@
 		"enabled": true,
 		"indentStyle": "tab"
 	},
+	"markdown": {
+		"formatter": { "enabled": false }
+	},
 	"linter": {
 		"enabled": true,
 		"rules": {
-			"recommended": true,
+			"preset": "recommended",
 			"correctness": {
 				"useExhaustiveDependencies": "off"
 			},

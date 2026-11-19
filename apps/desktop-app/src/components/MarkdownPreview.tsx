@@ -108,11 +108,11 @@ export function CodeBlock({
 						<TooltipContent>{collapsed ? "Expand" : "Collapse"}</TooltipContent>
 					</Tooltip>
 					{lang && (
-						<span className="text-[10px] font-semibold uppercase tracking-wider text-[var(--text-primary)]">
+						<span className="text-2xs font-semibold uppercase tracking-wider text-[var(--text-primary)]">
 							{lang}
 						</span>
 					)}
-					<span className="text-[var(--text-muted)] text-[10px]">
+					<span className="text-[var(--text-muted)] text-2xs">
 						{lineCount} {lineCount === 1 ? "line" : "lines"}
 					</span>
 				</div>

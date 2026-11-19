@@ -2,11 +2,8 @@ import {
 	type ColumnFiltersState,
 	type ColumnSizingState,
 	createColumnHelper,
-	getCoreRowModel,
-	getFilteredRowModel,
-	getSortedRowModel,
 	type SortingState,
-	useReactTable,
+	useTable,
 } from "@tanstack/react-table";
 import { useVirtualizer, type Virtualizer } from "@tanstack/react-virtual";
 import {
@@ -25,20 +22,36 @@ import {
 	type CtxMenuState,
 	DataTableContextMenuContent,
 } from "./DataTableContextMenu";
-import { DataTableHeader } from "./DataTableHeader";
+import { type ColumnMetaItem, DataTableHeader } from "./DataTableHeader";
 import { DataTableStatusBar } from "./DataTableStatusBar";
 import { DataTableToolbar } from "./DataTableToolbar";
 import { createSelectionDisplay } from "./hooks/selectionTypes";
 import { useCellInteractions } from "./hooks/useCellInteractions";
 import { useTableKeyboard } from "./hooks/useTableKeyboard";
+import { type DataTableRecord, dataTableFeatures } from "./tableFeatures";
 import type { DragRange, QueryMode, SelectedCell } from "./types";
 import { ROW_NUM_W, VirtualRow } from "./VirtualRow";
 
-const columnHelper = createColumnHelper<Record<string, unknown>>();
+const columnHelper = createColumnHelper<
+	typeof dataTableFeatures,
+	DataTableRecord
+>();
 
 export interface DataTableProps {
-	displayData: Record<string, unknown>[];
+	displayData: DataTableRecord[];
 	displayHeaders: string[];
+	columnLabels?: string[];
+	renderColumnDetails?: (column: number) => ReactNode;
+	renderColumnContextInfo?: (column: number) => ReactNode;
+	columnMeta?: (column: number) => ColumnMetaItem[];
+	hideToolbar?: boolean;
+	hideStatusBar?: boolean;
+	hideColumnIndexRow?: boolean;
+	databaseStyle?: boolean;
+	rowNumberWidth?: number;
+	manualSorting?: boolean;
+	readOnly?: boolean;
+	rowNumberOffset?: number;
 
 	queryMode: QueryMode;
 	onFilterMode?: () => void;
@@ -68,6 +81,10 @@ export interface DataTableProps {
 		value: string,
 		anchorEl: Element,
 	) => void;
+	editingCell?: { rowIndex: number; colIndex: number; value: string } | null;
+	onCellEditChange?: (value: string) => void;
+	onCellEditCommit?: () => void;
+	onCellEditCancel?: () => void;
 	onCellChange?: (rowIndex: number, colIndex: number, value: string) => void;
 	onCellBatchChange?: (changes: Array<[number, number, string]>) => void;
 
@@ -95,6 +112,18 @@ export interface DataTableProps {
 export function DataTable({
 	displayData,
 	displayHeaders,
+	columnLabels,
+	renderColumnDetails,
+	renderColumnContextInfo,
+	columnMeta,
+	hideToolbar,
+	hideStatusBar,
+	hideColumnIndexRow,
+	databaseStyle,
+	rowNumberWidth = ROW_NUM_W,
+	manualSorting,
+	readOnly,
+	rowNumberOffset,
 	queryMode,
 	onFilterMode,
 	onSqlMode,
@@ -116,6 +145,10 @@ export function DataTable({
 	selectedCell,
 	onCellSelect,
 	onCellDoubleClick,
+	editingCell,
+	onCellEditChange,
+	onCellEditCommit,
+	onCellEditCancel,
 	onCellChange,
 	onCellBatchChange,
 	selectedRows,
@@ -171,7 +204,7 @@ export function DataTable({
 			displayHeaders.map((h, i) =>
 				columnHelper.accessor(h, {
 					id: `col-${i}`,
-					header: h,
+					header: columnLabels?.[i] ?? h,
 					cell: (info) => {
 						const value = info.getValue();
 						if (renderCellValue) return renderCellValue(value);
@@ -185,13 +218,16 @@ export function DataTable({
 					minSize: 60,
 				}),
 			),
-		[displayHeaders, renderCellValue],
+		[columnLabels, displayHeaders, renderCellValue],
 	);
 
-	const table = useReactTable({
+	const table = useTable({
+		features: dataTableFeatures,
 		data: displayData,
 		columns,
 		columnResizeMode: "onChange",
+		manualSorting,
+		enableMultiSort: manualSorting ? false : undefined,
 		state: {
 			sorting,
 			globalFilter: queryMode === "sql" ? "" : (globalFilter ?? ""),
@@ -202,9 +238,6 @@ export function DataTable({
 		onGlobalFilterChange,
 		onColumnFiltersChange,
 		onColumnSizingChange,
-		getCoreRowModel: getCoreRowModel(),
-		getSortedRowModel: getSortedRowModel(),
-		getFilteredRowModel: getFilteredRowModel(),
 	});
 
 	const columnSizeVars = useMemo(() => {
@@ -467,21 +500,23 @@ export function DataTable({
 	]);
 
 	return (
-		<div className="flex flex-col h-full overview-hidden max-w-full">
+		<div className="flex flex-col h-full min-h-0 overflow-hidden max-w-full">
 			{/* ── Toolbar ── */}
-			<DataTableToolbar
-				queryMode={queryMode}
-				onFilterMode={onFilterMode}
-				onSqlMode={onSqlMode}
-				hideSqlToggle={hideSqlToggle}
-				hideFilterToggle={hideFilterToggle}
-				sqlConnecting={sqlConnecting}
-				sqlLoading={sqlLoading}
-				onSqlRun={onSqlRun}
-				sqlTableName={sqlTableName}
-				onGlobalFilterChange={onGlobalFilterChange}
-				toolbarLeading={toolbarLeading}
-			/>
+			{!hideToolbar && (
+				<DataTableToolbar
+					queryMode={queryMode}
+					onFilterMode={onFilterMode}
+					onSqlMode={onSqlMode}
+					hideSqlToggle={hideSqlToggle}
+					hideFilterToggle={hideFilterToggle}
+					sqlConnecting={sqlConnecting}
+					sqlLoading={sqlLoading}
+					onSqlRun={onSqlRun}
+					sqlTableName={sqlTableName}
+					onGlobalFilterChange={onGlobalFilterChange}
+					toolbarLeading={toolbarLeading}
+				/>
+			)}
 
 			{/* ── SQL error bar ── */}
 			{queryMode === "sql" && sqlError && (
@@ -506,7 +541,7 @@ export function DataTable({
 						style={{
 							...(columnSizeVars as React.CSSProperties),
 							display: "grid",
-							width: table.getCenterTotalSize() + ROW_NUM_W,
+							width: table.getCenterTotalSize() + rowNumberWidth,
 						}}
 					>
 						<DataTableHeader
@@ -516,6 +551,13 @@ export function DataTable({
 							onColSelect={handleColSelect}
 							onDeleteColumn={onDeleteColumn}
 							onColumnContextMenu={handleColumnContextMenu}
+							renderColumnDetails={renderColumnDetails}
+							columnMeta={columnMeta}
+							sortOnHeaderClick={readOnly}
+							showRowNumberLabel={rowNumberOffset !== undefined}
+							hideColumnIndexRow={hideColumnIndexRow}
+							databaseStyle={databaseStyle}
+							rowNumberWidth={rowNumberWidth}
 						/>
 						<tbody
 							style={{
@@ -533,6 +575,9 @@ export function DataTable({
 									<VirtualRow
 										key={row.id}
 										row={row}
+										rowNumberOffset={rowNumberOffset}
+										rowNumberWidth={rowNumberWidth}
+										databaseStyle={databaseStyle}
 										virtualRow={virtualRow}
 										measureElement={measureElement}
 										queryMode={queryMode}
@@ -540,6 +585,10 @@ export function DataTable({
 										selectionDisplay={selectionDisplay}
 										onCellClick={handleCellClick}
 										onCellDoubleClick={onCellDoubleClick}
+										editingCell={editingCell}
+										onCellEditChange={onCellEditChange}
+										onCellEditCommit={onCellEditCommit}
+										onCellEditCancel={onCellEditCancel}
 										renderCellValue={renderCellValue}
 										onRowClick={handleRowClick}
 									/>
@@ -558,6 +607,8 @@ export function DataTable({
 						cmdCells={cmdCells}
 						displayData={displayData}
 						displayHeaders={displayHeaders}
+						columnLabels={columnLabels}
+						readOnly={readOnly}
 						selectedRows={selectedRows}
 						onCellChange={onCellChange}
 						onCellBatchChange={onCellBatchChange}
@@ -568,19 +619,22 @@ export function DataTable({
 						onDeleteRows={onDeleteRows}
 						onSortColumn={handleSortColumn}
 						onDeleteColumn={onDeleteColumn}
+						renderColumnContextInfo={renderColumnContextInfo}
 					/>
 				</ContextMenuContent>
 			</ContextMenu>
 
 			{/* ── Status bar ── */}
-			<DataTableStatusBar
-				sqlLoading={sqlLoading}
-				filteredRowCount={filteredRowCount}
-				totalRows={totalRows}
-				colCount={colCount}
-				selectionStats={selectionStats}
-				statusRight={statusRight}
-			/>
+			{!hideStatusBar && (
+				<DataTableStatusBar
+					sqlLoading={sqlLoading}
+					filteredRowCount={filteredRowCount}
+					totalRows={totalRows}
+					colCount={colCount}
+					selectionStats={selectionStats}
+					statusRight={statusRight}
+				/>
+			)}
 			{bottomSlot}
 			{overlay}
 		</div>

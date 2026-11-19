@@ -3,7 +3,9 @@ import { useEffect } from "react";
 import { EXT_TO_FORMAT } from "../constants";
 import { useAppStore } from "../store";
 
-export function useDragDrop(loadFile: (path: string) => Promise<void>) {
+export function useDragDrop(
+	loadFile: (path: string, options: { previewOnly: boolean }) => Promise<void>,
+) {
 	const setIsDragOver = useAppStore((s) => s.setIsDragOver);
 
 	useEffect(() => {
@@ -19,7 +21,7 @@ export function useDragDrop(loadFile: (path: string) => Promise<void>) {
 					for (const path of event.payload.paths) {
 						const ext = path.split(".").pop()?.toLowerCase() ?? "";
 						if (EXT_TO_FORMAT[ext]) {
-							await loadFile(path);
+							await loadFile(path, { previewOnly: true });
 							break;
 						}
 					}

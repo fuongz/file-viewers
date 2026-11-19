@@ -1,166 +1,31 @@
-# Component Reference
+# Component reference
 
-## UI Primitives (`src/components/ui/`)
+Paths are relative to the desktop workspace.
 
-Reusable base elements used across the whole app. All styles are Tailwind utility classes only. Never use bare `<button>`, `<input>`, or `<textarea>` — always import from this package.
+| Component | Responsibility |
+| --- | --- |
+| [App](../src/App.tsx) | Connects window events, shortcuts, session state, Settings, and update notifications |
+| [FileTabs](../src/components/workspace/FileTabs.tsx) | Selects, closes, and reorders files. Shows shortcut hints and file metadata with a copyable path |
+| [Workspace](../src/components/Workspace.tsx) | Lays out the Monaco editor and format preview in resizable panels |
+| [EditorPanel](../src/components/EditorPanel.tsx) | Configures Monaco with local workers and the chosen monospace typography |
+| [PreviewPanel](../src/components/PreviewPanel.tsx) | Selects a preview by file format and renders the empty state when appropriate |
+| [CommandPalette](../src/components/ui/CommandPalette.tsx) | Searches open files, runs app commands, and opens supported text files from URLs |
+| [SettingsDialog](../src/components/SettingsDialog.tsx) | Offers system, light, and dark schemes, live typography controls, and a shortcut reference |
+| [UpdateToast](../src/components/ui/UpdateToast.tsx) | Displays update availability and download progress |
 
----
+## File previews
 
-### `Button`
+| Component | Responsibility |
+| --- | --- |
+| [MarkdownPreview](../src/components/MarkdownPreview.tsx) | Renders GitHub Flavored Markdown, including tables, task lists, and highlighted code |
+| [JsonPreview](../src/components/JsonPreview.tsx) | Shows expandable JSON, paginated JSONL records, or raw text |
+| [CsvPreview](../src/components/CsvPreview.tsx) | Parses CSV and provides search, SQL, editing, and export tools |
+| [ExcelPreview](../src/components/ExcelPreview.tsx) | Parses workbooks and displays selectable sheets |
+| [ParquetPreview](../src/components/ParquetPreview.tsx) | Uses local DuckDB-WASM to preview and query Parquet |
+| [SqlitePreview](../src/components/SqlitePreview.tsx) | Manages the resizable SQLite workspace, table tabs, query tabs, and schema tab |
+| [SqliteData](../src/components/SqliteData.tsx) | Handles table filters, pagination, row actions, and read-only query results |
+| [SqliteSchemaDiagram](../src/components/SqliteSchemaDiagram.tsx) | Draws table relationships and handles node movement, zoom, and pan |
 
-Variant styles managed via `cva`.
+The [shared grid](../src/components/table) provides virtualized rows, resizable headers, selection, and clipboard behavior. Individual previews supply columns, data, and any format-specific editing or server-side sorting.
 
-| Prop | Type | Default | Description |
-|------|------|---------|-------------|
-| `variant` | `Variant` | `"toolbar"` | Visual style |
-| `active` | `boolean` | `undefined` | Sets `data-active` → activates `data-[active]:` Tailwind styles |
-| `className` | `string` | `""` | Merged via `cn()` on top of variant classes |
-
-| Variant | Used for |
-|---------|---------|
-| `toolbar` | Toolbar actions, theme toggle |
-| `ghost` | Dropdown menu items |
-| `outline` | Bordered toggles (SQL mode) |
-| `outline-accent` | Accent-hover bordered buttons (Run query) |
-| `link` | Plain text buttons |
-
-Active state uses `data-[active]:` Tailwind variant — higher specificity than base classes, no `!important` needed.
-
----
-
-### `ButtonGroup`
-
-Groups multiple buttons with shared border and dividers. Wraps children in a flex container with appropriate border-radius distribution.
-
----
-
-### `InputGroup`
-
-Groups an input with a leading icon or trailing button. Handles z-index and focus ring coordination between grouped elements.
-
----
-
-### `Input`
-
-Wraps the base input with baked-in border, bg, and focus ring styles. Extend via `className`.
-
----
-
-### `Empty`
-
-Empty state card with icon, title, and description. Used in previews when a file has no content or no rows match a filter.
-
----
-
-### `DropdownMenu`, `ContextMenu`
-
-Radix-based dropdown and context menu primitives with consistent styling.
-
----
-
-### `Dialog`, `AlertDialog`
-
-Modal dialog primitives. Always import from `src/components/ui/` — never from Radix directly.
-
----
-
-## `App` (`src/App.tsx`)
-
-Root component. Composes the store, sidebar layout, toolbar, workspace, and side-effect hooks.
-
-### Side-effects (via hooks)
-
-| Hook | Purpose |
-|------|---------|
-| `useNativeMenu` | Listens for `"menu-open-file"` and `"menu-close-tab"` Tauri events |
-| `useDragDrop` | Tauri drag-drop listener → `isDragOver` |
-| `useKeyboard` | `Cmd+S` (save), `Cmd+W` (close tab) |
-| `useUpdater` | Polls for app updates on startup; controls `UpdateToast` visibility |
-
----
-
-## `EditorPanel`
-
-Monaco editor wrapper.
-
-| Prop | Type | Description |
-|------|------|-------------|
-| `value` | `string` | Controlled editor text |
-| `onChange` | `(val: string) => void` | Called on every keystroke |
-| `language` | `string` | Monaco language mode |
-| `isDark` | `boolean` | `"vs-dark"` or `"vs"` |
-
-Hidden when the active format is `csv`, `xlsx`, or `parquet`.
-
----
-
-## `PreviewPanel`
-
-Format router. Renders the correct preview component based on `format`, or `EmptyState` when `content` is empty.
-
-| Format | Component |
-|--------|-----------|
-| `"markdown"`, `"mdx"` | `MarkdownPreview` |
-| `"json"` | `JsonPreview` |
-| `"csv"` | `CsvPreview` |
-| `"xlsx"` | `ExcelPreview` |
-| `"parquet"` | `ParquetPreview` |
-| empty content | `EmptyState` |
-
----
-
-## `MarkdownPreview`
-
-Renders GitHub Flavored Markdown with `react-markdown` + `remark-gfm` + `rehype-highlight`. Code blocks always use `github-dark` regardless of the app theme.
-
----
-
-## `JsonPreview`
-
-Renders a collapsible JSON tree via `react-json-view-lite`. Shows an error badge if `JSON.parse` fails. Receives `isDark` to select `darkStyles` / `defaultStyles`.
-
----
-
-## `CsvPreview` / `ExcelPreview`
-
-Full-featured tabular viewers built on TanStack Table v8. Both use the shared `table/` components.
-
-| Feature | Implementation |
-|---------|---------------|
-| Parsing | PapaParse (`csv`) / SheetJS (`xlsx`) |
-| Virtualised rows | `@tanstack/react-virtual` — large files render instantly |
-| Async loading | File parses in the background; `TableSkeleton` shown while loading |
-| Column resize | `columnResizeMode: "onChange"` + drag handle |
-| Sort | Click header to cycle: unsorted → asc → desc |
-| Search | Debounced (300ms) `globalFilter` via `SearchInput` |
-| SQL mode | `alasql` — WHERE conditions, runs on `Cmd+Enter` or Run button |
-| Cell selection | `selectedCell` state — row index preserved through sort/filter |
-| Status bar | 3-zone: row count · selected cell coords · encoding + line ending |
-
----
-
-## `ParquetPreview`
-
-Queries `.parquet` files in-browser using DuckDB-WASM. Reads the file as a `Uint8Array` via `@tauri-apps/plugin-fs`, registers it with DuckDB, then renders results in `DataTable`. Supports full SQL via `SqlInput`.
-
----
-
-## `CommandPalette` (`Cmd+K`)
-
-| Input | Behaviour |
-|-------|-----------|
-| Text search | Filters open tabs by filename |
-| URL (`http://` / `https://`) | Fetches the remote file via `@tauri-apps/plugin-http` and opens it as a new tab |
-| Empty | Shows all open tabs |
-
----
-
-## `FileTree` (`src/components/workspace/FileTree.tsx`)
-
-Sidebar component listing all open tabs as a file tree with format icons. Clicking a file activates its tab. Supports close-on-hover per item.
-
----
-
-## `UpdateToast`
-
-In-app toast shown when a new app version is available. Displays version number, download progress bar, and an Install & Restart button. Driven by `useUpdater`.
+Use the [shared UI components](../src/components/ui) for controls and dialogs. Many of those components wrap Base UI, including the tabs, selects, and dialogs. Theme and typography tokens are defined in [App.css](../src/App.css).

@@ -1,11 +1,12 @@
 import {
 	IconKeyboard,
 	IconKeyboardFilled,
-	IconLayoutSidebarLeftCollapse,
-	IconLayoutSidebarLeftExpandFilled,
 	IconPlus,
+	IconSearch,
+	IconSettings,
 } from "@tabler/icons-react";
-import { cn } from "@/lib/utils";
+import type { ReactNode } from "react";
+import { canShowEditor, PLATFORM_IS_MAC } from "@/constants";
 import type { Format } from "../../types";
 import {
 	Button,
@@ -20,100 +21,125 @@ import {
 interface ToolbarProps {
 	format: Format;
 	showEditor: boolean;
-	sidebarCollapsed: boolean;
-	tabName: string;
+	busy: boolean;
 	onToggleEditor: () => void;
-	onToggleSidebar: () => void;
 	onAddTab: () => void;
+	onCommand: () => void;
+	onSettings: () => void;
+	children: ReactNode;
 }
 
 export function Toolbar({
 	format,
 	showEditor,
-	sidebarCollapsed,
-	tabName,
+	busy,
 	onToggleEditor,
-	onToggleSidebar,
 	onAddTab,
+	onCommand,
+	onSettings,
+	children,
 }: ToolbarProps) {
+	const editorLabel = showEditor ? "Hide editor" : "Show editor";
+	const modifier = PLATFORM_IS_MAC ? "⌘" : "Ctrl";
 	return (
-		<header
-			className="flex items-center h-[40px] flex-shrink-0 border-b px-2 fixed top-0 w-full z-10 bg-background"
-			data-tauri-drag-region
-		>
-			<div className={cn("flex-shrink-0 w-20")} />
+		<header className="file-toolbar" data-tauri-drag-region>
+			{PLATFORM_IS_MAC && (
+				<div className="w-18 shrink-0" data-tauri-drag-region />
+			)}
+			{children}
 			<Tooltip>
 				<TooltipTrigger
 					render={
-						<Toggle
-							aria-label="Toggle sidebar"
-							variant="default"
-							size="icon-md"
-							onPressedChange={onToggleSidebar}
-							pressed={!sidebarCollapsed}
+						<Button
+							aria-label="New tab"
+							size="icon-sm"
+							variant="ghost"
+							disabled={busy}
+							onClick={onAddTab}
 						/>
 					}
 				>
-					{!sidebarCollapsed ? (
-						<IconLayoutSidebarLeftExpandFilled stroke={1} />
-					) : (
-						<IconLayoutSidebarLeftCollapse stroke={1} />
-					)}
+					<IconPlus aria-hidden="true" />
 				</TooltipTrigger>
 				<TooltipContent>
-					{!sidebarCollapsed ? "Collapse sidebar" : "Expand sidebar"}
+					New tab{" "}
 					<KbdGroup>
-						<Kbd>⌘</Kbd>
-						<Kbd>B</Kbd>
-					</KbdGroup>
-				</TooltipContent>
-			</Tooltip>
-			<Tooltip>
-				<TooltipTrigger
-					render={<Button size="icon-lg" onClick={onAddTab} variant="ghost" />}
-				>
-					<IconPlus stroke={1} />
-				</TooltipTrigger>
-				<TooltipContent>
-					New tab
-					<KbdGroup>
-						<Kbd>⌘</Kbd>
+						<Kbd>{modifier}</Kbd>
 						<Kbd>T</Kbd>
 					</KbdGroup>
 				</TooltipContent>
 			</Tooltip>
-			<div className="flex-1" />
-			<span className="font-semibold text-sm">{tabName}</span>
-			<div className="flex-1" />
-			<div className="flex gap-0.5 items-center">
-				{format !== "xlsx" && (
+			<div className="min-w-2 flex-1 self-stretch" data-tauri-drag-region />
+			<div className="flex shrink-0 items-center gap-0.5">
+				<Tooltip>
+					<TooltipTrigger
+						render={
+							<Button
+								aria-label="Search open files"
+								size="icon-sm"
+								variant="ghost"
+								onClick={onCommand}
+							/>
+						}
+					>
+						<IconSearch aria-hidden="true" />
+					</TooltipTrigger>
+					<TooltipContent>
+						Search open files{" "}
+						<KbdGroup>
+							<Kbd>{modifier}</Kbd>
+							<Kbd>K</Kbd>
+						</KbdGroup>
+					</TooltipContent>
+				</Tooltip>
+				{canShowEditor(format) && (
 					<Tooltip>
 						<TooltipTrigger
 							render={
 								<Toggle
-									aria-label="Toggle sidebar"
-									variant="default"
-									size="icon-md"
-									onPressedChange={onToggleEditor}
+									aria-label="Show editor"
+									size="icon"
 									pressed={showEditor}
+									onPressedChange={onToggleEditor}
 								/>
 							}
 						>
 							{showEditor ? (
-								<IconKeyboardFilled stroke={1} />
+								<IconKeyboardFilled aria-hidden="true" />
 							) : (
-								<IconKeyboard stroke={1} />
+								<IconKeyboard aria-hidden="true" />
 							)}
 						</TooltipTrigger>
 						<TooltipContent>
-							{!showEditor ? "Hide editor" : "Show editor"}
+							{editorLabel}{" "}
 							<KbdGroup>
-								<Kbd>⌘</Kbd>
+								<Kbd>{modifier}</Kbd>
 								<Kbd>E</Kbd>
 							</KbdGroup>
 						</TooltipContent>
 					</Tooltip>
 				)}
+				<Tooltip>
+					<TooltipTrigger
+						render={
+							<Button
+								aria-label="Settings"
+								size="icon-sm"
+								variant="ghost"
+								onClick={onSettings}
+							/>
+						}
+					>
+						<IconSettings aria-hidden="true" />
+					</TooltipTrigger>
+					<TooltipContent>
+						Settings{" "}
+						<KbdGroup>
+							<Kbd>{modifier}</Kbd>
+							<Kbd>,</Kbd>
+						</KbdGroup>
+					</TooltipContent>
+				</Tooltip>
 			</div>
 		</header>
 	);

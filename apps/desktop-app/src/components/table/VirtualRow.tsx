@@ -1,14 +1,22 @@
-import type { Row } from "@tanstack/react-table";
 import type { VirtualItem } from "@tanstack/react-virtual";
 import { memo, type ReactNode, useMemo } from "react";
 import { cn } from "@/lib/utils";
+import { Input } from "../ui/input";
 import type { SelectionDisplay, SelectionState } from "./hooks/selectionTypes";
+import type { DataTableRow } from "./tableFeatures";
 import type { QueryMode } from "./types";
 
 export const ROW_NUM_W = 40;
 
 export interface VirtualRowProps {
-	row: Row<Record<string, unknown>>;
+	row: DataTableRow;
+	rowNumberOffset?: number;
+	rowNumberWidth?: number;
+	databaseStyle?: boolean;
+	editingCell?: { rowIndex: number; colIndex: number; value: string } | null;
+	onCellEditChange?: (value: string) => void;
+	onCellEditCommit?: () => void;
+	onCellEditCancel?: () => void;
 	virtualRow: VirtualItem;
 	measureElement: (node: Element | null) => void;
 	queryMode: QueryMode;
@@ -33,6 +41,13 @@ export interface VirtualRowProps {
 
 function VirtualRowComponent({
 	row,
+	rowNumberOffset,
+	rowNumberWidth = ROW_NUM_W,
+	databaseStyle,
+	editingCell,
+	onCellEditChange,
+	onCellEditCommit,
+	onCellEditCancel,
 	virtualRow,
 	measureElement,
 	queryMode,
@@ -62,7 +77,7 @@ function VirtualRowComponent({
 			style={{
 				transform: `translateY(${virtualRow.start}px)`,
 			}}
-			className="group flex absolute w-full border-b border-border"
+			className={`group absolute flex w-full border-b border-border ${databaseStyle ? "bg-background" : ""}`}
 		>
 			<td
 				data-ctx-type="row"
@@ -74,14 +89,19 @@ function VirtualRowComponent({
 							? "bg-primary/20 text-primary"
 							: "bg-muted text-muted-foreground",
 					"relative text-xs border-r select-none font-medium sticky left-0 z-10 flex cursor-pointer justify-center items-center font-mono",
+					databaseStyle && "bg-background text-muted-foreground",
 				)}
-				style={{ width: ROW_NUM_W }}
+				style={{ width: rowNumberWidth }}
 				onClick={(e) => {
 					e.stopPropagation();
 					onRowClick(row.index, e.metaKey || e.ctrlKey, e.shiftKey);
 				}}
 			>
-				<span>{row.index + 2}</span>
+				<span>
+					{rowNumberOffset === undefined
+						? row.index + 2
+						: rowNumberOffset + virtualRow.index + 1}
+				</span>
 			</td>
 
 			{row.getVisibleCells().map((cell, colIdx) => {
@@ -95,6 +115,19 @@ function VirtualRowComponent({
 
 				const isSelected = selectionDisplay.isCellSelected(row.index, colIdx);
 				const isCellInRange = selectionDisplay.isInRange(row.index, colIdx);
+				const isEditing =
+					editingCell?.rowIndex === row.index &&
+					editingCell.colIndex === colIdx;
+
+				const content = renderCellValue ? (
+					renderCellValue(rawValue)
+				) : rawValue === null || rawValue === undefined ? (
+					<span className="text-[var(--text-muted)]">null</span>
+				) : typeof rawValue === "object" ? (
+					JSON.stringify(rawValue)
+				) : (
+					String(rawValue)
+				);
 
 				const isTopEdge = isCellInRange && range?.startRow === row.index;
 				const isBottomEdge = isCellInRange && range?.endRow === row.index;
@@ -125,12 +158,15 @@ function VirtualRowComponent({
 						className={cn(
 							isCellInRange
 								? "bg-primary/15 cursor-default"
-								: isSelected
+								: isSelected && !isEditing
 									? "cursor-default ring-2 ring-inset ring-primary bg-primary/10"
 									: isRowSelected
 										? "bg-primary/15"
 										: "",
-							"select-none truncate flex items-center px-2 py-1 text-xs/relaxed border-r border-border",
+							"relative select-none truncate flex items-center px-2 py-1 text-xs/relaxed border-r border-border",
+							databaseStyle &&
+								"bg-background px-3 py-1 font-mono text-xs/relaxed",
+							isEditing && "overflow-hidden bg-background",
 						)}
 						onClick={(e) =>
 							onCellClick(
@@ -155,14 +191,43 @@ function VirtualRowComponent({
 								: undefined
 						}
 					>
-						{renderCellValue ? (
-							renderCellValue(rawValue)
-						) : rawValue === null || rawValue === undefined ? (
-							<span className="text-[var(--text-muted)]">null</span>
-						) : typeof rawValue === "object" ? (
-							JSON.stringify(rawValue)
+						{isEditing ? (
+							<>
+								<span
+									aria-hidden="true"
+									className="min-w-0 flex-1 truncate invisible"
+								>
+									{content}
+								</span>
+								<Input
+									autoFocus
+									aria-label={`Edit ${String(cell.column.columnDef.header ?? "cell")}`}
+									value={editingCell?.value ?? ""}
+									className={cn(
+										"absolute inset-0 size-full rounded-none border-2 border-primary bg-background font-mono text-xs/relaxed shadow-none focus-visible:border-primary focus-visible:ring-0",
+										databaseStyle ? "px-3 py-1" : "px-2 py-1",
+									)}
+									onFocus={(event) => event.currentTarget.select()}
+									onChange={(event) =>
+										onCellEditChange?.(event.currentTarget.value)
+									}
+									onBlur={() => onCellEditCommit?.()}
+									onMouseDown={(event) => event.stopPropagation()}
+									onClick={(event) => event.stopPropagation()}
+									onKeyDown={(event) => {
+										event.stopPropagation();
+										if (event.key === "Enter") {
+											event.preventDefault();
+											onCellEditCommit?.();
+										} else if (event.key === "Escape") {
+											event.preventDefault();
+											onCellEditCancel?.();
+										}
+									}}
+								/>
+							</>
 						) : (
-							String(rawValue)
+							content
 						)}
 					</td>
 				);
@@ -172,6 +237,19 @@ function VirtualRowComponent({
 }
 
 function propsAreEqual(prev: VirtualRowProps, next: VirtualRowProps): boolean {
+	if (prev.rowNumberOffset !== next.rowNumberOffset) return false;
+	if (prev.rowNumberWidth !== next.rowNumberWidth) return false;
+	if (prev.databaseStyle !== next.databaseStyle) return false;
+	if (prev.editingCell !== next.editingCell) {
+		if (!prev.editingCell || !next.editingCell) return false;
+		if (
+			prev.editingCell.rowIndex !== next.editingCell.rowIndex ||
+			prev.editingCell.colIndex !== next.editingCell.colIndex ||
+			prev.editingCell.value !== next.editingCell.value
+		)
+			return false;
+	}
+	if (prev.virtualRow.index !== next.virtualRow.index) return false;
 	if (prev.row !== next.row) return false;
 	if (prev.virtualRow.start !== next.virtualRow.start) return false;
 	if (prev.queryMode !== next.queryMode) return false;

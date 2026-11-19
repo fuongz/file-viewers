@@ -22,20 +22,20 @@ export function EditorActionsBar({
 		(format === "json" && !!content);
 	if (!hasActions) return null;
 	return (
-		<div className="py-1 px-2 h-8 bg-card border-b flex items-center justify-end gap-1">
+		<div className="py-1 px-2 h-8 flex items-center justify-end gap-1">
 			{(format === "markdown" || format === "mdx") && content && (
-				<Button variant="outline" size="xs" onClick={onFormatMarkdown}>
+				<Button variant="secondary" size="xs" onClick={onFormatMarkdown}>
 					<IconWand size={12} stroke={1.5} />
 					Format
 				</Button>
 			)}
 			{format === "json" && content && (
 				<>
-					<Button variant="outline" size="xs" onClick={onFormatJson}>
+					<Button variant="secondary" size="xs" onClick={onFormatJson}>
 						<IconWand size={12} stroke={1.5} />
 						Format
 					</Button>
-					<Button variant="outline" size="xs" onClick={onMinifyJson}>
+					<Button variant="secondary" size="xs" onClick={onMinifyJson}>
 						<IconMinimize size={12} stroke={1.5} />
 						Minify
 					</Button>

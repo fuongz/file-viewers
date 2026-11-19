@@ -1,4 +1,12 @@
-import { useEffect, useState } from "react";
+import { Tabs } from "@base-ui/react/tabs";
+import {
+	IconFilePlus,
+	IconFolderOpen,
+	IconKeyboard,
+	IconPalette,
+	IconSettings,
+} from "@tabler/icons-react";
+import { useEffect, useLayoutEffect, useState } from "react";
 import "./App.css";
 import { toast } from "sonner";
 import { CloseTabDialog } from "./components/CloseTabDialog";
@@ -9,23 +17,28 @@ import { Toolbar } from "./components/toolbar/Toolbar";
 import {
 	CommandPalette,
 	SettingsDialog,
-	SidebarInset,
-	SidebarProvider,
 	TooltipProvider,
 } from "./components/ui";
 import { Toaster } from "./components/ui/sonner";
 import { Workspace } from "./components/Workspace";
-import { FileTree } from "./components/workspace/FileTree";
-import { STORAGE_SESSION_KEY, STORAGE_THEME_KEY } from "./constants";
+import { FileTabs } from "./components/workspace/FileTabs";
+import {
+	canShowEditor,
+	STORAGE_SESSION_KEY,
+	STORAGE_THEME_KEY,
+	TAB_SHORTCUT_COUNT,
+} from "./constants";
 import { useDragDrop } from "./hooks/useDragDrop";
 import { useEditorActions } from "./hooks/useEditorActions";
 import { useFileManager, useRestoreSession } from "./hooks/useFileManager";
+import { useFileWatcher } from "./hooks/useFileWatcher";
 import { useKeyboard } from "./hooks/useKeyboard";
 import { useNativeMenu } from "./hooks/useNativeMenu";
 import { useOpenWith } from "./hooks/useOpenWith";
 import { persistSession } from "./hooks/useSession";
 import { useTheme } from "./hooks/useTheme";
 import { useUpdater } from "./hooks/useUpdater";
+import { fontStack, interfaceFonts, monoFonts } from "./lib/typography";
 import { selectActiveTab, selectIsDark, useAppStore } from "./store";
 
 function App() {
@@ -44,8 +57,6 @@ function App() {
 		setSettingsOpen,
 		commandOpen,
 		setCommandOpen,
-		toggleSidebar,
-		sidebarCollapsed,
 		isDragOver,
 	} = useAppStore();
 
@@ -54,6 +65,20 @@ function App() {
 
 	const activeTab = useAppStore(selectActiveTab);
 	const isDark = useAppStore(selectIsDark);
+	const { interfaceFont, interfaceSize, monoFont, monoSize } = useAppStore(
+		(s) => s.typography,
+	);
+
+	useLayoutEffect(() => {
+		const { style } = document.documentElement;
+		style.setProperty(
+			"--interface-font",
+			fontStack(interfaceFonts, interfaceFont),
+		);
+		style.setProperty("--interface-size", `${interfaceSize / 16}rem`);
+		style.setProperty("--code-font", fontStack(monoFonts, monoFont));
+		style.setProperty("--code-size", `${monoSize / 16}rem`);
+	}, [interfaceFont, interfaceSize, monoFont, monoSize]);
 
 	const { format, content, previewContent, binaryContent, showEditor } =
 		activeTab;
@@ -61,8 +86,17 @@ function App() {
 	const isAnyTabLoading = tabs.some((t) => t.isLoading);
 	const isAnyTabBusy = tabs.some((t) => t.isLoading || t.isProcessing);
 
-	const { loadFile, openFile, saveFile, loadFileRef, loadUrl } =
-		useFileManager();
+	const {
+		loadFile,
+		openFile,
+		saveFile,
+		reloadFromDisk,
+		keepLocalFile,
+		loadFileRef,
+		loadUrl,
+	} = useFileManager();
+
+	useFileWatcher(reloadFromDisk);
 
 	const { handleEditorChange, formatMarkdown, formatJson, minifyJson } =
 		useEditorActions();
@@ -76,6 +110,7 @@ function App() {
 	const clearStorage = () => {
 		localStorage.removeItem(STORAGE_SESSION_KEY);
 		localStorage.removeItem(STORAGE_THEME_KEY);
+		useAppStore.persist.clearStorage();
 		window.location.reload();
 	};
 
@@ -97,10 +132,11 @@ function App() {
 			},
 			",": () => setSettingsOpen(true),
 			k: () => setCommandOpen(true),
-			b: toggleSidebar,
-			e: () => updateActiveTab({ showEditor: !showEditor }),
+			e: () => {
+				if (canShowEditor(format)) updateActiveTab({ showEditor: !showEditor });
+			},
 			...Object.fromEntries(
-				Array.from({ length: 9 }, (_, i) => [
+				Array.from({ length: TAB_SHORTCUT_COUNT }, (_, i) => [
 					String(i + 1),
 					() => {
 						if (isAnyTabBusy) return;
@@ -203,136 +239,152 @@ function App() {
 
 	return (
 		<TooltipProvider delay={0}>
-			<div>
-				<SidebarProvider
-					className="flex flex-col"
-					open={!sidebarCollapsed}
-					onOpenChange={(open) => {
-						if (open === sidebarCollapsed) toggleSidebar();
-					}}
+			<Tabs.Root
+				className="flex h-dvh flex-col overflow-hidden bg-[var(--bg-app)] dark:bg-background"
+				value={activeTabId}
+				onValueChange={(id) => {
+					if (!isAnyTabBusy && typeof id === "string") setActiveTabId(id);
+				}}
+			>
+				<Toolbar
+					format={format}
+					showEditor={showEditor}
+					busy={isAnyTabBusy}
+					onToggleEditor={() => updateActiveTab({ showEditor: !showEditor })}
+					onAddTab={addTab}
+					onCommand={() => setCommandOpen(true)}
+					onSettings={() => setSettingsOpen(true)}
 				>
-					<Toolbar
-						format={format}
-						showEditor={showEditor}
-						sidebarCollapsed={sidebarCollapsed}
-						tabName={activeTab.name}
-						onToggleEditor={() => updateActiveTab({ showEditor: !showEditor })}
-						onToggleSidebar={toggleSidebar}
-						onAddTab={() => {
-							if (!isAnyTabBusy) addTab();
+					<FileTabs
+						busy={isAnyTabBusy}
+						onSplitTab={(id) => {
+							setActiveTabId(id);
+							setSplitDialogOpen(true);
 						}}
+						onMerge={() => setMergeDialogOpen(true)}
 					/>
-					<div className="flex flex-1 overflow-hidden">
-						<FileTree />
-						<SidebarInset className="app relative top-10 h-[calc(100svh-40px)]!">
-							<CloseTabDialog />
-							{isDragOver && <DragOverlay />}
-							<Workspace
-								showEditor={showEditor}
-								content={content}
-								previewContent={previewContent}
-								format={format}
-								isDark={isDark}
-								isLoading={isAnyTabLoading}
-								binaryContent={binaryContent}
-								onProcessingChange={(loading) =>
-									updateActiveTab({ isProcessing: loading })
-								}
-								onOpenFile={openFile}
-								onEditorChange={handleEditorChange}
-								onFormatMarkdown={formatMarkdown}
-								onFormatJson={formatJson}
-								onMinifyJson={minifyJson}
-								onContentChange={
-									format === "csv"
-										? (val) =>
-												updateActiveTab({
-													content: val,
-													previewContent: val,
-													isDirty: true,
-												})
-										: undefined
-								}
-								onClearCsv={
-									format === "csv"
-										? () => updateActiveTab({ content: "", previewContent: "" })
-										: undefined
-								}
-								onSplitCsv={() => setSplitDialogOpen(true)}
-								onMergeCsv={() => setMergeDialogOpen(true)}
-							/>
+				</Toolbar>
+				<Tabs.Panel
+					value={activeTabId}
+					render={<main />}
+					className="flex min-h-0 flex-1 flex-col overflow-hidden px-2 pt-1 pb-2 outline-none focus-visible:bg-muted/50"
+				>
+					<CloseTabDialog />
+					{isDragOver && <DragOverlay />}
+					<Workspace
+						tabId={activeTabId}
+						showEditor={showEditor}
+						content={content}
+						previewContent={previewContent}
+						format={format}
+						isDark={isDark}
+						isLoading={isAnyTabLoading}
+						binaryContent={binaryContent}
+						path={activeTab.path}
+						externalRevision={activeTab.reloadToken}
+						hasExternalChange={!!activeTab.hasExternalChange}
+						onReloadExternal={() => void reloadFromDisk(activeTabId)}
+						onKeepLocal={() => void keepLocalFile(activeTabId)}
+						onProcessingChange={(loading) =>
+							updateActiveTab({ isProcessing: loading })
+						}
+						onOpenFile={openFile}
+						onEditorChange={handleEditorChange}
+						onFormatMarkdown={formatMarkdown}
+						onFormatJson={formatJson}
+						onMinifyJson={minifyJson}
+						onContentChange={
+							format === "csv"
+								? (val) =>
+										updateActiveTab({
+											content: val,
+											previewContent: val,
+											isDirty: true,
+										})
+								: undefined
+						}
+						onClearCsv={
+							format === "csv"
+								? () => updateActiveTab({ content: "", previewContent: "" })
+								: undefined
+						}
+						onSplitCsv={() => setSplitDialogOpen(true)}
+						onMergeCsv={() => setMergeDialogOpen(true)}
+					/>
 
-							<SettingsDialog
-								open={settingsOpen}
-								onOpenChange={setSettingsOpen}
-								themePref={themePref}
-								onThemeSelect={setThemePref}
-							/>
+					<SettingsDialog
+						open={settingsOpen}
+						onOpenChange={setSettingsOpen}
+						themePref={themePref}
+						onThemeSelect={setThemePref}
+					/>
 
-							<CsvSplitDialog
-								open={splitDialogOpen}
-								onOpenChange={setSplitDialogOpen}
-								onConfirm={handleSplitCsv}
-								totalRows={countCsvRows(content)}
-							/>
+					<CsvSplitDialog
+						open={splitDialogOpen}
+						onOpenChange={setSplitDialogOpen}
+						onConfirm={handleSplitCsv}
+						totalRows={countCsvRows(content)}
+					/>
 
-							<CsvMergeDialog
-								open={mergeDialogOpen}
-								onOpenChange={setMergeDialogOpen}
-								onConfirm={handleMergeCsv}
-								csvTabs={csvTabs}
-							/>
+					<CsvMergeDialog
+						open={mergeDialogOpen}
+						onOpenChange={setMergeDialogOpen}
+						onConfirm={handleMergeCsv}
+						csvTabs={csvTabs}
+					/>
 
-							<CommandPalette
-								open={commandOpen}
-								onOpenChange={setCommandOpen}
-								onLoadUrl={loadUrl}
-								items={[
-									{
-										id: "new-tab",
-										label: "New Tab",
-										shortcut: "⌘T",
-										action: addTab,
-									},
-									{
-										id: "open",
-										label: "Open File",
-										shortcut: "⌘O",
-										action: openFile,
-									},
-									{
-										id: "toggle-sidebar",
-										label: "Toggle Sidebar",
-										shortcut: "⌘B",
-										action: toggleSidebar,
-									},
-									{
-										id: "settings",
-										label: "Settings",
-										shortcut: "⌘,",
-										action: () => setSettingsOpen(true),
-									},
-									{
-										id: "toggle-editor",
-										label: "Toggle Editor",
-										shortcut: "⌘E",
-										action: () => updateActiveTab({ showEditor: !showEditor }),
-									},
-									{
-										id: "toggle-theme",
-										label: isDark
-											? "Switch to Light Theme"
-											: "Switch to Dark Theme",
-										action: () => setThemePref(isDark ? "light" : "dark"),
-									},
-								]}
-							/>
+					<CommandPalette
+						open={commandOpen}
+						onOpenChange={setCommandOpen}
+						onLoadUrl={loadUrl}
+						items={[
+							{
+								id: "new-tab",
+								label: "New Tab",
+								icon: <IconFilePlus />,
+								shortcut: "T",
+								action: addTab,
+							},
+							{
+								id: "open",
+								label: "Open File",
+								icon: <IconFolderOpen />,
+								shortcut: "O",
+								action: openFile,
+							},
+							{
+								id: "settings",
+								label: "Settings",
+								icon: <IconSettings />,
+								shortcut: ",",
+								action: () => setSettingsOpen(true),
+							},
+							...(canShowEditor(format)
+								? [
+										{
+											id: "toggle-editor",
+											label: "Toggle Editor",
+											icon: <IconKeyboard />,
+											shortcut: "E",
+											action: () =>
+												updateActiveTab({ showEditor: !showEditor }),
+										},
+									]
+								: []),
+							{
+								id: "toggle-theme",
+								icon: <IconPalette />,
+								label: isDark
+									? "Switch to Light Theme"
+									: "Switch to Dark Theme",
+								action: () => setThemePref(isDark ? "light" : "dark"),
+							},
+						]}
+					/>
 
-							<Toaster position="top-center" />
-						</SidebarInset>
-					</div>
-				</SidebarProvider>
-			</div>
+					<Toaster position="top-center" />
+				</Tabs.Panel>
+			</Tabs.Root>
 		</TooltipProvider>
 	);
 }

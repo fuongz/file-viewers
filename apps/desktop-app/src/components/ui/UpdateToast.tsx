@@ -24,6 +24,9 @@ export function UpdateToast({
 			await onInstall();
 		} catch {
 			setStatus("idle");
+			toast.error("Could not install the update. Try again.", {
+				id: "update-install-error",
+			});
 		}
 	};
 

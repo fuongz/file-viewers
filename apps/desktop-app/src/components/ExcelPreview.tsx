@@ -113,7 +113,7 @@ function SheetTable({
 				</span>
 			}
 			bottomSlot={
-				<div className="flex items-center gap-0 border-t border-[var(--border)] bg-app px-2 flex-shrink-0 overflow-x-auto">
+				<div className="flex items-center gap-0 px-2 flex-shrink-0 overflow-x-auto">
 					{sheets.map((s, i) => (
 						<button
 							key={i}

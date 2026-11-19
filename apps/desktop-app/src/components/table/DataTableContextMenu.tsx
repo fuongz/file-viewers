@@ -9,6 +9,7 @@ import {
 	IconSortDescending,
 	IconTrash,
 } from "@tabler/icons-react";
+import type { ReactNode } from "react";
 import { ContextMenuItem, ContextMenuSeparator } from "../ui";
 import type { DragRange } from "./types";
 
@@ -23,6 +24,8 @@ interface DataTableContextMenuContentProps {
 	cmdCells?: Set<string>;
 	displayData?: Record<string, unknown>[];
 	displayHeaders?: string[];
+	columnLabels?: string[];
+	readOnly?: boolean;
 	selectedRows?: Set<number>;
 	onCellChange?: (rowIndex: number, colIndex: number, value: string) => void;
 	onCellBatchChange?: (changes: Array<[number, number, string]>) => void;
@@ -33,6 +36,7 @@ interface DataTableContextMenuContentProps {
 	onDeleteRows?: (rowIndices: number[]) => void;
 	onSortColumn?: (colIdx: number, desc: boolean) => void;
 	onDeleteColumn?: (colIdx: number) => void;
+	renderColumnContextInfo?: (colIdx: number) => ReactNode;
 }
 
 export function DataTableContextMenuContent({
@@ -41,6 +45,8 @@ export function DataTableContextMenuContent({
 	cmdCells,
 	displayData,
 	displayHeaders,
+	columnLabels,
+	readOnly,
 	selectedRows,
 	onCellChange,
 	onCellBatchChange,
@@ -51,6 +57,7 @@ export function DataTableContextMenuContent({
 	onDeleteRows,
 	onSortColumn,
 	onDeleteColumn,
+	renderColumnContextInfo,
 }: DataTableContextMenuContentProps) {
 	if (!ctxMenu) return null;
 
@@ -80,24 +87,26 @@ export function DataTableContextMenuContent({
 
 		return (
 			<>
-				<ContextMenuItem
-					onClick={() => {
-						if (cmdEntries.length > 0) {
-							onCellBatchChange?.(cmdEntries.map(([r, c]) => [r, c, ""]));
-						} else if (dragRange) {
-							const changes: Array<[number, number, string]> = [];
-							for (let r = dragRange.startRow; r <= dragRange.endRow; r++)
-								for (let c = dragRange.startCol; c <= dragRange.endCol; c++)
-									changes.push([r, c, ""]);
-							onCellBatchChange?.(changes);
-						} else {
-							onCellChange?.(ctxMenu.rowIndex, ctxMenu.colIndex, "");
-						}
-					}}
-				>
-					<IconEraser size={13} />
-					{emptyLabel}
-				</ContextMenuItem>
+				{!readOnly && (
+					<ContextMenuItem
+						onClick={() => {
+							if (cmdEntries.length > 0) {
+								onCellBatchChange?.(cmdEntries.map(([r, c]) => [r, c, ""]));
+							} else if (dragRange) {
+								const changes: Array<[number, number, string]> = [];
+								for (let r = dragRange.startRow; r <= dragRange.endRow; r++)
+									for (let c = dragRange.startCol; c <= dragRange.endCol; c++)
+										changes.push([r, c, ""]);
+								onCellBatchChange?.(changes);
+							} else {
+								onCellChange?.(ctxMenu.rowIndex, ctxMenu.colIndex, "");
+							}
+						}}
+					>
+						<IconEraser size={13} />
+						{emptyLabel}
+					</ContextMenuItem>
+				)}
 				<ContextMenuItem
 					onClick={() => {
 						if (cmdEntries.length > 0) {
@@ -119,7 +128,7 @@ export function DataTableContextMenuContent({
 	}
 
 	if (ctxMenu.type === "column") {
-		const colName = displayHeaders?.[ctxMenu.colIdx] ?? "";
+		const colName = (columnLabels ?? displayHeaders)?.[ctxMenu.colIdx] ?? "";
 		return (
 			<>
 				<ContextMenuItem onClick={() => navigator.clipboard.writeText(colName)}>
@@ -135,6 +144,7 @@ export function DataTableContextMenuContent({
 					<IconSortDescending size={13} />
 					Sort Z <IconArrowRight className="size-3" /> A
 				</ContextMenuItem>
+				{renderColumnContextInfo?.(ctxMenu.colIdx)}
 				{onDeleteColumn && (
 					<>
 						<ContextMenuSeparator />
@@ -150,6 +160,8 @@ export function DataTableContextMenuContent({
 			</>
 		);
 	}
+
+	if (readOnly) return null;
 
 	const isMulti =
 		(selectedRows?.has(ctxMenu.rowIndex) ?? false) &&

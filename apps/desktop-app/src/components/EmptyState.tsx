@@ -26,7 +26,11 @@ export function EmptyState({ onOpenFile }: EmptyStateProps) {
 			{/* Action list */}
 			<ul className="es-actions">
 				<li>
-					<Button variant="link" onClick={onOpenFile}>
+					<Button
+						variant="link"
+						className="border-0 px-0 text-start"
+						onClick={onOpenFile}
+					>
 						Open File
 					</Button>
 					<span className="es-keys">

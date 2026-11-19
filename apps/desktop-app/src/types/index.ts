@@ -17,6 +17,12 @@ export interface FileTab {
 	isLoading?: boolean;
 	isProcessing?: boolean;
 	openedAt?: number;
+	/** Last known on-disk modification time (ms since epoch). */
+	diskModifiedAt?: number;
+	/** The file changed on disk while the tab had unsaved edits. */
+	hasExternalChange?: boolean;
+	/** Incremented when an external change should refresh the SQLite view. */
+	reloadToken?: number;
 }
 
 export interface PersistedTab {

@@ -1,176 +1,49 @@
-# File Viewers — Desktop App
+# Desktop guide
 
-A cross-platform desktop app for viewing and editing **Markdown**, **MDX**, **JSON**, **CSV**, **Excel**, and **Parquet** files. Built with Tauri 2 + React 19.
+Use the native file picker, drag and drop, or open a supported file from a URL through the command palette. Dropped files open in preview mode. URL loading supports text formats. SQLite, Excel, and Parquet use local files.
 
----
+## Shortcuts
 
-## Features
+Use **Cmd** on macOS and **Ctrl** on Windows or Linux.
 
-| Feature | Details |
-|---------|---------|
-| **Multi-tab** | Multiple files open simultaneously; session persists across restarts |
-| **File tree sidebar** | Resizable sidebar listing all open tabs for quick navigation |
-| **Command palette** | `Cmd+K` — search open files, open local files, or load a file by pasting a URL |
-| **Auto-updater** | Checks for new releases on startup; installs and restarts from an in-app toast |
-| **Markdown / MDX** | GFM, tables, task lists, syntax-highlighted code blocks |
-| **JSON** | Collapsible tree viewer with dark/light theme support |
-| **CSV / Excel** | Sortable + resizable columns, global search, SQL mode, cell selection |
-| **Parquet** | In-browser queries via DuckDB-WASM — no server, no uploads |
-| **Monaco editor** | Live split-panel editor for Markdown and JSON |
-| **File open** | Native `File > Open…` (`Cmd+O`), drag-and-drop, or URL via command palette |
-| **Theme** | System / Light / Dark — persists across sessions |
+| Shortcut | Action |
+| --- | --- |
+| Cmd/Ctrl + O | Open local files |
+| Cmd/Ctrl + K | Search open tabs and run app commands |
+| Cmd/Ctrl + T | Open a new tab |
+| Cmd/Ctrl + W | Close the active tab |
+| Cmd/Ctrl + 1–9 | Switch to a file tab |
+| Alt + Left/Right | Move the focused file tab |
+| Cmd/Ctrl + E | Toggle the editor for supported formats |
+| Cmd/Ctrl + , | Open Settings |
 
----
+## Browse data
 
-## Getting Started
+The JSONL viewer displays one record per non-empty line. Use **Auto** to expand records or **Raw** to inspect the original lines. Invalid records show their source line number.
 
-### Prerequisites
+CSV, Excel, Parquet, and SQLite reuse the shared table grid. Click or drag across cells to select them. Use the column header controls to sort and drag a column edge to resize. CSV supports editing, undo/redo, and split or merge commands. Select an Excel sheet from the sheet tabs. CSV and Parquet provide a SQL mode.
 
-- [Rust](https://www.rust-lang.org/tools/install) (stable toolchain)
-- [Bun](https://bun.sh) `>= 1.0`
+## SQLite workspace
 
-**Platform support:** macOS 12+, Linux (GTK 3), Windows 10+
+Open a database and choose a table or view in the left pane. Drag the divider to resize the panes. Each table opens in its own tab. In the grid, column markers identify primary keys, references, indexes, and other column details. Enter a single expression in the filter bar, such as `exposure_s >= 180`, `quality LIKE 'ver%'`, or `notes IS NULL`. Text matching uses SQLite's `LIKE` patterns.
 
-### Install dependencies
+The Query tab runs read-only SQL and displays up to 500 rows per result. Open additional query tabs with **+**. The Run menu can execute the current statement, run statements in order or within a read-only transaction, and show a query plan.
 
-```bash
-bun install
+On eligible tables, use **Insert row**, double-click a cell to edit it, or select a row to delete it after confirmation. SQLite writes these changes to the open database.
+
+Open **Schema** to inspect table relationships. Drag a node to rearrange it or drag the canvas to pan. Scroll up or down to zoom and click the percentage to reset. On a Mac trackpad, two-finger vertical scrolling zooms. A three-finger gesture moves the node under the pointer or pans from empty space when macOS delivers the gesture to the app.
+
+## Develop and package
+
+Run these from the repository root.
+
+```sh
+mise install
+bun install --frozen-lockfile
+mise run app:dev
+bun run typecheck
 ```
 
-### Development
+Use `mise run app:build` for platform bundles. Use `mise run app:install` to build and install the macOS app locally. See the [release guide](../../../docs/releasing.md) for CI packaging and updater verification.
 
-```bash
-bun run tauri dev
-```
-
-Starts the Vite dev server on `localhost:1420` and opens the Tauri window with hot-module reload.
-
-### Production build
-
-```bash
-bun run tauri build
-```
-
-Produces a platform-native bundle in `src-tauri/target/release/bundle/`:
-
-| Platform | Output |
-|----------|--------|
-| macOS | `.app` + `.dmg` (universal binary via CI) |
-| Linux | `.deb` + `.AppImage` |
-| Windows | `.msi` + `.exe` (NSIS) |
-
-### Type check
-
-```bash
-bunx tsc --noEmit
-```
-
----
-
-## Opening Files
-
-### Command palette
-
-`Cmd+K` — type a filename to switch tabs, or paste a remote URL to fetch and open a file directly from the internet.
-
-### Native menu
-
-`File > Open…` (`Cmd+O` on macOS) — opens a system file picker filtered to supported extensions.
-
-### Drag and drop
-
-Drag any supported file onto the window. A blue overlay appears on hover; drop to load.
-
-### Supported extensions
-
-| Extension | Viewer |
-|-----------|--------|
-| `.md`, `.markdown`, `.mdx`, `.txt` | Markdown |
-| `.json` | JSON tree |
-| `.csv` | CSV table + SQL |
-| `.xlsx` | Excel table + SQL |
-| `.parquet` | Parquet table (DuckDB-WASM) |
-
----
-
-## CSV / Excel Viewer
-
-### Table interactions
-
-| Action | Result |
-|--------|--------|
-| Click column header | Sort ascending → descending → unsorted |
-| Drag column edge | Resize column |
-| Type in search box | Filter rows globally (300ms debounce) |
-| Click a cell | Select it (blue highlight) |
-
-### SQL mode
-
-Toggle SQL mode in the toolbar. Type a `WHERE` condition (the `SELECT * FROM csv WHERE` prefix is locked):
-
-```
-[SELECT * FROM csv WHERE] [condition input ............] [Cmd+Enter Run] [SQL]
-```
-
-- Query runs on `Cmd+Enter` or the **Run** button — not real-time
-- Column projections (`SELECT col1, col2`) are supported
-- Errors appear in a red bar below the toolbar
-
-### Status bar
-
-```
-[ 706 rows × 8 columns ]  [ 28:1 (67 chars) ]  [ UTF-8 ]  [ LF ]
-       left                      center              right
-```
-
-- **Left** — filtered / total rows × columns
-- **Center** — selected cell position `row:col (N chars)` — shown only when a cell is selected
-- **Right** — encoding chip + line-ending chip (LF / CRLF / CR)
-
----
-
-## Project Structure
-
-```
-desktop-app/
-├── src/
-│   ├── App.tsx                         # Root component
-│   ├── App.css                         # Global styles + CSS design tokens
-│   ├── main.tsx                        # Entry point; Monaco local-bundle setup
-│   ├── store/
-│   │   └── index.ts                    # Zustand store (tabs, theme, editor actions)
-│   ├── components/
-│   │   ├── CsvPreview.tsx
-│   │   ├── ExcelPreview.tsx
-│   │   ├── ParquetPreview.tsx
-│   │   ├── JsonPreview.tsx
-│   │   ├── MarkdownPreview.tsx
-│   │   ├── EditorPanel.tsx
-│   │   ├── PreviewPanel.tsx
-│   │   ├── Workspace.tsx
-│   │   ├── DragOverlay.tsx
-│   │   ├── table/                      # Shared DataTable, SearchInput, SqlInput, TableSkeleton
-│   │   ├── toolbar/                    # Toolbar, FormatTabs, ThemeMenu
-│   │   ├── ui/                         # Button, Input, Dialog, and other primitives
-│   │   └── workspace/
-│   │       └── FileTree.tsx            # File tree sidebar
-│   ├── hooks/
-│   │   ├── useFileManager.ts
-│   │   ├── useEditorActions.ts
-│   │   ├── useUpdater.ts               # Auto-update polling
-│   │   ├── useDragDrop.ts
-│   │   ├── useKeyboard.ts
-│   │   └── useNativeMenu.ts
-│   ├── utils/
-│   │   └── detectFormat.ts
-│   └── types/
-│       └── index.ts
-├── src-tauri/
-│   ├── src/lib.rs                      # Tauri setup; native OS menu; plugins
-│   ├── tauri.conf.json                 # App config; updater endpoint
-│   └── capabilities/
-│       └── default.json                # Tauri permission grants
-├── docs/                               # This documentation
-├── vite.config.ts
-└── package.json
-```
+[Architecture](architecture.md) · [Component reference](components.md) · [Color palette](color-palette.md)

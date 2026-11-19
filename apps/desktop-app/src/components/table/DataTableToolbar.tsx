@@ -33,7 +33,7 @@ export function DataTableToolbar({
 	toolbarLeading,
 }: DataTableToolbarProps) {
 	return (
-		<div className="flex gap-2 px-2 py-1 border-b w-full items-center wrap-flex">
+		<div className="flex gap-2 px-2 py-1 w-full items-center wrap-flex">
 			{toolbarLeading}
 			{!hideSqlToggle && !hideFilterToggle && (
 				<ButtonGroup>

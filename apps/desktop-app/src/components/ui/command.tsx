@@ -33,6 +33,7 @@ function CommandDialog({
 	description = "Search for a command to run...",
 	children,
 	className,
+	initialFocus,
 	showCloseButton = false,
 	...props
 }: Omit<React.ComponentProps<typeof Dialog>, "children"> & {
@@ -41,20 +42,23 @@ function CommandDialog({
 	className?: string;
 	showCloseButton?: boolean;
 	children: React.ReactNode;
+	initialFocus?: React.ComponentProps<typeof DialogContent>["initialFocus"];
 }) {
 	return (
 		<Dialog {...props}>
-			<DialogHeader className="sr-only">
-				<DialogTitle>{title}</DialogTitle>
-				<DialogDescription>{description}</DialogDescription>
-			</DialogHeader>
 			<DialogContent
 				className={cn(
-					"top-1/3 translate-y-0 overflow-hidden rounded-xl! p-0",
+					"top-[min(12dvh,96px)] max-w-[calc(100%-2rem)] translate-y-0 overflow-hidden rounded-2xl p-0 shadow-2xl sm:max-w-[34rem] data-open:animate-none! data-closed:animate-none!",
 					className,
 				)}
+				overlayClassName="bg-background/55 dark:bg-black/45 supports-backdrop-filter:backdrop-blur-[5px] data-open:animate-none! data-closed:animate-none!"
+				initialFocus={initialFocus}
 				showCloseButton={showCloseButton}
 			>
+				<DialogHeader className="sr-only">
+					<DialogTitle>{title}</DialogTitle>
+					<DialogDescription>{description}</DialogDescription>
+				</DialogHeader>
 				{children}
 			</DialogContent>
 		</Dialog>
@@ -66,12 +70,12 @@ function CommandInput({
 	...props
 }: React.ComponentProps<typeof CommandPrimitive.Input>) {
 	return (
-		<div data-slot="command-input-wrapper" className="p-1 pb-0">
-			<InputGroup className="h-8! bg-input/20 dark:bg-input/30">
+		<div data-slot="command-input-wrapper" className="px-2">
+			<InputGroup className="h-12 border-0 bg-transparent dark:bg-transparent">
 				<CommandPrimitive.Input
 					data-slot="command-input"
 					className={cn(
-						"w-full text-xs/relaxed outline-hidden disabled:cursor-not-allowed disabled:opacity-50",
+						"h-full w-full min-w-0 bg-transparent pe-2 text-sm outline-none placeholder:text-muted-foreground disabled:cursor-not-allowed disabled:opacity-50",
 						className,
 					)}
 					{...props}
@@ -80,7 +84,8 @@ function CommandInput({
 					<HugeiconsIcon
 						icon={SearchIcon}
 						strokeWidth={2}
-						className="size-3.5 shrink-0 opacity-50"
+						className="size-4 shrink-0"
+						aria-hidden="true"
 					/>
 				</InputGroupAddon>
 			</InputGroup>
@@ -178,7 +183,7 @@ function CommandShortcut({
 		<span
 			data-slot="command-shortcut"
 			className={cn(
-				"ml-auto text-[0.625rem] tracking-widest text-muted-foreground group-data-selected/command-item:text-foreground",
+				"ml-auto text-2xs tracking-widest text-muted-foreground group-data-selected/command-item:text-foreground",
 				className,
 			)}
 			{...props}

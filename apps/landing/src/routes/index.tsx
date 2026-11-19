@@ -1,219 +1,187 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowDown, Braces, Database, FileSpreadsheet, FileText, Table2 } from "lucide-react";
-import { AnimatePresence, motion } from "motion/react";
-import { useEffect, useState } from "react";
+import {
+	ArrowDown,
+	Braces,
+	Database,
+	FileText,
+	Network,
+	Table2,
+} from "lucide-react";
+import { type KeyboardEvent, useState } from "react";
 import { VERSION } from "../version";
 
 export const Route = createFileRoute("/")({ component: HomePage });
 
-const TABS = [
-	{ id: "001", label: "Markdown", icon: FileText },
-	{ id: "002", label: "CSV", icon: Table2 },
-	{ id: "003", label: "JSON", icon: Braces },
-	{ id: "004", label: "Excel", icon: FileSpreadsheet },
-	{ id: "005", label: "Parquet", icon: Database },
+const previews = [
+	{
+		id: "sqlite",
+		label: "SQLite",
+		icon: Database,
+		file: "observatory.sqlite",
+		description:
+			"Browse tables, filter rows, and run read-only SQL in separate tabs.",
+		alt: "SQLite viewer with an observatory table selected and a grid of observation records.",
+	},
+	{
+		id: "schema",
+		label: "Schema diagram",
+		icon: Network,
+		file: "observatory.sqlite",
+		description:
+			"Follow foreign keys and rearrange tables on the schema canvas.",
+		alt: "Schema diagram connecting observations, instruments, observatories, and calibrations.",
+	},
+	{
+		id: "jsonl",
+		label: "JSONL",
+		icon: Braces,
+		file: "events.jsonl",
+		description: "Expand individual records or switch to the original lines.",
+		alt: "Expandable JSON Lines records showing observation events and measurements.",
+	},
+	{
+		id: "csv",
+		label: "CSV",
+		icon: Table2,
+		file: "observations.csv",
+		description:
+			"Sort columns, resize the grid, and select cells to copy or edit.",
+		alt: "CSV grid showing targets, exposure times, and observation quality.",
+	},
+	{
+		id: "markdown",
+		label: "Markdown",
+		icon: FileText,
+		file: "field-notes.md",
+		description: "Read rendered tables, checklists, and highlighted code.",
+		alt: "Rendered observatory notes with a table, a handoff checklist, and a SQL code block.",
+	},
 ];
 
-function BannerImage({ src, alt }: { src: string; alt: string }) {
-	const [loaded, setLoaded] = useState(false);
-
-	useEffect(() => {
-		setLoaded(false);
-		const img = new Image();
-		img.src = src;
-		img.onload = () => setLoaded(true);
-	}, [src]);
-
-	return (
-		<div className="relative w-full" style={{ minHeight: "300px" }}>
-			{!loaded && (
-				<div className="absolute inset-0 rounded-lg bg-white/5 animate-pulse" />
-			)}
-			<AnimatePresence mode="wait">
-				<motion.img
-					key={src}
-					src={src}
-					alt={alt}
-					className="w-full block object-cover"
-					style={{ opacity: loaded ? 1 : 0 }}
-					initial={{ opacity: 0, y: 6 }}
-					animate={{ opacity: loaded ? 1 : 0, y: loaded ? 0 : 6 }}
-					exit={{ opacity: 0, y: -6 }}
-					transition={{ duration: 0.2, ease: "easeInOut" }}
-				/>
-			</AnimatePresence>
-		</div>
-	);
-}
-
 function HomePage() {
-	const [active, setActive] = useState("001");
+	const [active, setActive] = useState(0);
+
+	function navigatePreviews(event: KeyboardEvent<HTMLButtonElement>) {
+		let next: number;
+		switch (event.key) {
+			case "ArrowRight":
+				next = (active + 1) % previews.length;
+				break;
+			case "ArrowLeft":
+				next = (active - 1 + previews.length) % previews.length;
+				break;
+			case "Home":
+				next = 0;
+				break;
+			case "End":
+				next = previews.length - 1;
+				break;
+			default:
+				return;
+		}
+		event.preventDefault();
+		setActive(next);
+		document.getElementById(`preview-tab-${previews[next].id}`)?.focus();
+	}
+
 	return (
-		<div className="relative min-h-screen flex flex-col">
-			{/* Hero */}
-			<main className="flex-1 flex flex-col items-center px-8 pt-20 pb-0 max-sm:pt-16">
-				{/* App Icon */}
-				<motion.img
-					src="/icon.png"
-					alt="File Viewers"
-					width={240}
-					height={240}
-					className="mb-6"
-					initial={{ opacity: 0, scale: 0.9, y: 20 }}
-					animate={{ opacity: 1, scale: 1, y: 0 }}
-					transition={{ duration: 0.5, ease: "easeOut" }}
-				/>
-
-				{/* Name */}
-				<motion.h1
-					className="text-[2.8rem] font-bold text-white tracking-tight leading-none mb-3 text-center max-sm:text-4xl"
-					initial={{ opacity: 0, y: 20 }}
-					animate={{ opacity: 1, y: 0 }}
-					transition={{ duration: 0.5, delay: 0.1, ease: "easeOut" }}
-				>
+		<div className="min-h-screen bg-[#171514] text-[#faf5ef]">
+			<header className="mx-auto flex max-w-6xl items-center justify-between px-5 py-4 sm:px-8">
+				<Link to="/" className="flex items-center gap-2 font-semibold">
+					<img src="/icon.png" width={40} height={40} alt="" />
 					File Viewers
-				</motion.h1>
-
-				{/* Tagline */}
-				<motion.p
-					className="text-[1.1rem] text-white/50 mb-6 text-center"
-					initial={{ opacity: 0, y: 20 }}
-					animate={{ opacity: 1, y: 0 }}
-					transition={{ duration: 0.5, delay: 0.2, ease: "easeOut" }}
+				</Link>
+				<a
+					href="https://github.com/fuongz/file-viewers"
+					className="inline-flex items-center gap-2 text-sm text-[#c6bcb3] hover:text-white"
 				>
-					Your files, beautifully rendered.
-				</motion.p>
+					GitHub
+				</a>
+			</header>
 
-				{/* Download */}
-				<motion.div
-					className="mb-4"
-					initial={{ opacity: 0, y: 20 }}
-					animate={{ opacity: 1, y: 0 }}
-					transition={{ duration: 0.5, delay: 0.3, ease: "easeOut" }}
-				>
+			<main className="mx-auto max-w-6xl px-5 pb-12 sm:px-8">
+				<section className="mx-auto max-w-3xl py-12 text-center sm:py-16">
+					<h1 className="text-balance text-4xl font-semibold tracking-[-0.045em] sm:text-6xl">
+						A desktop viewer for data and docs
+					</h1>
+					<p className="mx-auto mt-5 max-w-lg text-pretty text-base text-[#c6bcb3] sm:text-lg">
+						Open SQLite, JSON, JSONL, CSV, Excel, Parquet, and Markdown in one
+						app.
+					</p>
 					<Link
 						to="/download"
-						className="inline-flex items-center gap-2 rounded-full px-6 py-2.5 text-sm font-semibold text-white no-underline transition-all hover:brightness-110 active:scale-95"
-						style={{ backgroundColor: "#f74f18" }}
+						className="mt-7 inline-flex items-center gap-2.5 rounded-lg bg-[#ffa781] px-4 py-2.5 text-sm font-semibold text-[#29160e] transition-colors hover:bg-[#ffc0a4]"
 					>
-						<ArrowDown size={15} />
+						<ArrowDown size={16} aria-hidden="true" />
 						Download
-						<span className="px-1.5 py-0.5 rounded text-[0.6rem] font-bold tracking-widest uppercase bg-[#2a2a2a]/20">
+						<span className="border-l border-current/20 pl-2.5 tabular-nums">
 							v{VERSION}
 						</span>
 					</Link>
-				</motion.div>
+				</section>
 
-				{/* Version meta */}
-				<motion.div
-					className="flex items-center gap-2 mb-12 flex-wrap justify-center"
-					initial={{ opacity: 0, y: 20 }}
-					animate={{ opacity: 1, y: 0 }}
-					transition={{ duration: 0.5, delay: 0.4, ease: "easeOut" }}
-				>
-					<span className="text-xs text-white/40">
-						Open source on{" "}
-						<a
-							href="https://github.com/fuongz/file-viewers"
-							target="_blank"
-							rel="noopener noreferrer"
-							className="no-underline hover:underline text-white/70"
-						>
-							GitHub
-						</a>
-					</span>
-				</motion.div>
-
-				{/* Tabbed Banners */}
-				<motion.div
-					className="w-full max-w-4xl mx-auto mb-6 pt-8 text-center"
-					initial={{ opacity: 0, y: 20 }}
-					animate={{ opacity: 1, y: 0 }}
-					transition={{ duration: 0.5, delay: 0.5, ease: "easeOut" }}
-				>
-					<p className="text-white/40 mt-1 text-xs">
-						Open and preview any file format - no extra apps needed.
-					</p>
-				</motion.div>
-
-				{/* Tabs row */}
-				<motion.div
-					className="flex items-center gap-1 mb-6 bg-white/5 rounded-full p-1"
-					initial={{ opacity: 0, y: 20 }}
-					animate={{ opacity: 1, y: 0 }}
-					transition={{ duration: 0.5, delay: 0.6, ease: "easeOut" }}
-				>
-					{TABS.map((tab) => {
-						const Icon = tab.icon;
-						return (
-							<motion.button
-								key={tab.id}
+				<section aria-label="App previews" className="mx-auto max-w-5xl">
+					<div
+						role="tablist"
+						aria-label="Choose a preview"
+						className="mb-4 flex flex-wrap gap-1.5"
+					>
+						{previews.map(({ id, label, icon: Icon }, index) => (
+							<button
+								key={id}
+								id={`preview-tab-${id}`}
 								type="button"
-								onClick={() => setActive(tab.id)}
-								className={`inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium transition-all cursor-pointer border-0 ${
-									active === tab.id
-										? "bg-white/15 text-white shadow"
-										: "bg-transparent text-white/40 hover:text-white/70"
-								}`}
-								whileHover={{ scale: 1.02 }}
-								whileTap={{ scale: 0.98 }}
+								role="tab"
+								aria-selected={index === active}
+								aria-controls={`preview-${id}`}
+								tabIndex={index === active ? 0 : -1}
+								onClick={() => setActive(index)}
+								onKeyDown={navigatePreviews}
+								className="inline-flex cursor-pointer items-center gap-1.5 rounded-md px-3 py-2 text-sm text-[#c6bcb3] transition-colors hover:bg-white/8 hover:text-white aria-selected:bg-[#402c23] aria-selected:text-[#ffd0b9]"
 							>
-								<Icon size={14} />
-								{tab.label}
-							</motion.button>
-						);
-					})}
-				</motion.div>
-
-				{/* Monitor frame + image */}
-				<motion.div
-					className="w-full max-w-4xl mx-auto pb-12"
-					initial={{ opacity: 0, y: 20 }}
-					animate={{ opacity: 1, y: 0 }}
-					transition={{ duration: 0.5, delay: 0.7, ease: "easeOut" }}
-				>
-					{/* Screen bezel */}
-					<div className="relative rounded-2xl bg-[#1c1c1e] p-3 shadow-2xl border border-white/10">
-						{/* Inner screen */}
-						<div className="rounded-lg overflow-hidden">
-							<BannerImage
-								src={`/banners/${active}.png`}
-								alt={TABS.find((t) => t.id === active)?.label ?? ""}
-							/>
-						</div>
-						{/* Bottom chin */}
-						<div className="h-5 flex items-center justify-center mt-2">
-							<div className="w-2 h-2 rounded-full bg-white/10" />
-						</div>
+								<Icon size={15} aria-hidden="true" />
+								{label}
+							</button>
+						))}
 					</div>
-					{/* Neck */}
-					<div className="flex flex-col items-center">
+					{previews.map(({ id, file, description, alt }, index) => (
 						<div
-							className="w-14 bg-[#3a3a3c]"
-							style={{
-								height: "40px",
-								clipPath: "polygon(20% 0%, 80% 0%, 90% 100%, 10% 100%)",
-							}}
-						/>
-						{/* Base */}
-						<div className="w-36 h-3 rounded-full bg-[#3a3a3c]" />
-					</div>
-				</motion.div>
+							key={id}
+							id={`preview-${id}`}
+							role="tabpanel"
+							aria-labelledby={`preview-tab-${id}`}
+							hidden={index !== active}
+							tabIndex={index === active ? 0 : -1}
+						>
+							{index === active && (
+								<figure className="m-0">
+									<div className="overflow-hidden rounded-xl border border-white/10 bg-[#211e1b] shadow-2xl shadow-black/35">
+										<img
+											src={`/banners/${id}.webp`}
+											alt={alt}
+											width={1800}
+											height={1140}
+											className="block h-auto w-full"
+										/>
+									</div>
+									<figcaption className="mt-4 flex flex-wrap items-baseline gap-x-4 gap-y-1 px-1">
+										<code className="text-xs text-[#f0af91]">{file}</code>
+										<span className="text-sm text-[#c6bcb3]">
+											{description}
+										</span>
+									</figcaption>
+								</figure>
+							)}
+						</div>
+					))}
+				</section>
 			</main>
 
-			{/* Footer */}
-			<footer className="px-16 py-7 max-sm:px-8">
-				<p className="text-xs m-0 text-center" style={{ color: "#888" }}>
-					© {new Date().getFullYear()}{" "}
-					<a
-						href="http://phuongphung.com"
-						target="_blank"
-						rel="noopener"
-						className="cursor-pointer hover:underline"
-					>
-						fuongz
-					</a>
-				</p>
+			<footer className="mx-auto max-w-6xl px-5 pb-6 text-center text-xs text-[#a89e95] sm:px-8">
+				© {new Date().getFullYear()}{" "}
+				<a href="https://phuongphung.com" className="hover:text-white">
+					fuongz
+				</a>
 			</footer>
 		</div>
 	);

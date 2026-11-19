@@ -1,5 +1,7 @@
-import Editor from "@monaco-editor/react";
-import type { ReactNode } from "react";
+import Editor, { useMonaco } from "@monaco-editor/react";
+import { type ReactNode, useEffect } from "react";
+import { fontStack, monoFonts } from "../lib/typography";
+import { useAppStore } from "../store";
 
 interface EditorPanelProps {
 	value: string;
@@ -16,6 +18,24 @@ export function EditorPanel({
 	isDark,
 	actionsBar,
 }: EditorPanelProps) {
+	const { monoFont, monoSize } = useAppStore((s) => s.typography);
+	const fontFamily = fontStack(monoFonts, monoFont);
+	const monaco = useMonaco();
+
+	useEffect(() => {
+		if (!monaco) return;
+		let active = true;
+		void document.fonts.load(`${monoSize}px ${fontFamily}`).then(
+			() => {
+				if (active) monaco.editor.remeasureFonts();
+			},
+			() => {},
+		);
+		return () => {
+			active = false;
+		};
+	}, [fontFamily, monoSize, monaco]);
+
 	return (
 		<div className="editor-panel">
 			<div className="editor-panel-monaco">
@@ -24,19 +44,18 @@ export function EditorPanel({
 					height="100%"
 					language={language}
 					value={value}
-					theme={isDark ? "vs-dark" : "vs"}
+					theme={isDark ? "viewer-dark" : "viewer-light"}
 					onChange={(val) => onChange(val ?? "")}
 					options={{
 						minimap: { enabled: false },
-						fontSize: 13,
+						fontSize: monoSize,
 						lineNumbers: "on",
 						wordWrap: "on",
 						scrollBeyondLastLine: false,
 						padding: { top: 16, bottom: 56 },
-						fontFamily:
-							"'JetBrains Mono', 'Fira Code', 'Cascadia Code', Menlo, monospace",
+						fontFamily,
 						fontLigatures: true,
-						renderLineHighlight: "all",
+						renderLineHighlight: "line",
 						cursorBlinking: "smooth",
 						smoothScrolling: true,
 					}}

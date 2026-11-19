@@ -35,7 +35,12 @@ export const Route = createRootRoute({
 				content: "width=device-width, initial-scale=1",
 			},
 			{
-				title: "File Viewers — Markdown, JSON & CSV viewer",
+				title: "File Viewers — Desktop viewer for data and docs",
+			},
+			{
+				name: "description",
+				content:
+					"Browse SQLite, JSONL, JSON, CSV, Excel, Parquet, and Markdown in one open-source desktop app.",
 			},
 		],
 		links: [

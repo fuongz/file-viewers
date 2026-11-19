@@ -61,6 +61,13 @@
 				"rank": "Alternate"
 			},
 			{
+				"ext": ["sqlite", "sqlite3", "db", "db3"],
+				"name": "SQLite Database",
+				"mimeType": "application/vnd.sqlite3",
+				"role": "Viewer",
+				"rank": "Alternate"
+			},
+			{
 				"ext": ["parquet"],
 				"name": "Parquet File",
 				"mimeType": "application/octet-stream",
@@ -85,6 +92,13 @@
 				"ext": ["json"],
 				"name": "JSON File",
 				"mimeType": "application/json",
+				"role": "Viewer",
+				"rank": "Alternate"
+			},
+			{
+				"ext": ["jsonl"],
+				"name": "JSON Lines File",
+				"mimeType": "application/jsonl",
 				"role": "Viewer",
 				"rank": "Alternate"
 			}

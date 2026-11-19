@@ -73,7 +73,12 @@ export function useTableKeyboard({
 		};
 
 		const onKeyDown = (e: KeyboardEvent) => {
-			if (isInputFocused()) return;
+			if (
+				e.defaultPrevented ||
+				tableContainerRef.current?.closest("[hidden]") ||
+				isInputFocused()
+			)
+				return;
 
 			const cell = selectedCellRef.current;
 			const range = dragRangeRef.current;

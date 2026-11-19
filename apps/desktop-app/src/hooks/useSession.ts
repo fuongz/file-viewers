@@ -1,5 +1,9 @@
 import { nanoid } from "nanoid";
-import { STORAGE_SESSION_KEY, STORAGE_THEME_KEY } from "../constants";
+import {
+	canShowEditor,
+	STORAGE_SESSION_KEY,
+	STORAGE_THEME_KEY,
+} from "../constants";
 import type { FileTab, PersistedSession, ThemePreference } from "../types";
 
 const MAX_LOCALSTORAGE_SIZE = 5 * 1024 * 1024;
@@ -12,7 +16,7 @@ export function createTab(overrides?: Partial<Omit<FileTab, "id">>): FileTab {
 		format,
 		content: "",
 		previewContent: "",
-		showEditor: format !== "csv" && format !== "xlsx",
+		showEditor: format !== "csv" && canShowEditor(format),
 		...overrides,
 	};
 }
@@ -50,7 +54,7 @@ export function readStoredSession(): {
 				format: pt.format,
 				content: pt.path ? "" : pt.content,
 				previewContent: pt.path ? "" : pt.content,
-				showEditor: pt.format !== "csv" && pt.format !== "xlsx",
+				showEditor: pt.format !== "csv" && canShowEditor(pt.format),
 				path: pt.path || undefined,
 				openedAt: pt.openedAt,
 			};

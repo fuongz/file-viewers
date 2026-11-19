@@ -1,3 +1,7 @@
+mod sqlite;
+#[cfg(target_os = "macos")]
+mod schema_trackpad;
+
 #[cfg(target_os = "macos")]
 fn center_traffic_lights(win: &tauri::WebviewWindow) {
     use objc2::encode::{Encode, Encoding, RefEncode};
@@ -134,6 +138,7 @@ pub fn run() {
                         .set_effect(&win, LiquidGlassConfig::default())
                         .ok();
                     center_traffic_lights(&win);
+                    schema_trackpad::install(&win)?;
                 }
             }
             #[cfg(target_os = "macos")]
@@ -143,7 +148,13 @@ pub fn run() {
 
                 // ── File Viewers (app menu) ───────────────────────────
                 let about = PredefinedMenuItem::about(app, None, None)?;
-                let check_updates = MenuItem::with_id(app, "check-updates", "Check for Updates\u{2026}", true, None::<&str>)?;
+                let check_updates = MenuItem::with_id(
+                    app,
+                    "check-updates",
+                    "Check for Updates\u{2026}",
+                    true,
+                    None::<&str>,
+                )?;
                 let sep1 = PredefinedMenuItem::separator(app)?;
                 let services = PredefinedMenuItem::services(app, None)?;
                 let sep2 = PredefinedMenuItem::separator(app)?;
@@ -151,7 +162,8 @@ pub fn run() {
                 let hide_other = PredefinedMenuItem::hide_others(app, None)?;
                 let show_all = PredefinedMenuItem::show_all(app, None)?;
                 let sep3 = PredefinedMenuItem::separator(app)?;
-                let reload_webview = MenuItem::with_id(app, "reload-webview", "Reload Webview", true, None::<&str>)?;
+                let reload_webview =
+                    MenuItem::with_id(app, "reload-webview", "Reload Webview", true, None::<&str>)?;
                 let restart = MenuItem::with_id(app, "restart", "Restart", true, None::<&str>)?;
                 let sep_quit = PredefinedMenuItem::separator(app)?;
                 let quit = PredefinedMenuItem::quit(app, None)?;
@@ -295,19 +307,33 @@ pub fn run() {
                 app.emit("menu-restart", ()).ok();
             }
         })
-        .invoke_handler(tauri::generate_handler![reveal_in_finder])
+        .invoke_handler(tauri::generate_handler![
+            reveal_in_finder,
+            sqlite::sqlite_relations,
+            sqlite::sqlite_schema,
+            sqlite::sqlite_page,
+            sqlite::sqlite_query,
+            sqlite::sqlite_exec,
+            sqlite::sqlite_insert,
+            sqlite::sqlite_update,
+            sqlite::sqlite_delete
+        ])
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
         .run(|app_handle, event| {
             #[cfg(target_os = "macos")]
             if let tauri::RunEvent::Opened { urls } = event {
                 use tauri::Emitter;
+                use tauri_plugin_fs::FsExt;
+                let scope = app_handle.fs_scope();
                 let paths: Vec<String> = urls
                     .iter()
                     .filter_map(|url| {
-                        url.to_file_path()
-                            .ok()
-                            .and_then(|p| p.to_str().map(|s| s.to_string()))
+                        let path = url.to_file_path().ok()?;
+                        if path.is_file() {
+                            let _ = scope.allow_file(&path);
+                        }
+                        path.into_os_string().into_string().ok()
                     })
                     .collect();
                 if !paths.is_empty() {

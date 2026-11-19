@@ -431,7 +431,7 @@ export function CsvPreview({
 								<Textarea
 									autoFocus
 									rows={4}
-									className="w-full text-xs font-mono resize-y min-h-[200px]"
+									className="w-full text-code font-mono resize-y min-h-[200px]"
 									value={editingCell?.draftValue ?? ""}
 									onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
 										setEditingCell((prev) =>
@@ -450,7 +450,7 @@ export function CsvPreview({
 										}
 									}}
 								/>
-								<p className="text-[10px] text-[var(--text-muted)] select-none">
+								<p className="text-2xs text-[var(--text-muted)] select-none">
 									<Kbd>enter</Kbd> save -{" "}
 									<KbdGroup>
 										<Kbd>shift</Kbd>

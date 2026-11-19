@@ -10,10 +10,12 @@ export default defineConfig(async () => ({
 	plugins: [tailwindcss(), react()],
 	resolve: {
 		alias: {
-			"@": resolve(__dirname, "src"),
+			"@": resolve(import.meta.dirname, "src"),
 		},
 	},
 	build: {
+		// Preserve the previous desktop WebView targets after upgrading Vite.
+		target: ["chrome107", "edge107", "firefox104", "safari16"],
 		chunkSizeWarningLimit: 3000,
 	},
 	optimizeDeps: {

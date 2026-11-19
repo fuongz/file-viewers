@@ -12,8 +12,11 @@ Landing page for the [File Viewers](https://github.com/fuongz/file-viewers) desk
 
 ## Development
 
+Install dependencies from the repository root with Bun. Use Node.js 22.22.2 or later in the 22.x line, 24.15.0 or later in the 24.x line, or Node.js 26 and newer.
+
 ```bash
 bun install
+cd apps/landing
 bun run dev        # starts at http://localhost:3000
 ```
 
@@ -45,3 +48,11 @@ bun run check      # Biome check (lint + format)
 |------|-------------|
 | `/` | Home / hero page |
 | `/download` | Platform download links |
+
+## Preview gallery
+
+The home page gallery uses screenshots from the macOS desktop app with synthetic observatory data. SQLite and Schema Diagram show the same database. JSONL, CSV, and Markdown show related sample files.
+
+For new screenshots, open the matching sample format in a local desktop build and capture the app window. Resize to 1800 × 1140 and export WebP to `public/banners/`. Image names and accessible descriptions are set in [the home route](src/routes/index.tsx).
+
+The download page uses the version metadata updated by the [release script](../../docs/releasing.md).

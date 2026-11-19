@@ -6,29 +6,78 @@ import {
 	readFile,
 	readTextFile,
 	rename,
+	stat,
 	writeTextFile,
 } from "@tauri-apps/plugin-fs";
 import { fetch as tauriFetch } from "@tauri-apps/plugin-http";
 import { useCallback, useEffect, useRef } from "react";
-import { EXT_TO_FORMAT } from "../constants";
+import { toast } from "sonner";
+import { canShowEditor, EXT_TO_FORMAT, SQLITE_EXTENSIONS } from "../constants";
 import { useAppStore } from "../store";
 import type { FileTab } from "../types";
 import { createTab } from "./useSession";
+
+/** Modification time in ms, or undefined when it cannot be read. */
+export async function diskModifiedAt(
+	path: string,
+): Promise<number | undefined> {
+	try {
+		const info = await stat(path);
+		return info.mtime?.getTime();
+	} catch {
+		return undefined;
+	}
+}
+
+function getSaveOptions(tab: FileTab) {
+	const isJsonLines = tab.format === "jsonl";
+	return {
+		defaultPath:
+			isJsonLines && !tab.name.toLowerCase().endsWith(".jsonl")
+				? `${tab.name}.jsonl`
+				: tab.name,
+		filters: [
+			{
+				name: isJsonLines ? "JSON Lines" : "Developer Files",
+				extensions: isJsonLines
+					? ["jsonl"]
+					: ["md", "markdown", "mdx", "json", "jsonl", "csv"],
+			},
+		],
+	};
+}
 
 export function useFileManager() {
 	const setTabs = useAppStore((s) => s.setTabs);
 	const setActiveTabId = useAppStore((s) => s.setActiveTabId);
 
 	const loadFile = useCallback(
-		async (path: string) => {
+		async (path: string, { previewOnly = false } = {}) => {
 			const ext = path.split(".").pop()?.toLowerCase() ?? "";
 			const fmt = EXT_TO_FORMAT[ext] ?? "markdown";
 			const fileName = path.split(/[/\\]/).pop() ?? path;
 			const openedAt = Date.now();
 
+			const existing =
+				previewOnly &&
+				useAppStore.getState().tabs.find((tab) => tab.path === path);
+			if (existing) {
+				useAppStore.setState((state) => ({
+					activeTabId: existing.id,
+					tabs: state.tabs.map((tab) =>
+						tab.id === existing.id ? { ...tab, showEditor: false } : tab,
+					),
+				}));
+				return;
+			}
+
 			setTabs((prev) => {
 				const existing = prev.find((t) => t.path === path);
-				const showEditor = fmt !== "csv" && fmt !== "xlsx" && fmt !== "parquet";
+				const showEditor =
+					!previewOnly &&
+					canShowEditor(fmt) &&
+					fmt !== "csv" &&
+					fmt !== "parquet";
 				if (existing) {
 					setActiveTabId(existing.id);
 					return prev.map((t) =>
@@ -72,6 +121,7 @@ export function useFileManager() {
 				const newTab = createTab({
 					name: fileName,
 					format: fmt,
+					showEditor,
 					content: "",
 					previewContent: "",
 					path,
@@ -87,7 +137,9 @@ export function useFileManager() {
 			try {
 				const isBinary = fmt === "xlsx" || fmt === "parquet";
 				const binaryContent = isBinary ? await readFile(path) : undefined;
-				const fileContent = isBinary ? "" : await readTextFile(path);
+				const fileContent =
+					isBinary || fmt === "sqlite" ? "" : await readTextFile(path);
+				const modifiedAt = await diskModifiedAt(path);
 
 				const duration = Date.now() - openedAt;
 				const MIN_LOADING_TIME = 300;
@@ -103,6 +155,8 @@ export function useFileManager() {
 										previewContent: fileContent,
 										binaryContent,
 										isLoading: false,
+										diskModifiedAt: modifiedAt,
+										hasExternalChange: false,
 									}
 								: t,
 						),
@@ -130,9 +184,11 @@ export function useFileManager() {
 						"markdown",
 						"mdx",
 						"json",
+						"jsonl",
 						"csv",
 						"xlsx",
 						"parquet",
+						...SQLITE_EXTENSIONS,
 					],
 				},
 			],
@@ -144,54 +200,66 @@ export function useFileManager() {
 	const saveFile = useCallback(async () => {
 		const { tabs, activeTabId } = useAppStore.getState();
 		const tab = tabs.find((t) => t.id === activeTabId);
-		if (!tab) return;
+		if (!tab || tab.format === "sqlite") return;
 		if (tab.path) {
 			if (!tab.isDirty) return;
+			const current = await diskModifiedAt(tab.path);
+			if (
+				current !== undefined &&
+				tab.diskModifiedAt !== undefined &&
+				current > tab.diskModifiedAt + 1000
+			) {
+				setTabs((prev) =>
+					prev.map((t) =>
+						t.id === activeTabId ? { ...t, hasExternalChange: true } : t,
+					),
+				);
+				toast.warning(
+					"File changed on disk. Reload it or keep your version before saving.",
+				);
+				return;
+			}
 			await writeTextFile(tab.path, tab.content);
-		} else {
-			const filePath = await saveDialog({
-				defaultPath: tab.name,
-				filters: [
-					{
-						name: "Developer Files",
-						extensions: ["md", "markdown", "mdx", "json", "csv"],
-					},
-				],
-			});
-			if (!filePath) return;
-			await writeTextFile(filePath, tab.content);
+			const written = await diskModifiedAt(tab.path);
 			setTabs((prev) =>
 				prev.map((t) =>
 					t.id === activeTabId
 						? {
 								...t,
-								path: filePath,
-								name: filePath.split(/[/\\]/).pop() ?? t.name,
 								isDirty: false,
+								hasExternalChange: false,
+								diskModifiedAt: written,
 							}
 						: t,
 				),
 			);
 			return;
 		}
+		const filePath = await saveDialog(getSaveOptions(tab));
+		if (!filePath) return;
+		await writeTextFile(filePath, tab.content);
+		const written = await diskModifiedAt(filePath);
 		setTabs((prev) =>
-			prev.map((t) => (t.id === activeTabId ? { ...t, isDirty: false } : t)),
+			prev.map((t) =>
+				t.id === activeTabId
+					? {
+							...t,
+							path: filePath,
+							name: filePath.split(/[/\\]/).pop() ?? t.name,
+							isDirty: false,
+							hasExternalChange: false,
+							diskModifiedAt: written,
+						}
+					: t,
+			),
 		);
 	}, [setTabs]);
 
 	const saveAsFile = useCallback(async (): Promise<boolean> => {
 		const { tabs, activeTabId } = useAppStore.getState();
 		const tab = tabs.find((t) => t.id === activeTabId);
-		if (!tab) return false;
-		const filePath = await saveDialog({
-			defaultPath: tab.name,
-			filters: [
-				{
-					name: "Developer Files",
-					extensions: ["md", "markdown", "mdx", "json", "csv"],
-				},
-			],
-		});
+		if (!tab || tab.format === "sqlite") return false;
+		const filePath = await saveDialog(getSaveOptions(tab));
 		if (!filePath) return false;
 		await writeTextFile(filePath, tab.content);
 		setTabs((prev) =>
@@ -220,7 +288,11 @@ export function useFileManager() {
 
 			const urlPath = parsedUrl.pathname;
 			const ext = urlPath.split(".").pop()?.toLowerCase() ?? "";
-			if (ext === "parquet" || ext === "xlsx")
+			if (
+				ext === "parquet" ||
+				ext === "xlsx" ||
+				SQLITE_EXTENSIONS.includes(ext)
+			)
 				throw new Error(
 					`Opening .${ext} files from URLs is not supported yet.`,
 				);
@@ -229,7 +301,8 @@ export function useFileManager() {
 				urlPath.split("/").filter(Boolean).pop() ||
 				parsedUrl.hostname ||
 				"download";
-			const showEditor = fmt !== "csv" && fmt !== "xlsx" && fmt !== "parquet";
+			const showEditor =
+				canShowEditor(fmt) && fmt !== "csv" && fmt !== "parquet";
 			const openedAt = Date.now();
 
 			setTabs((prev) => {
@@ -333,6 +406,65 @@ export function useFileManager() {
 		[setTabs, setActiveTabId],
 	);
 
+	const reloadFromDisk = useCallback(
+		async (id: string) => {
+			const tab = useAppStore.getState().tabs.find((t) => t.id === id);
+			if (!tab?.path) return;
+			try {
+				const isBinary = tab.format === "xlsx" || tab.format === "parquet";
+				const binaryContent = isBinary ? await readFile(tab.path) : undefined;
+				const content =
+					isBinary || tab.format === "sqlite"
+						? ""
+						: await readTextFile(tab.path);
+				const modifiedAt = await diskModifiedAt(tab.path);
+				setTabs((prev) =>
+					prev.map((t) =>
+						t.id === id
+							? {
+									...t,
+									...(tab.format === "sqlite"
+										? { reloadToken: (t.reloadToken ?? 0) + 1 }
+										: {
+												content,
+												previewContent: content,
+												binaryContent,
+											}),
+									isDirty: false,
+									isLoading: false,
+									hasExternalChange: false,
+									diskModifiedAt: modifiedAt,
+								}
+							: t,
+					),
+				);
+			} catch (error) {
+				toast.error(`Could not reload the file. ${String(error)}`);
+			}
+		},
+		[setTabs],
+	);
+
+	const keepLocalFile = useCallback(
+		async (id: string) => {
+			const tab = useAppStore.getState().tabs.find((t) => t.id === id);
+			if (!tab?.path) return;
+			const modifiedAt = await diskModifiedAt(tab.path);
+			setTabs((prev) =>
+				prev.map((t) =>
+					t.id === id
+						? {
+								...t,
+								hasExternalChange: false,
+								diskModifiedAt: modifiedAt ?? t.diskModifiedAt,
+							}
+						: t,
+				),
+			);
+		},
+		[setTabs],
+	);
+
 	const loadFileRef = useRef(loadFile);
 	loadFileRef.current = loadFile;
 
@@ -368,6 +500,8 @@ export function useFileManager() {
 		saveFile,
 		saveAsFile,
 		renameFile,
+		reloadFromDisk,
+		keepLocalFile,
 		loadFileRef,
 		loadUrl,
 	};

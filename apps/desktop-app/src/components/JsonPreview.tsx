@@ -1,9 +1,14 @@
-import { IconCopy } from "@tabler/icons-react";
+import {
+	IconChevronLeft,
+	IconChevronRight,
+	IconCopy,
+} from "@tabler/icons-react";
 import type React from "react";
 import { useCallback, useMemo, useState } from "react";
+import { formatBytes } from "@/lib/utils";
+import { parseJsonLines } from "../utils/parseJsonLines";
 import {
 	Button,
-	ButtonGroup,
 	ContextMenu,
 	ContextMenuContent,
 	ContextMenuItem,
@@ -15,6 +20,7 @@ import {
 	SelectTrigger,
 	SelectValue,
 } from "./ui";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs";
 
 // ── Stat helpers ─────────────────────────────────────────────────────────────
 
@@ -31,8 +37,10 @@ function getMaxDepth(data: unknown, d = 0): number {
 	const vals = Array.isArray(data)
 		? (data as unknown[])
 		: Object.values(data as Record<string, unknown>);
-	if (vals.length === 0) return d;
-	return Math.max(...vals.map((v) => getMaxDepth(v, d + 1)));
+	return vals.reduce<number>(
+		(max, value) => Math.max(max, getMaxDepth(value, d + 1)),
+		d,
+	);
 }
 
 function buildPath(parent: string, key: string | number): string {
@@ -234,6 +242,7 @@ function JsonNodeView({
 					<button
 						type="button"
 						className="json-children-badge"
+						aria-expanded={expanded}
 						onClick={handleToggle}
 					>
 						§ children
@@ -263,6 +272,7 @@ function JsonNodeView({
 					<button
 						type="button"
 						className="json-children-badge"
+						aria-expanded={expanded}
 						onClick={handleToggle}
 					>
 						§ children
@@ -299,41 +309,53 @@ function JsonNodeView({
 // ── JsonPreview ───────────────────────────────────────────────────────────────
 
 const LARGE_JSON_THRESHOLD = 3 * 1024 * 1024;
-
-function formatBytes(bytes: number): string {
-	if (bytes < 1024) return `${bytes} B`;
-	if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-	return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-}
+const RECORDS_PER_PAGE = 100;
 
 interface JsonPreviewProps {
 	content: string;
-	isDark: boolean;
+	format: "json" | "jsonl";
 }
 
-export function JsonPreview({ content }: JsonPreviewProps) {
+export function JsonPreview({ content, format }: JsonPreviewProps) {
 	const [selectedPath, setSelectedPath] = useState<string | null>(null);
 	const [expandDepth, setExpandDepth] = useState<ExpandDepth>(2);
 	const [toggled, setToggled] = useState<Set<string>>(new Set());
 	const [viewMode, setViewMode] = useState<"auto" | "raw">("auto");
+	const [page, setPage] = useState(0);
 
 	const contentSize = content.length;
 	const isLargeFile = contentSize > LARGE_JSON_THRESHOLD;
+	const isJsonLines = format === "jsonl";
+	const formatLabel = isJsonLines ? "JSONL" : "JSON";
 
-	const { parsed, parseError } = useMemo(() => {
+	const { parsed, parseError } = useMemo<{
+		parsed: unknown;
+		parseError: string | null;
+	}>(() => {
 		if (!content.trim()) return { parsed: null, parseError: null };
 		if (isLargeFile) return { parsed: null, parseError: null };
 		try {
-			return { parsed: JSON.parse(content), parseError: null };
+			return {
+				parsed: isJsonLines ? parseJsonLines(content) : JSON.parse(content),
+				parseError: null,
+			};
 		} catch (e) {
 			return { parsed: null, parseError: (e as Error).message };
 		}
-	}, [content, isLargeFile]);
+	}, [content, isJsonLines, isLargeFile]);
 
 	const { nodeCount, maxDepth } = useMemo(() => {
 		if (parsed == null) return { nodeCount: 0, maxDepth: 0 };
-		return { nodeCount: countNodes(parsed), maxDepth: getMaxDepth(parsed) };
-	}, [parsed]);
+		return {
+			nodeCount: isJsonLines ? 0 : countNodes(parsed),
+			maxDepth: getMaxDepth(parsed) - Number(isJsonLines),
+		};
+	}, [parsed, isJsonLines]);
+
+	const records = isJsonLines && Array.isArray(parsed) ? parsed : null;
+	const pageCount = Math.ceil((records?.length ?? 0) / RECORDS_PER_PAGE);
+	const currentPage = Math.min(page, Math.max(pageCount - 1, 0));
+	const pageStart = currentPage * RECORDS_PER_PAGE;
 
 	const handleToggle = useCallback((path: string) => {
 		setToggled((prev) => {
@@ -348,10 +370,15 @@ export function JsonPreview({ content }: JsonPreviewProps) {
 		setToggled(new Set());
 	}
 
+	function changePage(nextPage: number) {
+		setPage(nextPage);
+		setSelectedPath(null);
+	}
+
 	if (!content.trim()) {
 		return (
 			<div className="preview-empty">
-				<p>Start typing JSON in the editor...</p>
+				<p>Start typing {formatLabel} in the editor...</p>
 			</div>
 		);
 	}
@@ -362,8 +389,9 @@ export function JsonPreview({ content }: JsonPreviewProps) {
 				<div className="json-error-badge">Large File</div>
 				<div className="json-error-message">
 					<p>
-						This JSON file is <strong>{formatBytes(contentSize)}</strong> and
-						cannot be previewed. Use the Monaco editor to view and edit.
+						This {formatLabel} file is{" "}
+						<strong>{formatBytes(contentSize)}</strong> and cannot be previewed.
+						Use the Monaco editor to view and edit.
 					</p>
 				</div>
 			</div>
@@ -373,89 +401,145 @@ export function JsonPreview({ content }: JsonPreviewProps) {
 	if (parseError) {
 		return (
 			<div className="json-error">
-				<div className="json-error-badge">Invalid JSON</div>
+				<div className="json-error-badge">Invalid {formatLabel}</div>
 				<pre className="json-error-message">{parseError}</pre>
 			</div>
 		);
 	}
 
+	const treeProps = {
+		depth: 0,
+		expandDepth,
+		toggled,
+		onToggle: handleToggle,
+		onSelect: setSelectedPath,
+		selectedPath,
+		isLast: true,
+	};
+	const deepestLevel = Math.max(maxDepth, 1);
+	const depthItems = [
+		...Array.from({ length: deepestLevel }, (_, index) => ({
+			label: `Depth ${index + 1}`,
+			value: String(index + 1),
+		})),
+		{ label: "All", value: "all" },
+	];
+	const selectedDepth =
+		expandDepth === "all"
+			? expandDepth
+			: String(Math.min(expandDepth, deepestLevel));
+
 	return (
-		<div className="json-preview">
+		<Tabs
+			className="json-preview gap-0"
+			value={viewMode}
+			onValueChange={(mode) => {
+				if (mode === "auto" || mode === "raw") setViewMode(mode);
+			}}
+		>
 			{/* ── Status bar ── */}
-			<div className="text-xs h-8 px-2 py-1 bg-card border-b flex gap-2 justify-between flex-shrink-0 items-center">
-				<span className="json-statusbar-left">{nodeCount} nodes</span>
-				<span>
+			<div className="flex shrink-0 items-center justify-between gap-2 px-2 py-1 text-xs">
+				<span className="json-statusbar-left">
+					{records
+						? `${records.length} ${records.length === 1 ? "record" : "records"}`
+						: `${nodeCount} nodes`}
+				</span>
+				<span className="min-w-0">
 					{selectedPath && (
 						<span className="json-path-chip">{selectedPath}</span>
 					)}
 				</span>
-				<div className="flex items-center gap-1">
+				<div className="flex shrink-0 items-center gap-1">
 					{/* Depth select */}
 					<Select
-						value={String(expandDepth)}
+						items={depthItems}
+						value={selectedDepth}
 						onValueChange={(v) => changeDepth(v === "all" ? "all" : Number(v))}
 					>
-						<SelectTrigger size="xs" className="text-xs">
+						<SelectTrigger
+							size="xs"
+							className="border-0 bg-secondary text-xs"
+							aria-label="Expansion depth"
+						>
 							<SelectValue />
 						</SelectTrigger>
 						<SelectContent side="bottom" align="end">
-							{Array.from(
-								{ length: Math.max(maxDepth, 1) },
-								(_, i) => i + 1,
-							).map((d) => (
-								<SelectItem className="text-xs" key={d} value={String(d)}>
-									Depth {d}
+							{depthItems.map(({ label, value }) => (
+								<SelectItem className="text-xs" key={value} value={value}>
+									{label}
 								</SelectItem>
 							))}
-							<SelectItem className="text-xs" key="all" value="all">
-								All
-							</SelectItem>
 						</SelectContent>
 					</Select>
 
-					{/* View mode */}
-					<ButtonGroup>
-						<Button
-							type="button"
-							variant={viewMode === "auto" ? "default" : "outline"}
-							size="xs"
-							onClick={() => setViewMode("auto")}
-						>
-							Auto
-						</Button>
-						<Button
-							type="button"
-							variant={viewMode === "raw" ? "default" : "outline"}
-							size="xs"
-							onClick={() => setViewMode("raw")}
-						>
-							Raw
-						</Button>
-					</ButtonGroup>
+					<TabsList
+						aria-label="JSON view"
+						className="group-data-horizontal/tabs:h-6"
+					>
+						<TabsTrigger value="auto">Auto</TabsTrigger>
+						<TabsTrigger value="raw">Raw</TabsTrigger>
+					</TabsList>
 				</div>
 			</div>
 
 			{/* ── Tree / Raw area ── */}
-			<div className="json-tree-area">
-				{viewMode === "raw" ? (
-					<pre className="json-raw">{JSON.stringify(parsed, null, 2)}</pre>
-				) : (
-					<div className="json-tree">
+			<TabsContent value="raw" className="json-tree-area">
+				<pre className="json-raw">
+					{isJsonLines ? content : JSON.stringify(parsed, null, 2)}
+				</pre>
+			</TabsContent>
+			<TabsContent value="auto" className="json-tree-area" key={currentPage}>
+				<div className="json-tree">
+					{records ? (
+						records
+							.slice(pageStart, pageStart + RECORDS_PER_PAGE)
+							.map((record, offset) => {
+								const index = pageStart + offset;
+								return (
+									<JsonNodeView
+										{...treeProps}
+										key={index}
+										data={record}
+										keyName={index}
+										path={buildPath("data", index)}
+									/>
+								);
+							})
+					) : (
 						<JsonNodeView
+							{...treeProps}
 							data={parsed}
 							keyName={null}
 							path="data"
-							depth={0}
-							expandDepth={expandDepth}
-							toggled={toggled}
-							onToggle={handleToggle}
-							onSelect={setSelectedPath}
-							selectedPath={selectedPath}
-							isLast={true}
 						/>
-					</div>
-				)}
-			</div>
-		</div>
+					)}
+				</div>
+			</TabsContent>
+			{viewMode === "auto" && pageCount > 1 && (
+				<div className="flex items-center justify-end gap-2 px-2 py-1 text-xs">
+					<Button
+						variant="ghost"
+						size="xs"
+						aria-label="Previous page"
+						disabled={currentPage === 0}
+						onClick={() => changePage(currentPage - 1)}
+					>
+						<IconChevronLeft />
+					</Button>
+					<span>
+						Page {currentPage + 1} of {pageCount}
+					</span>
+					<Button
+						variant="ghost"
+						size="xs"
+						aria-label="Next page"
+						disabled={currentPage + 1 === pageCount}
+						onClick={() => changePage(currentPage + 1)}
+					>
+						<IconChevronRight />
+					</Button>
+				</div>
+			)}
+		</Tabs>
 	);
 }

@@ -1,3 +1,28 @@
 [tools]
 rust = "1.93.1"
 bun = "1.3.11"
+
+[tasks."app:dev"]
+description = "Run the desktop app in development mode"
+dir = "{{config_root}}/apps/desktop-app"
+run = "bun run app:dev"
+
+[tasks."app:build"]
+description = "Build the desktop app and its platform bundles"
+dir = "{{config_root}}/apps/desktop-app"
+run = "bun run tauri build"
+
+[tasks."app:install"]
+description = "Build and install File Viewers in /Applications on macOS"
+dir = "{{config_root}}/apps/desktop-app"
+run = "sh ../../scripts/install-app.sh"
+
+[tasks.clean]
+description = "Remove workspace build outputs and caches"
+dir = "{{config_root}}"
+run = "sh scripts/clean.sh"
+
+[tasks."clean:deep"]
+description = "Remove workspace build outputs, caches, and installed dependencies"
+dir = "{{config_root}}"
+run = "sh scripts/clean.sh deep"
