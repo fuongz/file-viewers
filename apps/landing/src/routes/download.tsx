@@ -1,154 +1,163 @@
-import { createFileRoute, Link } from "@tanstack/react-router";
-import { ArrowDown, ArrowLeft, ArrowUpRight } from "lucide-react";
-import { useEffect, useState } from "react";
-import { RELEASES_URL, SiteLayout } from "../components/SiteLayout";
-import { RELEASE_DATE, VERSION } from "../version";
+import { createFileRoute } from "@tanstack/react-router";
+import { ArrowUpRight } from "lucide-react";
+import { type CSSProperties, useEffect, useState } from "react";
+import { Reveal } from "../components/Reveal";
+import { MacDownloadButton, SiteLayout } from "../components/SiteLayout";
+import {
+	DMG_FILE,
+	LATEST_RELEASE_URL,
+	RELEASE_DATE,
+	RELEASE_DATE_LABEL,
+	RELEASE_TAG_URL,
+	SITE_URL,
+	VERSION,
+} from "../release";
 
 export const Route = createFileRoute("/download")({
 	head: () => ({
 		meta: [
-			{ title: "Download — File Viewers" },
+			{ title: "Download File Viewers for Mac" },
 			{
 				name: "description",
-				content: "Download File Viewers for macOS, Windows, and Linux.",
+				content: `Download File Viewers ${VERSION} for macOS: one universal DMG for Apple silicon and Intel Macs. Free and open source.`,
 			},
+			{ property: "og:title", content: "Download File Viewers for Mac" },
+			{ property: "og:url", content: `${SITE_URL}/download` },
 		],
+		links: [{ rel: "canonical", href: `${SITE_URL}/download` }],
 	}),
 	component: DownloadPage,
 });
 
-const releaseURL = `${RELEASES_URL}/tag/v${VERSION}`;
-const assetsURL = `${RELEASES_URL}/download/v${VERSION}`;
-
-const platforms = [
+const facts = [
+	{ term: "Version", detail: VERSION },
 	{
-		id: "macos",
-		name: "macOS",
-		details: "Universal · Apple Silicon and Intel",
-		downloads: [
-			{
-				label: "Disk image",
-				extension: ".dmg",
-				file: `File.Viewers_${VERSION}_universal.dmg`,
-			},
-		],
+		term: "Released",
+		detail: <time dateTime={RELEASE_DATE}>{RELEASE_DATE_LABEL}</time>,
+	},
+	{ term: "Macs", detail: "Apple silicon and Intel" },
+	{ term: "Download", detail: "Universal DMG" },
+	{ term: "License", detail: "MIT, free" },
+];
+
+const install = [
+	{
+		title: "Open the DMG",
+		text: `Double-click ${DMG_FILE} in your Downloads folder.`,
 	},
 	{
-		id: "windows",
-		name: "Windows",
-		details: "64-bit · WebView2",
-		downloads: [
-			{
-				label: "Setup",
-				extension: ".exe",
-				file: `File.Viewers_${VERSION}_x64-setup.exe`,
-			},
-			{
-				label: "Windows Installer",
-				extension: ".msi",
-				file: `File.Viewers_${VERSION}_x64_en-US.msi`,
-			},
-		],
+		title: "Drag the app to Applications",
+		text: "Drop File Viewers onto the Applications folder in the window that opens.",
 	},
 	{
-		id: "linux",
-		name: "Linux",
-		details: "x86-64 · WebKitGTK",
-		downloads: [
-			{
-				label: "AppImage",
-				extension: ".AppImage",
-				file: `File.Viewers_${VERSION}_amd64.AppImage`,
-			},
-			{
-				label: "Debian / Ubuntu",
-				extension: ".deb",
-				file: `File.Viewers_${VERSION}_amd64.deb`,
-			},
-			{
-				label: "Fedora",
-				extension: ".rpm",
-				file: `File.Viewers-${VERSION}-1.x86_64.rpm`,
-			},
-		],
+		title: "Open a file",
+		text: "Launch File Viewers, or right-click a file in Finder, then choose Open With and File Viewers.",
 	},
-] as const;
+];
 
-type Platform = (typeof platforms)[number]["id"];
-
-function detectPlatform(): Platform | null {
+function isMac() {
 	const agent = navigator.userAgent.toLowerCase();
-	if (/android|iphone|ipad|ipod|cros/.test(agent)) return null;
-	const platform = navigator.platform.toLowerCase();
-	if (platform.startsWith("mac")) return "macos";
-	if (platform.startsWith("win")) return "windows";
-	if (platform.startsWith("linux")) return "linux";
-	return null;
+	if (/iphone|ipad|ipod/.test(agent)) return false;
+	// iPadOS reports itself as a Mac but has a touch screen.
+	return (
+		navigator.platform.toLowerCase().startsWith("mac") &&
+		navigator.maxTouchPoints < 2
+	);
 }
 
-const releaseDate = new Intl.DateTimeFormat("en-US", {
-	dateStyle: "medium",
-	timeZone: "UTC",
-}).format(new Date(RELEASE_DATE));
+/** Staggers the page-load entrance; see `.enter` in styles.css. */
+const delay = (ms: number) => ({ "--d": `${ms}ms` }) as CSSProperties;
 
 function DownloadPage() {
-	const [current, setCurrent] = useState<Platform | null>(null);
-	useEffect(() => setCurrent(detectPlatform()), []);
+	const [elsewhere, setElsewhere] = useState(false);
+	useEffect(() => setElsewhere(!isMac()), []);
 
 	return (
 		<SiteLayout>
-			<main>
-				<section aria-labelledby="downloads-title" className="paper-hero">
-					<div className="site-wrap download-hero">
-						<Link to="/" className="site-text-link">
-							<ArrowLeft size={15} aria-hidden="true" /> Back to home
-						</Link>
-						<h1 id="downloads-title" className="display-title">
-							Download File Viewers
+			<section className="hero hero-download" aria-labelledby="download-title">
+				<div className="wrap download-layout">
+					<div className="download-intro">
+						<p className="eyebrow enter" style={delay(0)}>
+							<span className="tag">v{VERSION}</span>
+							<span>
+								Released{" "}
+								<time dateTime={RELEASE_DATE}>{RELEASE_DATE_LABEL}</time>
+							</span>
+						</p>
+						<h1
+							id="download-title"
+							className="hero-title download-title enter"
+							style={delay(70)}
+						>
+							File Viewers for Mac.
 						</h1>
-						<div className="release-meta">
-							<code>v{VERSION}</code>
-							<time dateTime={RELEASE_DATE}>{releaseDate}</time>
-							<a className="site-text-link" href={releaseURL}>
-								Changelog <ArrowUpRight size={14} aria-hidden="true" />
+						<p className="hero-lede enter" style={delay(150)}>
+							One universal DMG that runs natively on Apple silicon and Intel
+							Macs.
+						</p>
+						{elsewhere && (
+							<p className="notice" role="note">
+								File Viewers is a macOS app. Open this page on your Mac to
+								download it there.
+							</p>
+						)}
+					</div>
+					<div className="download-card enter-window">
+						<div className="download-card-head">
+							<img src="/icon.png" width={64} height={64} alt="" />
+							<div>
+								<p className="download-card-name">File Viewers</p>
+								<p className="mono-note download-file" translate="no">
+									{DMG_FILE}
+								</p>
+							</div>
+						</div>
+						<dl className="facts">
+							{facts.map(({ term, detail }) => (
+								<div key={term}>
+									<dt>{term}</dt>
+									<dd>{detail}</dd>
+								</div>
+							))}
+						</dl>
+						<MacDownloadButton className="btn-block" />
+						<div className="download-links">
+							<a className="text-link" href={RELEASE_TAG_URL}>
+								What’s new in {VERSION}
+								<ArrowUpRight size={14} aria-hidden="true" />
+							</a>
+							<a className="text-link" href={LATEST_RELEASE_URL}>
+								Latest release on GitHub
+								<ArrowUpRight size={14} aria-hidden="true" />
 							</a>
 						</div>
 					</div>
-				</section>
-				<section
-					aria-label="Installers by platform"
-					className="site-wrap download-list"
-				>
-					{platforms.map(({ id, name, details, downloads }) => (
-						<section
-							className="platform-row"
-							key={id}
-							aria-labelledby={`platform-${id}`}
-						>
-							<div>
-								<h2 id={`platform-${id}`} className="display-title">
-									{name}
-								</h2>
-								<p>{details}</p>
-								{current === id && (
-									<span className="current-platform">Your platform</span>
-								)}
-							</div>
-							<ul>
-								{downloads.map(({ label, extension, file }) => (
-									<li key={file}>
-										<a className="installer-link" href={`${assetsURL}/${file}`}>
-											<span>{label}</span>
-											<code>{extension}</code>
-											<ArrowDown size={16} aria-hidden="true" />
-										</a>
-									</li>
-								))}
-							</ul>
-						</section>
-					))}
-				</section>
-			</main>
+				</div>
+			</section>
+			<section className="section" aria-labelledby="install-title">
+				<div className="wrap">
+					<Reveal className="section-head">
+						<p className="eyebrow eyebrow-rule">
+							<span>Install</span>
+							<span>3 steps</span>
+						</p>
+						<h2 id="install-title" className="section-title">
+							From download to first file.
+						</h2>
+					</Reveal>
+					<Reveal as="ol" className="install-steps">
+						{install.map(({ title, text }, index) => (
+							<li key={title}>
+								<span className="step-index" aria-hidden="true">
+									{String(index + 1).padStart(2, "0")}
+								</span>
+								<h3>{title}</h3>
+								<p>{text}</p>
+							</li>
+						))}
+					</Reveal>
+				</div>
+			</section>
 		</SiteLayout>
 	);
 }

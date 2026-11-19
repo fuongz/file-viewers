@@ -51,8 +51,8 @@ bun run check      # Biome check (lint + format)
 
 ## Preview gallery
 
-The home page gallery uses screenshots from the macOS desktop app with synthetic observatory data. SQLite and Schema Diagram show the same database. JSONL, CSV, and Markdown show related sample files.
+The home page uses screenshots of the macOS desktop app with synthetic sample data, in a light and a dark version each. The page shows the one that matches the visitor's color scheme.
 
-For new screenshots, open the matching sample format in a local desktop build and capture the app window. Resize to 1800 × 1140 and export WebP to `public/banners/`. Image names and accessible descriptions are set in [the home route](src/routes/index.tsx).
+For new screenshots, open the matching sample format in a local desktop build and capture the app window. Capture a light and a dark version, export them as WebP named `<view>-light.webp` and `<view>-dark.webp` in `public/shots/`, then register the view in [`src/shots.ts`](src/shots.ts).
 
 The download page uses the version metadata updated by the [release script](../../docs/releasing.md).

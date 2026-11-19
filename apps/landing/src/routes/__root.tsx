@@ -1,4 +1,3 @@
-import { TanStackDevtools } from "@tanstack/react-devtools";
 import {
 	createRootRoute,
 	HeadContent,
@@ -6,58 +5,88 @@ import {
 	Outlet,
 	Scripts,
 } from "@tanstack/react-router";
-import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
-
+import { type ReactNode, useEffect } from "react";
+import { SiteLayout } from "../components/SiteLayout";
+import { SITE_URL } from "../release";
 import appCss from "../styles.css?url";
+
+const TITLE = "File Viewers: open a file, look closer";
+const DESCRIPTION =
+	"A free, open source Mac app for SQLite, CSV, Parquet, Excel, JSON, JSON Lines and Markdown. Your files stay on your Mac.";
+const OG_IMAGE = `${SITE_URL}/og.png`;
 
 export const Route = createRootRoute({
 	component: RootComponent,
-	notFoundComponent: () => (
-		<div className="min-h-screen flex flex-col items-center justify-center text-center px-8">
-			<h1 className="display-title text-6xl mb-4">404</h1>
-			<p className="text-[var(--muted)] mb-8">Page not found.</p>
-			<Link to="/" className="site-button">
-				Go home
-			</Link>
-		</div>
-	),
+	notFoundComponent: NotFound,
 	head: () => ({
 		meta: [
+			{ charSet: "utf-8" },
+			{ name: "viewport", content: "width=device-width, initial-scale=1" },
+			{ title: TITLE },
+			{ name: "description", content: DESCRIPTION },
 			{
-				charSet: "utf-8",
+				name: "theme-color",
+				content: "#fcf9f6",
+				media: "(prefers-color-scheme: light)",
 			},
 			{
-				name: "viewport",
-				content: "width=device-width, initial-scale=1",
+				name: "theme-color",
+				content: "#151110",
+				media: "(prefers-color-scheme: dark)",
 			},
+			{ name: "color-scheme", content: "light dark" },
+			{ property: "og:type", content: "website" },
+			{ property: "og:site_name", content: "File Viewers" },
+			{ property: "og:title", content: TITLE },
+			{ property: "og:description", content: DESCRIPTION },
+			{ property: "og:url", content: SITE_URL },
+			{ property: "og:image", content: OG_IMAGE },
+			{ property: "og:image:width", content: "1200" },
+			{ property: "og:image:height", content: "630" },
 			{
-				title: "File Viewers — Desktop viewer for data and docs",
+				property: "og:image:alt",
+				content: "File Viewers showing an SQLite table on macOS",
 			},
-			{
-				name: "description",
-				content:
-					"Browse SQLite, JSONL, JSON, CSV, Excel, Parquet, and Markdown in one open-source desktop app.",
-			},
+			{ name: "twitter:card", content: "summary_large_image" },
+			{ name: "twitter:title", content: TITLE },
+			{ name: "twitter:description", content: DESCRIPTION },
+			{ name: "twitter:image", content: OG_IMAGE },
 		],
 		links: [
-			{
-				rel: "stylesheet",
-				href: appCss,
-			},
-			{
-				rel: "icon",
-				href: "/icon.png",
-			},
+			{ rel: "stylesheet", href: appCss },
+			{ rel: "icon", href: "/icon.png" },
+			{ rel: "apple-touch-icon", href: "/icon.png" },
 		],
 	}),
 	shellComponent: RootDocument,
 });
 
+/** Unknown URLs get the site's own bar, landmarks and a title of their own. */
+function NotFound() {
+	useEffect(() => {
+		document.title = "Page not found | File Viewers";
+	}, []);
+	return (
+		<SiteLayout>
+			<div className="not-found">
+				<p className="eyebrow eyebrow-rule">
+					<span>404</span>
+					<span>Page not found</span>
+				</p>
+				<h1 className="section-title">Nothing to look at here.</h1>
+				<Link to="/" className="btn btn-primary">
+					Go to the home page
+				</Link>
+			</div>
+		</SiteLayout>
+	);
+}
+
 function RootComponent() {
 	return <Outlet />;
 }
 
-function RootDocument({ children }: { children: React.ReactNode }) {
+function RootDocument({ children }: { children: ReactNode }) {
 	return (
 		<html lang="en">
 			<head>
@@ -65,17 +94,6 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 			</head>
 			<body>
 				{children}
-				<TanStackDevtools
-					config={{
-						position: "bottom-right",
-					}}
-					plugins={[
-						{
-							name: "Tanstack Router",
-							render: <TanStackRouterDevtoolsPanel />,
-						},
-					]}
-				/>
 				<Scripts />
 			</body>
 		</html>
