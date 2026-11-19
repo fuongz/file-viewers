@@ -14,13 +14,9 @@ export const Route = createRootRoute({
 	component: RootComponent,
 	notFoundComponent: () => (
 		<div className="min-h-screen flex flex-col items-center justify-center text-center px-8">
-			<h1 className="text-5xl font-bold text-white mb-4">404</h1>
-			<p className="text-white/60 mb-8">Page not found.</p>
-			<Link
-				to="/"
-				className="inline-flex items-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold text-white no-underline transition-all hover:brightness-110 active:scale-95"
-				style={{ backgroundColor: "#1d6ae8" }}
-			>
+			<h1 className="display-title text-6xl mb-4">404</h1>
+			<p className="text-[var(--muted)] mb-8">Page not found.</p>
+			<Link to="/" className="site-button">
 				Go home
 			</Link>
 		</div>
@@ -67,7 +63,7 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 			<head>
 				<HeadContent />
 			</head>
-			<body style={{ backgroundColor: "#181818", color: "#ffffff", margin: 0 }}>
+			<body>
 				{children}
 				<TanStackDevtools
 					config={{
