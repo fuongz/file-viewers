@@ -37,10 +37,8 @@ The workflow falls back to an unsigned build if `APPLE_CERTIFICATE` is absent. T
 | Target | Installers | Updater assets |
 | --- | --- | --- |
 | macOS universal | DMG | Signed app archive for Apple Silicon and Intel |
-| Linux x86_64 | DEB, AppImage, RPM | Signed packages |
-| Windows x86_64 | MSI, NSIS EXE | Signed installers |
 
-CI updates a shared `latest.json` in sequence across platforms. The final `verify-updater` job checks that the manifest version matches the tag and that the required entries have HTTPS URLs and signatures.
+Linux and Windows jobs are commented out in the workflow while releases focus on macOS. CI updates a shared `latest.json` in sequence across platforms. The final `verify-updater` job checks that the manifest version matches the tag and that the required entries have HTTPS URLs and signatures.
 
 ## Verify availability
 
