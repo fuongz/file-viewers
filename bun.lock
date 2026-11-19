@@ -14,7 +14,7 @@
     },
     "apps/desktop-app": {
       "name": "@apps/desktop",
-      "version": "0.7.0",
+      "version": "0.8.0",
       "dependencies": {
         "@base-ui/react": "^1.9.0",
         "@duckdb/duckdb-wasm": "^1.33.1-dev57.0",
