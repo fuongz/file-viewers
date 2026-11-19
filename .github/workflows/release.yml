@@ -46,6 +46,47 @@ jobs:
             echo "enabled=false" >> $GITHUB_OUTPUT
           fi
 
+      # Notarization credentials. Prefer an App Store Connect API key
+      # (APPLE_API_KEY_ID + APPLE_API_ISSUER + APPLE_API_PRIVATE_KEY, the .p8
+      # contents); fall back to Apple ID + app-specific password. Only
+      # non-empty values are exported: Tauri treats an empty APPLE_* variable
+      # as set and fails. A signed but un-notarized DMG is still blocked by
+      # Gatekeeper, so missing credentials fail the release.
+      - name: Configure notarization
+        if: steps.signing.outputs.enabled == 'true'
+        env:
+          APPLE_API_KEY_ID: ${{ secrets.APPLE_API_KEY_ID }}
+          APPLE_API_ISSUER: ${{ secrets.APPLE_API_ISSUER }}
+          APPLE_API_PRIVATE_KEY: ${{ secrets.APPLE_API_PRIVATE_KEY }}
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+        run: |
+          if [ -n "$APPLE_API_KEY_ID" ] && [ -n "$APPLE_API_ISSUER" ] && [ -n "$APPLE_API_PRIVATE_KEY" ]; then
+            key_dir="$RUNNER_TEMP/private_keys"
+            mkdir -p "$key_dir"
+            key_path="$key_dir/AuthKey_${APPLE_API_KEY_ID}.p8"
+            printf '%s\n' "$APPLE_API_PRIVATE_KEY" > "$key_path"
+            chmod 600 "$key_path"
+            {
+              echo "APPLE_API_KEY=$APPLE_API_KEY_ID"
+              echo "APPLE_API_ISSUER=$APPLE_API_ISSUER"
+              echo "APPLE_API_KEY_PATH=$key_path"
+            } >> "$GITHUB_ENV"
+            echo "Notarizing with App Store Connect API key."
+          elif [ -n "$APPLE_ID" ] && [ -n "$APPLE_PASSWORD" ] && [ -n "$APPLE_TEAM_ID" ]; then
+            echo "::add-mask::$APPLE_PASSWORD"
+            {
+              echo "APPLE_ID=$APPLE_ID"
+              echo "APPLE_PASSWORD=$APPLE_PASSWORD"
+              echo "APPLE_TEAM_ID=$APPLE_TEAM_ID"
+            } >> "$GITHUB_ENV"
+            echo "Notarizing with Apple ID."
+          else
+            echo "::error::No notarization credentials. Set APPLE_API_KEY_ID, APPLE_API_ISSUER and APPLE_API_PRIVATE_KEY (or APPLE_ID, APPLE_PASSWORD and APPLE_TEAM_ID)."
+            exit 1
+          fi
+
       # Signed + notarized build (requires Developer ID Application cert).
       - name: Build and publish .dmg (signed)
         if: steps.signing.outputs.enabled == 'true'
@@ -55,9 +96,6 @@ jobs:
           APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
           APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
           APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
-          APPLE_ID: ${{ secrets.APPLE_ID }}
-          APPLE_PASSWORD: ${{ secrets.APPLE_PASSWORD }}
-          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:

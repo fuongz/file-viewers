@@ -22,7 +22,15 @@ Set `TAURI_SIGNING_PRIVATE_KEY` as a GitHub Actions secret and set `TAURI_SIGNIN
 
 ### macOS signing
 
-Every public macOS release must use the project's Apple Developer account to sign the app with a **Developer ID Application** certificate and submit it to Apple for notarization. Before publishing, configure `APPLE_CERTIFICATE`, `APPLE_CERTIFICATE_PASSWORD`, `APPLE_SIGNING_IDENTITY`, `APPLE_ID`, `APPLE_PASSWORD`, and `APPLE_TEAM_ID` in GitHub Actions. `APPLE_PASSWORD` is an app-specific password for notarization.
+Every public macOS release must use the project's Apple Developer account (team `GWG64UPCV5`) to sign the app with the **Developer ID Application: Phuong Phung (GWG64UPCV5)** certificate and submit it to Apple for notarization. GitHub Actions needs these secrets:
+
+- Signing: `APPLE_CERTIFICATE` (base64 of a `.p12` holding only the Developer ID Application certificate and its private key), `APPLE_CERTIFICATE_PASSWORD`, `APPLE_SIGNING_IDENTITY`, and `APPLE_TEAM_ID`.
+- Notarization, preferred: an App Store Connect API key with the Developer role. Set `APPLE_API_KEY_ID` (the key ID), `APPLE_API_ISSUER` (the issuer ID from App Store Connect → Users and Access → Integrations), and `APPLE_API_PRIVATE_KEY` (the full contents of `AuthKey_<id>.p8`).
+- Notarization, alternative: `APPLE_ID` and `APPLE_PASSWORD`, an app-specific password from account.apple.com.
+
+The release fails if signing is configured without notarization credentials.
+
+To build a signed app locally, run `APPLE_SIGNING_IDENTITY="Developer ID Application: Phuong Phung (GWG64UPCV5)" bun run tauri build --bundles app` in `apps/desktop-app`. Add `APPLE_API_KEY`, `APPLE_API_ISSUER`, and `APPLE_API_KEY_PATH` to notarize it as well.
 
 The workflow falls back to an unsigned build if `APPLE_CERTIFICATE` is absent. Treat that result as a failed release verification and correct the signing configuration before distributing the DMG. Apple code signing and the Tauri updater signature are both required for the public macOS release.
 
