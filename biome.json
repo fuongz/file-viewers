@@ -11,11 +11,9 @@
 			"!**/node_modules",
 			"!**/dist",
 			"!**/routeTree.gen.ts",
-			"!**/build",
 			"!**/target",
 			"!**/docs",
-			"!**/package.json",
-			"!**/bun.lockb"
+			"!**/package.json"
 		]
 	},
 	"formatter": {
@@ -23,7 +21,9 @@
 		"indentStyle": "tab"
 	},
 	"markdown": {
-		"formatter": { "enabled": false }
+		"formatter": {
+			"enabled": false
+		}
 	},
 	"linter": {
 		"enabled": true,
@@ -45,8 +45,7 @@
 			},
 			"a11y": {
 				"useSemanticElements": "off",
-				"useKeyWithClickEvents": "off",
-				"useFocusableInteractive": "off"
+				"useKeyWithClickEvents": "off"
 			}
 		}
 	},

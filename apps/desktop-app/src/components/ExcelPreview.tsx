@@ -1,5 +1,3 @@
-/** biome-ignore-all lint/suspicious/noArrayIndexKey: no need */
-
 import { Cancel01Icon, FileCorruptIcon } from "@hugeicons/core-free-icons";
 import { HugeiconsIcon } from "@hugeicons/react";
 import { readXlsx } from "hucre/xlsx";

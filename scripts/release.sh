@@ -104,6 +104,8 @@ jq --indent 2 --arg v "$next_version" '.version = $v' "$PKG_JSON" > "$tmp" && mv
 echo "=> updating apps/desktop-app/src-tauri/tauri.conf.json..."
 tmp=$(mktemp)
 jq --tab --arg v "$next_version" '.version = $v' "$TAURI_CONF" > "$tmp" && mv "$tmp" "$TAURI_CONF"
+# jq expands short arrays; restore the Biome formatting the lint check expects.
+bunx biome format --write "$TAURI_CONF" >/dev/null
 
 echo "=> updating apps/desktop-app/src-tauri/Cargo.toml..."
 # Replace the first `version = "..."` line in [package] section only
